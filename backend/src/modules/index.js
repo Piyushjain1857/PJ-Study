@@ -1,5 +1,10 @@
-/**
- * Modules directory for PJ Study domain feature modules.
- * Future feature modules (e.g. auth, notes, ai, flashcards, admin) will reside here.
- */
-export default {};
+export * from './users/user.repository.js';
+export * from './users/user.service.js';
+export * from './courses/course.repository.js';
+export * from './courses/course.service.js';
+export * from './subjects/subject.repository.js';
+export * from './subjects/subject.service.js';
+export * from './topics/topic.repository.js';
+export * from './topics/topic.service.js';
+export * from './notes/note.repository.js';
+export * from './notes/note.service.js';

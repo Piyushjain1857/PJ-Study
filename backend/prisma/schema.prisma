@@ -1,5 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// PJ Study Database Architecture Schema
+// MySQL + Prisma ORM Relational Foundation
 
 generator client {
   provider = "prisma-client-js"
@@ -10,35 +10,235 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// User model represents registered students, educators, and administrators
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  role      String   @default("STUDENT")
-  avatarUrl String?  @map("avatar_url")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  notes     Note[]
+// =============================================================================
+// ENUMS
+// =============================================================================
 
+enum Role {
+  STUDENT
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum NoteStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  DISMISSED
+}
+
+// =============================================================================
+// CORE MODELS
+// =============================================================================
+
+/// User model represents a registered student, moderator, or administrator account.
+model User {
+  id               String      @id @default(uuid())
+  name             String      @db.VarChar(120)
+  email            String      @unique @db.VarChar(255)
+  passwordHash     String      @map("password_hash") @db.VarChar(255)
+  avatarUrl        String?     @map("avatar_url") @db.VarChar(1024)
+  bio              String?     @db.Text
+  role             Role        @default(STUDENT)
+  isEmailVerified  Boolean     @default(false) @map("is_email_verified")
+  isActive         Boolean     @default(true) @map("is_active")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+
+  // Relationships
+  notes            Note[]      @relation("UserNotes")
+  bookmarks        Bookmark[]
+  reviews          Review[]
+  reportsSubmitted Report[]    @relation("ReportedByUser")
+  reportsReviewed  Report[]    @relation("ReviewedByUser")
+  auditLogs        AuditLog[]
+
+  @@index([role])
+  @@index([isActive])
   @@map("users")
 }
 
-/// Note model represents academic study notes uploaded or created on PJ Study
-model Note {
-  id          String   @id @default(uuid())
-  title       String
-  description String?  @db.Text
-  subject     String
-  fileUrl     String?  @map("file_url")
-  isPublished Boolean  @default(false) @map("is_published")
-  authorId    String   @map("author_id")
-  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+/// Course represents an academic program or degree (e.g. B.Tech Computer Science).
+model Course {
+  id          String    @id @default(uuid())
+  name        String    @db.VarChar(150)
+  slug        String    @unique @db.VarChar(150)
+  description String?   @db.Text
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  @@index([authorId])
-  @@index([subject])
+  // Relationships
+  subjects    Subject[]
+  notes       Note[]
+
+  @@index([isActive])
+  @@map("courses")
+}
+
+/// Subject represents an academic course unit or syllabus module (e.g. Data Structures).
+model Subject {
+  id          String    @id @default(uuid())
+  courseId    String    @map("course_id")
+  name        String    @db.VarChar(150)
+  slug        String    @db.VarChar(150)
+  description String?   @db.Text
+  semester    Int       @db.SmallInt
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relationships
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  topics      Topic[]
+  notes       Note[]
+
+  @@unique([courseId, slug], name: "course_subject_slug_unique")
+  @@index([courseId, semester])
+  @@index([slug])
+  @@map("subjects")
+}
+
+/// Topic represents a granular syllabus concept within a subject.
+model Topic {
+  id          String    @id @default(uuid())
+  subjectId   String    @map("subject_id")
+  name        String    @db.VarChar(150)
+  slug        String    @db.VarChar(150)
+  description String?   @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relationships
+  subject     Subject   @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  notes       Note[]
+
+  @@unique([subjectId, slug], name: "subject_topic_slug_unique")
+  @@index([subjectId])
+  @@map("topics")
+}
+
+/// Note represents an uploaded study material manuscript or lecture document.
+model Note {
+  id            String      @id @default(uuid())
+  title         String      @db.VarChar(255)
+  description   String?     @db.Text
+  fileName      String      @map("file_name") @db.VarChar(255)
+  storageKey    String      @unique @map("storage_key") @db.VarChar(512)
+  fileSize      BigInt      @map("file_size") // In bytes
+  mimeType      String      @default("application/pdf") @map("mime_type") @db.VarChar(100)
+  pageCount     Int?        @map("page_count")
+  courseId      String      @map("course_id")
+  subjectId     String      @map("subject_id")
+  topicId       String?     @map("topic_id")
+  uploadedById  String      @map("uploaded_by_id")
+  status        NoteStatus  @default(PENDING_REVIEW)
+  downloadCount Int         @default(0) @map("download_count")
+  viewCount     Int         @default(0) @map("view_count")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  publishedAt   DateTime?   @map("published_at")
+
+  // Relationships
+  course        Course      @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  subject       Subject     @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  topic         Topic?      @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  uploadedBy    User        @relation("UserNotes", fields: [uploadedById], references: [id], onDelete: Restrict)
+  bookmarks     Bookmark[]
+  reviews       Review[]
+  reports       Report[]
+
+  @@index([status, publishedAt])
+  @@index([courseId, subjectId])
+  @@index([uploadedById])
+  @@index([title])
   @@map("notes")
 }
 
+/// Bookmark represents saved notes in a user's study library.
+model Bookmark {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  noteId    String   @map("note_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relationships
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, noteId], name: "user_note_bookmark_unique")
+  @@index([userId])
+  @@index([noteId])
+  @@map("bookmarks")
+}
+
+/// Review represents a numerical rating (1-5) and written critique by a student.
+model Review {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  noteId    String   @map("note_id")
+  rating    Int      @db.TinyInt // 1 to 5 enforced at service & DB layer
+  comment   String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, noteId], name: "user_note_review_unique")
+  @@index([noteId])
+  @@index([userId])
+  @@map("reviews")
+}
+
+/// Report tracks student flags against inappropriate, plagiarized, or low-quality notes.
+model Report {
+  id           String       @id @default(uuid())
+  reportedById String       @map("reported_by_id")
+  noteId       String       @map("note_id")
+  reason       String       @db.VarChar(255)
+  description  String?      @db.Text
+  status       ReportStatus @default(PENDING)
+  reviewedById String?      @map("reviewed_by_id")
+  reviewedAt   DateTime?    @map("reviewed_at")
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  // Relationships
+  reportedBy   User         @relation("ReportedByUser", fields: [reportedById], references: [id], onDelete: Cascade)
+  reviewedBy   User?        @relation("ReviewedByUser", fields: [reviewedById], references: [id], onDelete: SetNull)
+  note         Note         @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([noteId])
+  @@index([reportedById])
+  @@map("reports")
+}
+
+/// AuditLog tracks sensitive administrative operations and moderation actions.
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?  @map("actor_id")
+  action     String   @db.VarChar(120)
+  entityType String   @map("entity_type") @db.VarChar(80)
+  entityId   String   @map("entity_id") @db.VarChar(64)
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relationships
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

@@ -19,4 +19,3 @@ export function PublicLayout() {
 }
 
 export default PublicLayout;
-
