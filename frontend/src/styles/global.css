@@ -1,27 +1,16 @@
 /**
  * PJ Study Global Stylesheet
- * Base reset, root typography, and element defaults.
  */
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
 html {
-  font-family: var(--font-family-sans);
-  font-size: 16px;
-  line-height: var(--line-height-normal);
-  color: var(--color-text-main);
   background-color: var(--color-background);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  color: var(--color-text-primary);
+  scroll-behavior: smooth;
 }
 
 body {
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -33,22 +22,7 @@ body {
   flex-direction: column;
 }
 
-/* Typography Defaults */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  color: var(--color-text-main);
-  line-height: var(--line-height-tight);
-  font-weight: 700;
-}
-
-p {
-  color: var(--color-text-muted);
-}
-
+/* Links */
 a {
   color: var(--color-primary);
   text-decoration: none;
@@ -59,23 +33,38 @@ a:hover {
   color: var(--color-primary-hover);
 }
 
-/* Accessibility Focus States */
+/* Accessible focus visible indicators */
 a:focus-visible,
 button:focus-visible,
-input:focus-visible {
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
-button {
-  font-family: inherit;
-  font-size: inherit;
-  border: none;
-  background: none;
-  cursor: pointer;
+/* Selection */
+::selection {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
-code,
-pre {
-  font-family: var(--font-family-mono);
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-small);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-hover);
 }

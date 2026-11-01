@@ -1,0 +1,42 @@
+/**
+ * Container Component Styles
+ */
+
+.layout-container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .layout-container {
+    padding-left: var(--space-6);
+    padding-right: var(--space-6);
+  }
+}
+
+@media (min-width: 1024px) {
+  .layout-container {
+    padding-left: var(--space-8);
+    padding-right: var(--space-8);
+  }
+}
+
+.layout-container--default {
+  max-width: var(--container-width);
+}
+
+.layout-container--narrow {
+  max-width: 840px;
+}
+
+.layout-container--wide {
+  max-width: 1440px;
+}
+
+.layout-container--full {
+  max-width: 100%;
+}
+

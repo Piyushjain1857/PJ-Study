@@ -16,4 +16,3 @@ export function formatSuccessResponse(data, message) {
   }
   return response;
 }
-

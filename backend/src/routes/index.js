@@ -27,5 +27,29 @@ router.get('/health', (req, res) => {
   });
 });
 
-export default router;
+/**
+ * Public platform configuration & capability metadata endpoint.
+ * Centralizes public brand identity and feature roadmap status without exposing secrets.
+ *
+ * GET /api/v1/config
+ */
+router.get('/config', (req, res) => {
+  res.status(200).json({
+    success: true,
+    data: {
+      product: 'PJ Study',
+      tagline: 'Your Entire Study World, One Place.',
+      version: '1.0.0',
+      environment: env.nodeEnv,
+      features: {
+        designSystem: 'active',
+        appShell: 'active',
+        notesCatalog: 'foundation',
+        aiStudyTools: 'planned',
+        peerReviews: 'planned'
+      }
+    }
+  });
+});
 
+export default router;

@@ -1,0 +1,292 @@
+/**
+ * AppLayout Component Styles
+ */
+
+.app-shell {
+  display: flex;
+  min-height: 100dvh;
+  background-color: var(--color-background);
+}
+
+/* Sidebar */
+.app-shell__sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: var(--z-navbar);
+  width: var(--sidebar-width);
+  background-color: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  transition:
+    width var(--transition-normal),
+    transform var(--transition-normal);
+}
+
+.app-shell--collapsed .app-shell__sidebar {
+  width: 72px;
+}
+
+@media (max-width: 860px) {
+  .app-shell__sidebar {
+    transform: translateX(-100%);
+  }
+
+  .app-shell__sidebar--mobile-open {
+    transform: translateX(0);
+    box-shadow: var(--shadow-modal);
+  }
+}
+
+.app-shell__mobile-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(25, 27, 24, 0.4);
+  z-index: calc(var(--z-navbar) - 1);
+}
+
+.app-shell__sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--navbar-height);
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app-shell__sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-decoration: none;
+}
+
+.app-shell__sidebar-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background-color: var(--color-primary);
+  color: var(--color-text-inverse);
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  border-radius: var(--radius-small);
+  flex-shrink: 0;
+}
+
+.app-shell__sidebar-brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell__sidebar-title {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  color: var(--color-text-primary);
+  line-height: 1;
+}
+
+.app-shell__sidebar-subtitle {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-accent);
+  font-weight: var(--font-weight-semibold);
+  margin-top: 2px;
+}
+
+.app-shell__collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--radius-small);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.app-shell__collapse-btn:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.app-shell__collapse-btn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Sidebar Navigation */
+.app-shell__nav {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4) var(--space-2);
+  flex: 1;
+  overflow-y: auto;
+  gap: var(--space-6);
+}
+
+.app-shell__nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.app-shell__nav-label {
+  font-size: 0.6875rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  padding: var(--space-2) var(--space-3);
+}
+
+.app-shell__nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-small);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+  text-decoration: none;
+}
+
+.app-shell__nav-item:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.app-shell__nav-item--active {
+  background-color: var(--color-primary-subtle);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.app-shell__nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.app-shell__nav-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.app-shell__nav-text {
+  white-space: nowrap;
+}
+
+.ml-auto {
+  margin-left: auto;
+}
+
+.app-shell__sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  background-color: var(--color-surface-subtle);
+}
+
+.app-shell__user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell__user-name {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.app-shell__user-role {
+  font-size: 0.6875rem;
+  color: var(--color-text-secondary);
+}
+
+/* Main Content Wrapper */
+.app-shell__main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-left: var(--sidebar-width);
+  transition: margin-left var(--transition-normal);
+  min-width: 0;
+}
+
+.app-shell--collapsed .app-shell__main-wrapper {
+  margin-left: 72px;
+}
+
+@media (max-width: 860px) {
+  .app-shell__main-wrapper,
+  .app-shell--collapsed .app-shell__main-wrapper {
+    margin-left: 0;
+  }
+}
+
+.app-shell__top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: var(--navbar-height);
+  background-color: rgba(249, 248, 246, 0.94);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-6);
+}
+
+.app-shell__mobile-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-primary);
+}
+
+.app-shell__mobile-menu-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+@media (min-width: 861px) {
+  .app-shell__mobile-menu-btn {
+    display: none;
+  }
+}
+
+.app-shell__breadcrumb-current {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.app-shell__avatar-btn {
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-full);
+}
+
+.app-shell__content {
+  flex: 1;
+  padding: var(--space-8) var(--space-6);
+  max-width: var(--container-width);
+  width: 100%;
+  margin: 0 auto;
+}

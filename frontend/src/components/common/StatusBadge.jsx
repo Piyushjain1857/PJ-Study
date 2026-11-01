@@ -1,23 +1,22 @@
 import React from 'react';
-import './StatusBadge.css';
+import Badge from './Badge.jsx';
 
 /**
- * Reusable StatusBadge component for showing system or note status.
- *
- * @param {{
- *   status: 'success' | 'warning' | 'danger' | 'info' | 'neutral',
- *   label: string,
- *   pulse?: boolean
- * }} props
+ * Backwards-compatible StatusBadge wrapper using the unified Badge component.
  */
-export function StatusBadge({ status = 'neutral', label, pulse = false }) {
-  return (
-    <span className={`status-badge status-badge--${status}`} role="status">
-      <span className={`status-badge__dot ${pulse ? 'status-badge__dot--pulse' : ''}`} />
-      <span className="status-badge__label">{label}</span>
-    </span>
-  );
+export function StatusBadge({ status = 'default', label, pulse = false }) {
+  // Map legacy status strings to badge variants
+  const variantMap = {
+    neutral: 'default',
+    info: 'verified',
+    danger: 'error',
+    success: 'success',
+    warning: 'warning'
+  };
+
+  const variant = variantMap[status] || status;
+
+  return <Badge variant={variant} label={label} dot pulse={pulse} />;
 }
 
 export default StatusBadge;
-

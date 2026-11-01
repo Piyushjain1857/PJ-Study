@@ -13,4 +13,3 @@ export function notFound(req, res, next) {
 }
 
 export default notFound;
-

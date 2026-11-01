@@ -1,0 +1,116 @@
+/**
+ * PJ Study Typography System
+ * Editorial serif headers paired with clean contemporary sans-serif body text.
+ */
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+}
+
+/* Headings with Instrument Serif */
+h1,
+h2,
+h3,
+h4,
+.font-heading {
+  font-family: var(--font-heading);
+  color: var(--color-text-primary);
+  font-weight: 400; /* Instrument Serif has a natural display weight */
+  letter-spacing: -0.015em;
+  line-height: var(--line-height-tight);
+}
+
+/* Display Heading */
+.heading-display {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-display);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  font-weight: 400;
+}
+
+/* Page Heading (h1) */
+h1,
+.heading-page {
+  font-size: var(--font-size-4xl);
+  line-height: var(--line-height-tight);
+  margin-bottom: var(--space-4);
+}
+
+/* Section Heading (h2) */
+h2,
+.heading-section {
+  font-size: var(--font-size-3xl);
+  line-height: var(--line-height-tight);
+  margin-bottom: var(--space-3);
+}
+
+/* Subsection Heading (h3) */
+h3,
+.heading-subsection {
+  font-size: var(--font-size-2xl);
+  line-height: var(--line-height-snug);
+  margin-bottom: var(--space-2);
+}
+
+/* Card / Component Heading (h4) */
+h4,
+.heading-card {
+  font-family: var(--font-body);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+/* Body Typography */
+p {
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+.body-large {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+}
+
+.body-base {
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-secondary);
+}
+
+.body-small {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-secondary);
+}
+
+/* Editorial Serif Accents */
+.text-serif-italic {
+  font-family: var(--font-heading);
+  font-style: italic;
+}
+
+.editorial-kicker {
+  font-family: var(--font-body);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+/* Metadata & Small Text */
+.text-meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import app from '../src/app.js';
 
-test('Backend Health and Not-Found Endpoints', async (t) => {
+test('Backend Health, Config, and Not-Found Endpoints', async (t) => {
   let server;
   let baseUrl;
 
@@ -35,6 +35,19 @@ test('Backend Health and Not-Found Endpoints', async (t) => {
     assert.equal(json.data.password, undefined);
   });
 
+  await t.test('GET /api/v1/config should return centralized public configuration', async () => {
+    const res = await fetch(`${baseUrl}/api/v1/config`);
+    assert.equal(res.status, 200);
+
+    const json = await res.json();
+    assert.equal(json.success, true);
+    assert.equal(json.data.product, 'PJ Study');
+    assert.equal(json.data.tagline, 'Your Entire Study World, One Place.');
+    assert.equal(json.data.version, '1.0.0');
+    assert.equal(json.data.features.designSystem, 'active');
+    assert.equal(json.data.databaseUrl, undefined);
+  });
+
   await t.test('GET /unknown-route should return 404 with structured error', async () => {
     const res = await fetch(`${baseUrl}/unknown-route`);
     assert.equal(res.status, 404);
@@ -46,4 +59,3 @@ test('Backend Health and Not-Found Endpoints', async (t) => {
     assert.ok(json.error.message.includes('Resource not found'));
   });
 });
-

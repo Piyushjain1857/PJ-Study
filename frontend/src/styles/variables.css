@@ -1,58 +1,67 @@
 /**
  * PJ Study Design Tokens
- * Standard CSS Custom Properties for colors, typography, spacing, borders, shadows, and transitions.
+ * Academic & Editorial Palette: Deep Library Green, Warm Cream, Antique Gold Accent
  */
 
 :root {
-  /* Brand Colors */
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-primary-light: #eff6ff;
-  --color-primary-dark: #1e40af;
-
-  /* Neutral & Base Colors */
-  --color-background: #f8fafc;
+  /* Color Palette */
+  --color-background: #f9f8f6;
   --color-surface: #ffffff;
-  --color-surface-hover: #f1f5f9;
-  --color-surface-border: #e2e8f0;
-  --color-border: #cbd5e1;
-
-  /* Text Colors */
-  --color-text-main: #0f172a;
-  --color-text-muted: #64748b;
-  --color-text-light: #94a3b8;
+  --color-surface-hover: #f2efe9;
+  --color-surface-subtle: #f4f2ed;
+  --color-text-primary: #191b18;
+  --color-text-secondary: #74756f;
+  --color-text-tertiary: #a2a29c;
   --color-text-inverse: #ffffff;
 
-  /* Status & Feedback Colors */
-  --color-success: #10b981;
-  --color-success-light: #ecfdf5;
-  --color-warning: #f59e0b;
-  --color-warning-light: #fffbeb;
-  --color-danger: #ef4444;
-  --color-danger-light: #fef2f2;
-  --color-info: #0284c7;
-  --color-info-light: #f0f9ff;
+  --color-primary: #285943;
+  --color-primary-hover: #214936;
+  --color-primary-subtle: #ebf2ee;
+  --color-primary-light: #d7e5dd;
+
+  --color-accent: #c58a43;
+  --color-accent-hover: #b07834;
+  --color-accent-subtle: #faf3eb;
+
+  --color-border: #e6e3dc;
+  --color-border-hover: #d0ccc2;
+
+  --color-success: #347a55;
+  --color-success-subtle: #ecf5f0;
+  --color-warning: #b7791f;
+  --color-warning-subtle: #fdf7ec;
+  --color-danger: #b54747;
+  --color-danger-subtle: #fdf0f0;
+  --color-verified: #2d68c4;
+  --color-verified-subtle: #eef4fd;
 
   /* Typography */
-  --font-family-sans:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-family-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
-    monospace;
+  --font-heading: 'Instrument Serif', Georgia, Cambria, serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, Monaco, Consolas, monospace;
 
-  /* Font Sizes using clamp for fluid responsive typography */
+  /* Font Weights */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Fluid Font Sizes */
   --font-size-xs: 0.75rem; /* 12px */
   --font-size-sm: 0.875rem; /* 14px */
   --font-size-base: 1rem; /* 16px */
   --font-size-lg: 1.125rem; /* 18px */
   --font-size-xl: 1.25rem; /* 20px */
-  --font-size-2xl: clamp(1.35rem, 1.2rem + 0.75vw, 1.75rem); /* ~24-28px */
-  --font-size-3xl: clamp(1.75rem, 1.5rem + 1.25vw, 2.25rem); /* ~28-36px */
-  --font-size-4xl: clamp(2.25rem, 1.75rem + 2vw, 3rem); /* ~36-48px */
+  --font-size-2xl: clamp(1.4rem, 1.2rem + 1vw, 1.75rem);
+  --font-size-3xl: clamp(1.75rem, 1.4rem + 1.5vw, 2.35rem);
+  --font-size-4xl: clamp(2.25rem, 1.6rem + 2.5vw, 3.25rem);
+  --font-size-display: clamp(2.75rem, 2rem + 3.5vw, 4.5rem);
 
   /* Line Heights */
-  --line-height-tight: 1.2;
-  --line-height-normal: 1.5;
+  --line-height-none: 1;
+  --line-height-tight: 1.15;
+  --line-height-snug: 1.35;
+  --line-height-normal: 1.6;
   --line-height-relaxed: 1.75;
 
   /* Spacing Scale */
@@ -66,24 +75,33 @@
   --space-10: 2.5rem; /* 40px */
   --space-12: 3rem; /* 48px */
   --space-16: 4rem; /* 64px */
+  --space-20: 5rem; /* 80px */
+  --space-24: 6rem; /* 96px */
 
-  /* Border Radius */
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  /* Border Radii */
+  --radius-small: 6px;
+  --radius-medium: 10px;
+  --radius-large: 16px;
   --radius-full: 9999px;
 
-  /* Box Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  /* Shadows */
+  --shadow-subtle: 0 2px 8px rgba(25, 27, 24, 0.04);
+  --shadow-medium: 0 6px 16px rgba(25, 27, 24, 0.06);
+  --shadow-dropdown: 0 10px 25px rgba(25, 27, 24, 0.08), 0 2px 6px rgba(25, 27, 24, 0.04);
+  --shadow-modal: 0 20px 40px rgba(25, 27, 24, 0.12), 0 4px 12px rgba(25, 27, 24, 0.06);
 
-  /* Transitions */
-  --transition-fast: 150ms ease-in-out;
-  --transition-normal: 250ms ease-in-out;
+  /* Layout */
+  --container-width: 1280px;
+  --navbar-height: 4.5rem;
+  --sidebar-width: 260px;
 
-  /* Layout Containers */
-  --container-max-width: 1200px;
-  --header-height: 4.25rem;
+  /* Transitions (short, subtle) */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+
+  /* Z-index Scale */
+  --z-navbar: 100;
+  --z-dropdown: 200;
+  --z-modal-backdrop: 500;
+  --z-modal: 600;
 }

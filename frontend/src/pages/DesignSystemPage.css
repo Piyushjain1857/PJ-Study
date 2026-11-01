@@ -1,0 +1,111 @@
+/**
+ * DesignSystemPage Styles
+ */
+
+.ds-page {
+  padding: var(--space-12) 0 var(--space-20) 0;
+}
+
+.ds-section {
+  margin-bottom: var(--space-16);
+}
+
+.ds-section__header {
+  margin-bottom: var(--space-6);
+}
+
+.ds-section__title {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-3xl);
+  margin-top: var(--space-1);
+  margin-bottom: var(--space-2);
+  color: var(--color-text-primary);
+}
+
+.ds-section__desc {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  max-width: 600px;
+}
+
+/* Swatches Grid */
+.ds-swatches-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .ds-swatches-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .ds-swatches-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.ds-swatch {
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.ds-swatch__color {
+  height: 60px;
+  border-radius: var(--radius-small);
+  width: 100%;
+}
+
+.ds-swatch__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ds-swatch__name {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.ds-swatch__hex {
+  font-size: 0.6875rem;
+  color: var(--color-text-secondary);
+}
+
+.ds-swatch__label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  margin-top: 2px;
+}
+
+/* Typography showcase card */
+.ds-type-card {
+  padding: var(--space-8);
+}
+
+.ds-type-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
+@media (min-width: 768px) {
+  .ds-type-row {
+    grid-template-columns: 140px 1fr;
+    align-items: baseline;
+  }
+}
+
+.ds-type-spec {
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  color: var(--color-accent);
+  letter-spacing: 0.05em;
+  font-weight: var(--font-weight-semibold);
+}
+

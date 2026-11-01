@@ -1,0 +1,21 @@
+/**
+ * DashboardShellPage Styles
+ */
+
+.dash-shell-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.dash-metric-number {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-3xl);
+  color: var(--color-text-primary);
+  line-height: 1.1;
+  margin: var(--space-1) 0;
+}
+
+.dash-shell-content {
+  margin-top: var(--space-4);
+}
+

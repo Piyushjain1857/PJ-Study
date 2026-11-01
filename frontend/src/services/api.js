@@ -62,5 +62,20 @@ export async function getHealthStatus() {
   return response.data?.data;
 }
 
-export default apiClient;
+/**
+ * Retrieves public platform configuration and features status.
+ *
+ * @returns {Promise<{
+ *   product: string,
+ *   tagline: string,
+ *   version: string,
+ *   environment: string,
+ *   features: Record<string, string>
+ * }>}
+ */
+export async function getPlatformConfig() {
+  const response = await apiClient.get('/config');
+  return response.data?.data;
+}
 
+export default apiClient;

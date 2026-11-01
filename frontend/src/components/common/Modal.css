@@ -1,0 +1,109 @@
+/**
+ * Modal Component Styles
+ */
+
+/* Modal Dialog */
+dialog.modal-dialog {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-large);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-modal);
+  padding: 0;
+  width: 90vw;
+  margin: auto;
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  animation: modal-scale-in var(--transition-normal);
+}
+
+/* Scroll containment per modern web guidance */
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+  background-color: rgba(25, 27, 24, 0.45);
+  backdrop-filter: blur(4px);
+  overflow: hidden;
+  overscroll-behavior: contain;
+  animation: backdrop-fade-in var(--transition-normal);
+}
+
+.modal-dialog__content {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--space-6) var(--space-6) var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-dialog__titles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.modal-dialog__title {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-2xl);
+  font-weight: 400;
+  color: var(--color-text-primary);
+  line-height: var(--line-height-tight);
+}
+
+.modal-dialog__desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.modal-dialog__close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-small);
+  color: var(--color-text-secondary);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+  margin-top: -0.25rem;
+  margin-right: -0.25rem;
+}
+
+.modal-dialog__close-btn:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.modal-dialog__close-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.modal-dialog__body {
+  padding: var(--space-6);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-normal);
+  max-height: 65vh;
+  overflow-y: auto;
+}
+
+.modal-dialog__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  background-color: var(--color-surface-subtle);
+  border-top: 1px solid var(--color-border);
+  border-bottom-left-radius: var(--radius-large);
+  border-bottom-right-radius: var(--radius-large);
+}

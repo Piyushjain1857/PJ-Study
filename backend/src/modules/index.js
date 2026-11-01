@@ -3,4 +3,3 @@
  * Future feature modules (e.g. auth, notes, ai, flashcards, admin) will reside here.
  */
 export default {};
-
