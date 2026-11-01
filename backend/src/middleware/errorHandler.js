@@ -15,11 +15,25 @@ export function errorHandler(err, req, res, _next) {
     statusCode = 500;
   }
 
+  let message = err.message || 'An unexpected internal server error occurred';
+  let code = err.code || (statusCode === 404 ? 'NOT_FOUND' : 'INTERNAL_SERVER_ERROR');
+
+  // Friendly interception for database connectivity issues (e.g. Prisma P1001)
+  if (
+    err.code === 'P1001' ||
+    (typeof err.message === 'string' && err.message.includes("Can't reach database server"))
+  ) {
+    statusCode = 503;
+    code = 'DATABASE_UNAVAILABLE';
+    message =
+      'Unable to connect to the MySQL database server. Please verify MySQL is running at localhost:3306.';
+  }
+
   const response = {
     success: false,
     error: {
-      message: err.message || 'An unexpected internal server error occurred',
-      code: err.code || (statusCode === 404 ? 'NOT_FOUND' : 'INTERNAL_SERVER_ERROR'),
+      message,
+      code,
       statusCode
     }
   };

@@ -99,4 +99,3 @@ export class TopicRepository {
 
 export const topicRepository = new TopicRepository();
 export default topicRepository;
-

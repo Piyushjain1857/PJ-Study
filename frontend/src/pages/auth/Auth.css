@@ -1,0 +1,201 @@
+/* ==========================================================================
+   PJ STUDY AUTHENTICATION PAGES STYLING
+   Follows editorial academic design tokens: #285943, #F9F8F6, Instrument Serif
+   ========================================================================== */
+
+.auth-wrapper {
+  min-height: calc(100vh - 160px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  background-color: var(--color-background);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-large);
+  box-shadow: 0 12px 36px rgba(25, 27, 24, 0.05);
+  padding: 40px 36px;
+}
+
+.auth-card--wide {
+  max-width: 520px;
+}
+
+.auth-card__header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.auth-card__badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background-color: rgba(40, 89, 67, 0.08);
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-radius: var(--radius-small);
+  margin-bottom: 12px;
+}
+
+.auth-card__title {
+  font-family: var(--font-heading);
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.15;
+  margin: 0 0 8px 0;
+}
+
+.auth-card__subtitle {
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.auth-alert {
+  padding: 12px 16px;
+  border-radius: var(--radius-medium);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.auth-alert--danger {
+  background-color: rgba(181, 71, 71, 0.08);
+  border: 1px solid rgba(181, 71, 71, 0.25);
+  color: var(--color-danger);
+}
+
+.auth-alert--success {
+  background-color: rgba(52, 122, 85, 0.08);
+  border: 1px solid rgba(52, 122, 85, 0.25);
+  color: var(--color-success);
+}
+
+.auth-alert__errors {
+  margin: 4px 0 0 0;
+  padding-left: 20px;
+  font-size: 0.825rem;
+}
+
+.auth-form__row-split {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.auth-link {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.auth-link:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}
+
+.auth-card__footer {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+/* Password Strength Indicator */
+.password-strength {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: -8px;
+}
+
+.password-strength__bars {
+  display: flex;
+  gap: 4px;
+  height: 4px;
+}
+
+.password-strength__bar {
+  flex: 1;
+  background-color: var(--color-border);
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+.password-strength__bar--weak {
+  background-color: var(--color-danger);
+}
+
+.password-strength__bar--medium {
+  background-color: var(--color-warning);
+}
+
+.password-strength__bar--strong {
+  background-color: var(--color-success);
+}
+
+.password-strength__label {
+  font-size: 0.775rem;
+  color: var(--color-text-secondary);
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Verification Status View */
+.verify-status {
+  text-align: center;
+  padding: 16px 0;
+}
+
+.verify-status__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  margin-bottom: 20px;
+}
+
+.verify-status__icon--success {
+  background-color: rgba(52, 122, 85, 0.12);
+  color: var(--color-success);
+}
+
+.verify-status__icon--error {
+  background-color: rgba(181, 71, 71, 0.12);
+  color: var(--color-danger);
+}
+
+.verify-status__icon--pending {
+  background-color: rgba(40, 89, 67, 0.12);
+  color: var(--color-primary);
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 28px 20px;
+  }
+}

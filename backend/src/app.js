@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import env from './config/env.js';
 import v1Routes from './routes/index.js';
 import notFound from './middleware/notFound.js';
@@ -33,6 +34,9 @@ export function createApp() {
   } else if (!env.isTest) {
     app.use(morgan('combined'));
   }
+
+  // Cookie parsing middleware
+  app.use(cookieParser());
 
   // Body parsing middleware
   app.use(express.json());

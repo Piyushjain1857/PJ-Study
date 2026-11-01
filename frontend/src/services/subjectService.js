@@ -41,4 +41,3 @@ export const subjectService = {
 };
 
 export default subjectService;
-

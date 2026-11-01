@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import env from '../config/env.js';
+import authRoutes from '../modules/auth/auth.routes.js';
 
 const router = Router();
 
@@ -44,6 +45,7 @@ router.get('/config', (req, res) => {
       features: {
         designSystem: 'active',
         appShell: 'active',
+        authentication: 'active',
         notesCatalog: 'foundation',
         aiStudyTools: 'planned',
         peerReviews: 'planned'
@@ -51,5 +53,11 @@ router.get('/config', (req, res) => {
     }
   });
 });
+
+/**
+ * Authentication and session lifecycle routes.
+ * /api/v1/auth/...
+ */
+router.use('/auth', authRoutes);
 
 export default router;

@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import Button from '../common/Button.jsx';
+import Avatar from '../common/Avatar.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import './Navbar.css';
 
 /**
- * Public navigation bar with responsive mobile menu.
+ * Public navigation bar with responsive mobile menu and authentication state.
  */
 export function Navbar() {
+  const { user, isAuthenticated, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -29,6 +33,12 @@ export function Navbar() {
 
   const toggleMobileMenu = () => setMobileMenuOpen((prev) => !prev);
   const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  async function handleLogout() {
+    closeMobileMenu();
+    await logout();
+    navigate('/');
+  }
 
   return (
     <header className="navbar-root">
@@ -77,20 +87,55 @@ export function Navbar() {
           >
             App Shell
           </NavLink>
+          {isAuthenticated && (
+            <NavLink
+              to="/profile"
+              className={({ isActive }) =>
+                `navbar-nav__link ${isActive ? 'navbar-nav__link--active' : ''}`
+              }
+            >
+              Account
+            </NavLink>
+          )}
         </nav>
 
         {/* Desktop Actions */}
         <div className="navbar-actions">
-          <Link to="/app">
-            <Button variant="ghost" size="sm">
-              Log In
-            </Button>
-          </Link>
-          <Link to="/app">
-            <Button variant="primary" size="sm">
-              Get Started
-            </Button>
-          </Link>
+          {isAuthenticated ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Link
+                to="/profile"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  textDecoration: 'none',
+                  color: 'var(--color-text-primary)'
+                }}
+              >
+                <Avatar name={user?.name || 'Scholar'} size="sm" />
+                <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>
+                  {user?.name?.split(' ')[0]}
+                </span>
+              </Link>
+              <Button variant="ghost" size="sm" onClick={handleLogout}>
+                Sign Out
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="ghost" size="sm">
+                  Sign In
+                </Button>
+              </Link>
+              <Link to="/register">
+                <Button variant="primary" size="sm">
+                  Get Started
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Hamburger Button */}
@@ -155,19 +200,37 @@ export function Navbar() {
               >
                 App Shell
               </NavLink>
+              {isAuthenticated && (
+                <NavLink
+                  to="/profile"
+                  className={({ isActive }) =>
+                    `navbar-mobile-link ${isActive ? 'navbar-mobile-link--active' : ''}`
+                  }
+                >
+                  Account Profile
+                </NavLink>
+              )}
             </nav>
 
             <div className="navbar-mobile-actions">
-              <Link to="/app" className="d-block mb-2" onClick={closeMobileMenu}>
-                <Button variant="secondary" size="md" className="w-100">
-                  Log In
+              {isAuthenticated ? (
+                <Button variant="secondary" size="md" className="w-100" onClick={handleLogout}>
+                  Sign Out ({user?.name?.split(' ')[0]})
                 </Button>
-              </Link>
-              <Link to="/app" className="d-block" onClick={closeMobileMenu}>
-                <Button variant="primary" size="md" className="w-100">
-                  Get Started
-                </Button>
-              </Link>
+              ) : (
+                <>
+                  <Link to="/login" className="d-block mb-2" onClick={closeMobileMenu}>
+                    <Button variant="secondary" size="md" className="w-100">
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link to="/register" className="d-block" onClick={closeMobileMenu}>
+                    <Button variant="primary" size="md" className="w-100">
+                      Get Started
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

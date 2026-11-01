@@ -109,4 +109,3 @@ export class CourseRepository {
 
 export const courseRepository = new CourseRepository();
 export default courseRepository;
-

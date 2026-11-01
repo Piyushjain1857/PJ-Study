@@ -62,4 +62,3 @@ export function buildPaginatedResponse(items, totalItems, { page, limit }) {
     }
   };
 }
-

@@ -182,4 +182,3 @@ export class NoteRepository {
 
 export const noteRepository = new NoteRepository();
 export default noteRepository;
-

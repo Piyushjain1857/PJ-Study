@@ -23,6 +23,7 @@ export default [
         fetch: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
+        localStorage: 'readonly',
         Intl: 'readonly',
         import: 'readonly'
       }

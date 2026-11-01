@@ -8,3 +8,7 @@ export * from './topics/topic.repository.js';
 export * from './topics/topic.service.js';
 export * from './notes/note.repository.js';
 export * from './notes/note.service.js';
+export * from './auth/auth.repository.js';
+export * from './auth/auth.service.js';
+export * from './auth/auth.controller.js';
+export * from './auth/auth.middleware.js';

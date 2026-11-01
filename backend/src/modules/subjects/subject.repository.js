@@ -108,4 +108,3 @@ export class SubjectRepository {
 
 export const subjectRepository = new SubjectRepository();
 export default subjectRepository;
-
