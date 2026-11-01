@@ -1,0 +1,38 @@
+{
+  "name": "pj-study-monorepo",
+  "version": "1.0.0",
+  "description": "PJ Study - Your Entire Study World, One Place. Academic notes and AI-powered study platform.",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"cyan.bold,magenta.bold\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "build": "npm run build:frontend",
+    "build:frontend": "npm --prefix frontend run build",
+    "prisma:generate": "npm --prefix backend run prisma:generate",
+    "test": "npm --prefix backend run test",
+    "lint": "npm --prefix frontend run lint",
+    "format": "prettier --write \"**/*.{js,jsx,json,css,md}\" --ignore-path .gitignore",
+    "format:check": "prettier --check \"**/*.{js,jsx,json,css,md}\" --ignore-path .gitignore",
+    "check": "npm run check:backend",
+    "check:backend": "node backend/src/server.js --check-only"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "prettier": "^3.9.10"
+  },
+  "keywords": [
+    "education",
+    "academic-notes",
+    "ai-study",
+    "react",
+    "express",
+    "prisma"
+  ],
+  "author": "PJ Study Team",
+  "license": "ISC"
+}

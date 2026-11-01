@@ -1,0 +1,116 @@
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: var(--header-height);
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--color-surface-border);
+}
+
+.site-header__container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.site-header__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-decoration: none;
+}
+
+.site-header__logo-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: var(--color-text-inverse);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: var(--font-size-sm);
+  letter-spacing: -0.05em;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+.site-header__brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.site-header__brand-name {
+  font-size: var(--font-size-lg);
+  font-weight: 800;
+  color: var(--color-text-main);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.site-header__brand-badge {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.site-header__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.site-header__nav-link {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.site-header__nav-link:hover {
+  color: var(--color-text-main);
+  background-color: var(--color-surface-hover);
+}
+
+.site-header__nav-link--active {
+  color: var(--color-primary);
+  background-color: var(--color-primary-light);
+}
+
+.site-header__nav-link--disabled {
+  color: var(--color-text-light);
+  cursor: not-allowed;
+}
+
+.site-header__nav-link--disabled:hover {
+  color: var(--color-text-light);
+  background-color: transparent;
+}
+
+.site-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.site-header__version {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  background-color: var(--color-surface-hover);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-surface-border);
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .site-header__nav {
+    display: none;
+  }
+}

@@ -1,0 +1,44 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+/// User model represents registered students, educators, and administrators
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  role      String   @default("STUDENT")
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  notes     Note[]
+
+  @@map("users")
+}
+
+/// Note model represents academic study notes uploaded or created on PJ Study
+model Note {
+  id          String   @id @default(uuid())
+  title       String
+  description String?  @db.Text
+  subject     String
+  fileUrl     String?  @map("file_url")
+  isPublished Boolean  @default(false) @map("is_published")
+  authorId    String   @map("author_id")
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([authorId])
+  @@index([subject])
+  @@map("notes")
+}
+
