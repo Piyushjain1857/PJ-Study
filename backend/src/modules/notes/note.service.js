@@ -5,6 +5,7 @@ import courseRepository from '../courses/course.repository.js';
 import subjectRepository from '../subjects/subject.repository.js';
 import topicRepository from '../topics/topic.repository.js';
 import { getPaginationParams, buildPaginatedResponse } from '../../utils/pagination.js';
+import { assertNoteOwnership } from '../../auth/ownership.js';
 
 const VALID_NOTE_STATUSES = ['DRAFT', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'ARCHIVED'];
 
@@ -225,6 +226,57 @@ export class NoteService {
 
       return updatedNote;
     });
+  }
+
+  /**
+   * Updates note content with strict ownership verification.
+   *
+   * @param {string} noteId
+   * @param {string} userId
+   * @param {string} userRole
+   * @param {{ title?: string, description?: string }} data
+   * @returns {Promise<any>}
+   */
+  async updateNote(noteId, userId, userRole, data) {
+    const note = await noteRepository.findById(noteId);
+    if (!note) {
+      const error = new Error(`Note with ID "${noteId}" was not found.`);
+      error.statusCode = 404;
+      throw error;
+    }
+
+    assertNoteOwnership(note, userId, userRole);
+
+    const updatePayload = {};
+    if (data.title && typeof data.title === 'string' && data.title.trim().length > 0) {
+      updatePayload.title = data.title.trim();
+    }
+    if (data.description !== undefined) {
+      updatePayload.description = data.description;
+    }
+
+    return noteRepository.update(noteId, updatePayload);
+  }
+
+  /**
+   * Deletes a note with strict ownership verification.
+   *
+   * @param {string} noteId
+   * @param {string} userId
+   * @param {string} userRole
+   * @returns {Promise<any>}
+   */
+  async deleteNote(noteId, userId, userRole) {
+    const note = await noteRepository.findById(noteId);
+    if (!note) {
+      const error = new Error(`Note with ID "${noteId}" was not found.`);
+      error.statusCode = 404;
+      throw error;
+    }
+
+    assertNoteOwnership(note, userId, userRole);
+
+    return noteRepository.delete(noteId);
   }
 
   /**

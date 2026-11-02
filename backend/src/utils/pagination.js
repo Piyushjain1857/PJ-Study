@@ -34,10 +34,20 @@ export function getPaginationParams(query = {}) {
  * @template T
  * @param {T[]} items - List of records returned from query
  * @param {number} totalItems - Total matching count across all pages
- * @param {{ page: number, limit: number }} pagination - Active page and limit
+ * @param {{ page: number, limit: number } | number} paginationOrPage - Active page and limit object, or page number
+ * @param {number} [maybeLimit] - Limit number if page number was passed as 3rd param
  * @returns {{
  *   items: T[],
+ *   data: T[],
  *   meta: {
+ *     page: number,
+ *     limit: number,
+ *     totalItems: number,
+ *     totalPages: number,
+ *     hasNextPage: boolean,
+ *     hasPrevPage: boolean
+ *   },
+ *   pagination: {
  *     page: number,
  *     limit: number,
  *     totalItems: number,
@@ -47,18 +57,33 @@ export function getPaginationParams(query = {}) {
  *   }
  * }}
  */
-export function buildPaginatedResponse(items, totalItems, { page, limit }) {
+export function buildPaginatedResponse(items, totalItems, paginationOrPage, maybeLimit) {
+  let page = 1;
+  let limit = 10;
+
+  if (typeof paginationOrPage === 'object' && paginationOrPage !== null) {
+    page = paginationOrPage.page || 1;
+    limit = paginationOrPage.limit || 10;
+  } else if (typeof paginationOrPage === 'number') {
+    page = paginationOrPage;
+    limit = typeof maybeLimit === 'number' ? maybeLimit : 10;
+  }
+
   const totalPages = Math.ceil(totalItems / limit) || 1;
+
+  const meta = {
+    page,
+    limit,
+    totalItems,
+    totalPages,
+    hasNextPage: page < totalPages,
+    hasPrevPage: page > 1
+  };
 
   return {
     items,
-    meta: {
-      page,
-      limit,
-      totalItems,
-      totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1
-    }
+    data: items,
+    meta,
+    pagination: meta
   };
 }

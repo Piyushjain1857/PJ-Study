@@ -9,7 +9,7 @@ import './Navbar.css';
  * Public navigation bar with responsive mobile menu and authentication state.
  */
 export function Navbar() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -87,6 +87,16 @@ export function Navbar() {
           >
             App Shell
           </NavLink>
+          {isAdmin && (
+            <NavLink
+              to="/admin"
+              className={({ isActive }) =>
+                `navbar-nav__link ${isActive ? 'navbar-nav__link--active' : ''}`
+              }
+            >
+              Admin Portal
+            </NavLink>
+          )}
           {isAuthenticated && (
             <NavLink
               to="/profile"
@@ -200,6 +210,16 @@ export function Navbar() {
               >
                 App Shell
               </NavLink>
+              {isAdmin && (
+                <NavLink
+                  to="/admin"
+                  className={({ isActive }) =>
+                    `navbar-mobile-link ${isActive ? 'navbar-mobile-link--active' : ''}`
+                  }
+                >
+                  Admin Governance
+                </NavLink>
+              )}
               {isAuthenticated && (
                 <NavLink
                   to="/profile"

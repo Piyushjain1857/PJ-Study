@@ -108,3 +108,11 @@ export const generalAuthLimiter = rateLimit({
     );
   }
 });
+
+// Centralized RBAC exports for compatibility
+export { requireAuth } from '../../auth/requireAuth.js';
+export { requireRole } from '../../auth/requireRole.js';
+export { requirePermission } from '../../auth/requirePermission.js';
+export { requireNoteOwnership } from '../../auth/ownership.js';
+export { PERMISSIONS } from '../../auth/permissions.js';
+export { ROLES } from '../../auth/rolePermissions.js';

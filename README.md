@@ -97,7 +97,87 @@ The frontend provides a cohesive editorial user experience for scholars:
 
 ---
 
-## 5. Relational Database Architecture
+## 5. Role-Based Access Control (RBAC) Architecture
+
+PJ Study incorporates a centralized, multi-tier Role-Based Access Control (RBAC) framework engineered to uphold academic credibility, administrative accountability, and defense-in-depth authorization.
+
+### A. Supported Roles
+
+1. **`STUDENT`**: Default role for scholars and academic learners. Can explore notes, upload manuscripts, edit/delete their own notes, bookmark, and review peer notes.
+2. **`MODERATOR`**: Academic review staff. Can review pending submissions, approve/reject notes, resolve content flags, and access moderation queues. Cannot manage staff, users, or system settings.
+3. **`ADMIN`**: Platform administrators. Can manage students and moderators, suspend abusive accounts, curate academic taxonomies (courses, subjects, topics), and inspect system audit trails. Restricted from touching Admin or Super Admin accounts.
+4. **`SUPER_ADMIN`**: Ultimate system stewards. Full governance capabilities, including role elevation/demotion, assigning Admin and Super Admin roles, viewing full audit trails, and system maintenance. Protected against accidental self-demotion or removal of the last remaining Super Admin.
+
+### B. Role-Permission Matrix
+
+| Permission Key      | Description                          | Student | Moderator | Admin | Super Admin |
+| :------------------ | :----------------------------------- | :-----: | :-------: | :---: | :---------: |
+| `notes:read`        | Read published academic notes        |    ✓    |     ✓     |   ✓   |      ✓      |
+| `notes:create`      | Upload note manuscripts              |    ✓    |     ✓     |   ✓   |      ✓      |
+| `notes:edit_own`    | Edit own uploaded notes              |    ✓    |     ✓     |   ✓   |      ✓      |
+| `notes:delete_own`  | Delete own uploaded notes            |    ✓    |     ✓     |   ✓   |      ✓      |
+| `notes:review`      | Review/approve/reject submissions    |    —    |     ✓     |   ✓   |      ✓      |
+| `notes:delete_any`  | Permanently remove any note          |    —    |     —     |   ✓   |      ✓      |
+| `categories:manage` | Manage courses, subjects, topics     |    —    |     —     |   ✓   |      ✓      |
+| `users:read`        | Search and inspect user directory    |    —    |     —     |   ✓   |      ✓      |
+| `users:suspend`     | Suspend or reactivate user accounts  |    —    |     —     |   ✓   |      ✓      |
+| `moderators:manage` | Assign or revoke Moderator role      |    —    |     —     |   ✓   |      ✓      |
+| `admins:manage`     | Assign or revoke Admin / Super Admin |    —    |     —     |   —   |      ✓      |
+| `settings:manage`   | Configure global system parameters   |    —    |     —     |   —   |      ✓      |
+| `audit_logs:read`   | Inspect administrative audit trails  |    —    |     —     |   ✓   |      ✓      |
+
+### C. Backend Authorization Middleware & Guard Functions
+
+All authorization is anchored centrally in `backend/src/auth/`:
+
+- **`requireAuth`**: Validates the Bearer JWT access token and queries MySQL to guarantee the user exists, is active (not suspended), and retrieves their real-time role.
+- **`requireRole(...roles)`**: Restricts an endpoint to users whose role matches one of the specified roles.
+- **`requirePermission(permission)`**: Evaluates granular permissions via the role-permission matrix.
+- **`assertNoteOwnership(noteId, userId, userRole)` / `requireNoteOwnership`**: Enforces that only the manuscript author (or an authorized administrator) can update or delete notes, completely preventing IDOR attacks.
+
+```javascript
+// Example: Route protection
+router.patch(
+  '/notes/:id',
+  requireAuth,
+  requirePermission(PERMISSIONS.NOTES_EDIT_OWN),
+  requireNoteOwnership('id'),
+  noteController.updateNote
+);
+
+router.patch(
+  '/admin/users/:id/role',
+  requireAuth,
+  requirePermission(PERMISSIONS.MODERATORS_MANAGE),
+  adminController.changeUserRole
+);
+```
+
+### D. Administrative Governance Invariants & Session Revocation
+
+1. **Hierarchy Integrity:** An actor cannot modify or demote a user whose role is equal to or higher than their own. Admins can only assign or revoke `STUDENT` or `MODERATOR`. Only `SUPER_ADMIN` can assign `ADMIN` or `SUPER_ADMIN`.
+2. **Self-Role Protection:** Users cannot alter their own role, protecting against privilege escalation or accidental lockout.
+3. **Last Super Admin Invariant:** Demoting or deactivating the last active `SUPER_ADMIN` is strictly rejected by the database service layer with code `LAST_SUPER_ADMIN_PROTECTED`.
+4. **Instant Multi-Device Session Revocation:** When an account is suspended or its role is changed, all existing refresh sessions for that user are immediately invalidated (`revokedAt = NOW()`), forcing the user to re-authenticate or be locked out immediately.
+5. **Auditing:** Every role change or suspension writes an immutable record to the `audit_logs` table with `actorId`, `action`, `entityType`, `entityId`, and `metadata` (including reason and previous/new states).
+
+### E. Frontend RBAC Components & Integration
+
+- **`useAuth()`**: Exposes `hasPermission(permission)`, `hasRole(...roles)`, `isAdmin`, `isSuperAdmin`, `isModerator`, and `permissions` list.
+- **`<RequirePermission permission={...}>`**: Declaratively wraps UI elements (buttons, forms, links) and only renders children when the authenticated user possesses the permission.
+- **`<RequireRole roles={[...]}>`**: Conditionally displays components based on role membership.
+- **`ProtectedRoute`**: Supports `requiredRoles` and `requiredPermissions` props. Redirects unauthorized authenticated users to `/unauthorized` (HTTP 403 Forbidden page).
+- **Admin Dashboard (`/admin`)**: A comprehensive management interface accessible exclusively to `ADMIN` and `SUPER_ADMIN`, featuring:
+  - User Directory with real-time search, role filter, status filter, and pagination.
+  - Staff & Moderators management tab.
+  - Role Assignment modal with hierarchy verification and audit reason prompt.
+  - Account Suspension / Reactivation modal.
+  - Immutable Audit Log Trail with JSON metadata modal.
+  - Visual Role & Permissions Matrix reference grid.
+
+---
+
+## 6. Relational Database Architecture
 
 The database architecture is normalized, strongly typed, and engineered for high data integrity using MySQL and Prisma ORM.
 
@@ -120,19 +200,28 @@ The database architecture is normalized, strongly typed, and engineered for high
 
 ---
 
-## 6. Directory Structure
+## 7. Directory Structure
 
 ```text
 PJ Study/
 ├── backend/
 │   ├── prisma/
 │   │   ├── schema.prisma                       # Core Prisma models, Auth tables, and MySQL config
+│   │   ├── seed.js                             # Database seeder (Super Admin, Student accounts)
 │   │   └── migrations/
 │   │       ├── 20261101000000_init_core_schema/
 │   │       │   └── migration.sql               # Base 9 core tables DDL
 │   │       └── 20261101100000_add_auth_sessions_and_tokens/
 │   │           └── migration.sql               # Auth tables DDL (refresh_sessions, tokens)
 │   ├── src/
+│   │   ├── auth/                               # Centralized RBAC Core
+│   │   │   ├── permissions.js                  # Granular capability definitions
+│   │   │   ├── rolePermissions.js              # Role hierarchy & permissions matrix
+│   │   │   ├── requireAuth.js                  # Bearer JWT & active user validator
+│   │   │   ├── requireRole.js                  # Role guard middleware
+│   │   │   ├── requirePermission.js            # Capability guard middleware
+│   │   │   ├── ownership.js                    # Resource ownership assertion (IDOR defense)
+│   │   │   └── index.js                        # Unified auth exports
 │   │   ├── config/
 │   │   │   ├── database.js                     # Singleton PrismaClient lifecycle
 │   │   │   └── env.js                          # Environment variable validator (JWT, email, DB)
@@ -140,51 +229,60 @@ PJ Study/
 │   │   │   ├── errorHandler.js                 # Centralized JSON error formatter
 │   │   │   └── notFound.js                     # 404 unmatched route handler
 │   │   ├── modules/
+│   │   │   ├── admin/                          # User governance, role assignment & audit queries
+│   │   │   ├── audit/                          # Audit log repository & immutable service
 │   │   │   ├── auth/                           # Controller, Service, Repository, Middleware, Validation
 │   │   │   ├── users/                          # User repository & service
 │   │   │   ├── courses/                        # Course repository & service
 │   │   │   ├── subjects/                       # Subject repository & service
 │   │   │   ├── topics/                         # Topic repository & service
-│   │   │   └── notes/                          # Note, Review & Bookmark service
+│   │   │   └── notes/                          # Note, Review & Bookmark service with ownership checks
 │   │   ├── services/
 │   │   │   ├── tokens/                         # Cryptographic token generator & JWT signer
 │   │   │   └── email/                          # Provider abstraction & branded HTML templates
 │   │   ├── routes/
-│   │   │   └── index.js                        # Versioned routes (/health, /config, /auth)
+│   │   │   └── index.js                        # Mounted routes (/health, /config, /auth, /admin, /notes)
 │   │   ├── utils/
 │   │   │   ├── apiResponse.js                  # Standard sendSuccess / sendError helpers
 │   │   │   ├── password.js                     # Bcrypt hashing & strength evaluation
-│   │   │   └── pagination.js                   # Standard pagination helper
+│   │   │   └── pagination.js                   # Standard pagination envelope helper
 │   │   ├── app.js                              # Express app configuration & cookie parser
 │   │   └── server.js                           # Server listener & graceful shutdown
 │   └── tests/
-│       ├── auth.test.js                        # Unit, invariant, security & API tests (22 tests)
+│       ├── auth.test.js                        # Auth unit, invariant, security & API tests (22 tests)
 │       ├── health.test.js                      # API & 404 integration tests (5 tests)
+│       ├── rbac.test.js                        # RBAC permissions, hierarchy, session revocation & audit tests (24 tests)
 │       └── schema_validation.test.js           # Domain invariants & schema tests (7 tests)
 │
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
+│   │   │   ├── auth/                           # RequirePermission, RequireRole conditional wrappers
 │   │   │   ├── common/                         # Button, Input, Badge, Avatar, Dropdown, Modal, ProtectedRoute, GuestRoute
-│   │   │   └── layout/                         # Navbar (with auth state), Footer, Container, PageHeader
+│   │   │   └── layout/                         # Navbar (dynamic role-based navigation), Footer, Container, PageHeader
 │   │   ├── context/
-│   │   │   └── AuthContext.jsx                 # Global auth state & silent refresh lifecycle
+│   │   │   └── AuthContext.jsx                 # Global auth state, RBAC capability helpers & silent refresh
 │   │   ├── layouts/
 │   │   │   ├── PublicLayout.jsx                # Public navigation & footer shell
 │   │   │   └── AppLayout.jsx                   # Student workspace sidebar shell
 │   │   ├── pages/
+│   │   │   ├── admin/                          # AdminDashboardPage (Users, Staff, Audit Logs, Matrix)
 │   │   │   ├── auth/                           # LoginPage, RegisterPage, VerifyEmailPage, ForgotPasswordPage, ResetPasswordPage, ProfilePage
 │   │   │   ├── HomePage.jsx                    # Editorial academic landing page
 │   │   │   ├── DesignSystemPage.jsx            # Interactive design system catalog
 │   │   │   ├── DashboardShellPage.jsx          # Authenticated workspace shell
+│   │   │   ├── UnauthorizedPage.jsx            # 403 Forbidden page
 │   │   │   └── NotFoundPage.jsx                # Editorial 404 page
 │   │   ├── services/
+│   │   │   ├── adminService.js                 # Administrative API client
 │   │   │   ├── api.js                          # Axios instance with 401 refresh queue
 │   │   │   ├── authService.js                  # Frontend auth API methods
 │   │   │   ├── courseService.js                # Course API client
 │   │   │   ├── subjectService.js               # Subject API client
 │   │   │   ├── topicService.js                 # Topic API client
 │   │   │   └── noteService.js                  # Notes, reviews, bookmarks client
+│   │   ├── utils/
+│   │   │   └── permissions.js                  # Client-side permission constants & role hierarchies
 │   │   └── styles/                             # variables, reset, typography, global, utilities, components
 │   ├── package.json
 │   └── vite.config.js
@@ -195,14 +293,14 @@ PJ Study/
 
 ---
 
-## 7. Build, Test, and Quality Commands
+## 8. Build, Test, and Quality Commands
 
 From the repository root:
 
 | Command                   | Action                                                               |
 | :------------------------ | :------------------------------------------------------------------- |
 | `npm run dev`             | Runs backend and frontend development servers concurrently           |
-| `npm test`                | Runs all backend automated unit, invariant, and API tests (34 tests) |
+| `npm test`                | Runs all backend automated unit, invariant, and API tests (58 tests) |
 | `npm run check:backend`   | Validates backend configuration and environment variables            |
 | `npm run lint`            | Runs ESLint on frontend JavaScript and JSX                           |
 | `npm run format:check`    | Verifies Prettier code style across all files                        |

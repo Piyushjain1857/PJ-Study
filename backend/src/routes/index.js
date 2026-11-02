@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import env from '../config/env.js';
 import authRoutes from '../modules/auth/auth.routes.js';
+import adminRoutes from '../modules/admin/admin.routes.js';
+import noteRoutes from '../modules/notes/note.routes.js';
 
 const router = Router();
 
@@ -46,6 +48,7 @@ router.get('/config', (req, res) => {
         designSystem: 'active',
         appShell: 'active',
         authentication: 'active',
+        roleBasedAccessControl: 'active',
         notesCatalog: 'foundation',
         aiStudyTools: 'planned',
         peerReviews: 'planned'
@@ -59,5 +62,17 @@ router.get('/config', (req, res) => {
  * /api/v1/auth/...
  */
 router.use('/auth', authRoutes);
+
+/**
+ * Administrative and RBAC governance routes.
+ * /api/v1/admin/...
+ */
+router.use('/admin', adminRoutes);
+
+/**
+ * Study notes and ownership-governed resources.
+ * /api/v1/notes/...
+ */
+router.use('/notes', noteRoutes);
 
 export default router;

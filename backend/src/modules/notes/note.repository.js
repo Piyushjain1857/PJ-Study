@@ -59,6 +59,18 @@ export class NoteRepository {
   }
 
   /**
+   * Deletes a note by ID.
+   *
+   * @param {string} id
+   * @returns {Promise<any>}
+   */
+  async delete(id) {
+    return prisma.note.delete({
+      where: { id }
+    });
+  }
+
+  /**
    * Retrieves a paginated list of notes.
    *
    * @param {{ skip?: number, take?: number, where?: object, orderBy?: object }} options

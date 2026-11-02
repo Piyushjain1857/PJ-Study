@@ -14,8 +14,11 @@ import VerifyEmailPage from '../pages/auth/VerifyEmailPage.jsx';
 import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage.jsx';
 import ResetPasswordPage from '../pages/auth/ResetPasswordPage.jsx';
 import ProfilePage from '../pages/auth/ProfilePage.jsx';
+import AdminDashboardPage from '../pages/admin/AdminDashboardPage.jsx';
+import UnauthorizedPage from '../pages/UnauthorizedPage.jsx';
 import ProtectedRoute from '../components/common/ProtectedRoute.jsx';
 import GuestRoute from '../components/common/GuestRoute.jsx';
+import { ROLES } from '../utils/permissions.js';
 
 /**
  * Application routing table for PJ Study.
@@ -77,6 +80,18 @@ export const router = createBrowserRouter(
               <ProfilePage />
             </ProtectedRoute>
           )
+        },
+        {
+          path: 'admin',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'unauthorized',
+          element: <UnauthorizedPage />
         },
         {
           path: '*',

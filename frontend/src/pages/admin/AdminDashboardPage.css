@@ -1,0 +1,271 @@
+/* ==========================================================================
+   PJ STUDY ADMINISTRATIVE DASHBOARD STYLES
+   Editorial academic visual style: warm ivory, charcoal, forest green
+   ========================================================================== */
+
+.admin-dashboard {
+  min-height: calc(100vh - 160px);
+  background-color: var(--color-background);
+  padding: 32px 0 64px 0;
+}
+
+.admin-header {
+  margin-bottom: 28px;
+}
+
+.admin-header__badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background-color: rgba(40, 89, 67, 0.08);
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-radius: var(--radius-small);
+  margin-bottom: 8px;
+}
+
+.admin-header__title {
+  font-family: var(--font-heading);
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.15;
+  margin: 0 0 8px 0;
+}
+
+.admin-header__subtitle {
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* Metric KPI Cards */
+.admin-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.admin-metric-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+  padding: 20px 24px;
+  box-shadow: 0 2px 8px rgba(25, 27, 24, 0.02);
+}
+
+.admin-metric-card__label {
+  font-size: 0.825rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.admin-metric-card__value {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+  line-height: 1.1;
+}
+
+/* Tab Navigation */
+.admin-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+
+.admin-tab-btn {
+  background: none;
+  border: none;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.admin-tab-btn:hover {
+  color: var(--color-text-primary);
+}
+
+.admin-tab-btn--active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+/* Toolbar & Filters */
+.admin-toolbar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.admin-toolbar__filters {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.admin-search-input {
+  min-width: 260px;
+  max-width: 380px;
+}
+
+.admin-select {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+  background-color: var(--color-surface);
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+}
+
+/* User Directory & Audit Log Table */
+.admin-table-container {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-large);
+  box-shadow: 0 4px 16px rgba(25, 27, 24, 0.03);
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.admin-table th {
+  padding: 14px 20px;
+  font-size: 0.775rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  background-color: #fbfbfa;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table tr:hover td {
+  background-color: rgba(40, 89, 67, 0.015);
+}
+
+.admin-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.admin-user-cell__name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.admin-user-cell__email {
+  font-size: 0.825rem;
+  color: var(--color-text-secondary);
+  margin: 2px 0 0 0;
+}
+
+.admin-actions-cell {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Pagination bar */
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+
+.admin-pagination__info {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.admin-pagination__actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Matrix Table */
+.matrix-table th,
+.matrix-table td {
+  padding: 12px 16px;
+}
+
+.matrix-check {
+  font-weight: 700;
+  color: var(--color-success);
+}
+
+.matrix-cross {
+  color: #d1d5db;
+}
+
+/* Modals */
+.admin-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-modal-desc {
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.admin-modal-user-box {
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+  padding: 14px 18px;
+}
+
+@media (max-width: 768px) {
+  .admin-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .admin-search-input {
+    max-width: 100%;
+  }
+}

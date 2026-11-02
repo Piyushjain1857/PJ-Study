@@ -1,6 +1,11 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import authService from '../services/authService.js';
 import { setAccessToken } from '../services/api.js';
+import {
+  hasPermission as checkPermission,
+  getPermissionsForRole,
+  ROLES
+} from '../utils/permissions.js';
 
 const AuthContext = createContext(null);
 const SESSION_HINT_KEY = 'pj_study_active_session';
@@ -141,12 +146,41 @@ export function AuthProvider({ children }) {
     setUser((prev) => (prev ? { ...prev, ...userData } : userData));
   }, []);
 
+  // Centralized RBAC capabilities for active user
+  const permissions = useMemo(() => {
+    return user ? getPermissionsForRole(user.role) : [];
+  }, [user]);
+
+  const hasPermission = useCallback(
+    (permission) => {
+      return Boolean(user && checkPermission(user.role, permission));
+    },
+    [user]
+  );
+
+  const hasRole = useCallback(
+    (...allowedRoles) => {
+      return Boolean(user && allowedRoles.includes(user.role));
+    },
+    [user]
+  );
+
   const value = {
     user,
     accessToken,
     isAuthenticated: Boolean(user),
     isLoading,
     error,
+    role: user?.role || null,
+    permissions,
+    isSuperAdmin: user?.role === ROLES.SUPER_ADMIN,
+    isAdmin: user?.role === ROLES.ADMIN || user?.role === ROLES.SUPER_ADMIN,
+    isModerator:
+      user?.role === ROLES.MODERATOR ||
+      user?.role === ROLES.ADMIN ||
+      user?.role === ROLES.SUPER_ADMIN,
+    hasPermission,
+    hasRole,
     login,
     register,
     logout,
