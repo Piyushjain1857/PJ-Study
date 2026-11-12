@@ -29,6 +29,18 @@ export function errorHandler(err, req, res, _next) {
       'Unable to connect to the MySQL database server. Please verify MySQL is running at localhost:3306.';
   }
 
+  // Friendly interception for database authentication issues (e.g. Prisma P1000)
+  if (
+    err.code === 'P1000' ||
+    (typeof err.message === 'string' &&
+      err.message.includes('Authentication failed against database server'))
+  ) {
+    statusCode = 500;
+    code = 'DATABASE_AUTH_FAILED';
+    message =
+      'Database authentication failed. Please verify the database credentials in backend/.env.';
+  }
+
   const response = {
     success: false,
     error: {

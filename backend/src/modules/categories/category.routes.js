@@ -7,4 +7,3 @@ router.get('/', categoryController.listCategories);
 router.get('/:id', categoryController.getCategoryById);
 
 export default router;
-
