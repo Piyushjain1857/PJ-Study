@@ -24,6 +24,9 @@ export default [
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
         localStorage: 'readonly',
+        FormData: 'readonly',
+        Blob: 'readonly',
+        File: 'readonly',
         Intl: 'readonly',
         import: 'readonly'
       }

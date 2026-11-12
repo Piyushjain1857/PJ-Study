@@ -22,4 +22,3 @@ export function RequireRole({ roles, fallback = null, children }) {
 }
 
 export default RequireRole;
-

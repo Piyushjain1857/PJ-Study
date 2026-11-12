@@ -1,0 +1,39 @@
+.notes-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 64px 24px;
+  background-color: var(--color-bg-surface, #ffffff);
+  border: 1px dashed var(--color-border, #e5e3da);
+  border-radius: var(--radius-lg, 12px);
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+.notes-empty-state__icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  line-height: 1;
+}
+
+.notes-empty-state__title {
+  font-family: var(--font-heading, 'Instrument Serif', Georgia, serif);
+  font-size: 1.75rem;
+  font-weight: var(--font-weight-normal, 400);
+  color: var(--color-text-primary, #2d2c28);
+  margin-bottom: 10px;
+}
+
+.notes-empty-state__desc {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary, #6b6960);
+  margin-bottom: 24px;
+}
+
+.notes-empty-state__action {
+  display: flex;
+  justify-content: center;
+}

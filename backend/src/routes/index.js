@@ -3,6 +3,9 @@ import env from '../config/env.js';
 import authRoutes from '../modules/auth/auth.routes.js';
 import adminRoutes from '../modules/admin/admin.routes.js';
 import noteRoutes from '../modules/notes/note.routes.js';
+import categoryRoutes from '../modules/categories/category.routes.js';
+import { requireAuth } from '../auth/requireAuth.js';
+import noteController from '../modules/notes/note.controller.js';
 
 const router = Router();
 
@@ -70,9 +73,20 @@ router.use('/auth', authRoutes);
 router.use('/admin', adminRoutes);
 
 /**
+ * Academic category metadata routes.
+ * /api/v1/categories/...
+ */
+router.use('/categories', categoryRoutes);
+
+/**
  * Study notes and ownership-governed resources.
  * /api/v1/notes/...
  */
 router.use('/notes', noteRoutes);
+
+/**
+ * User personal resources shortcut (/api/v1/users/me/notes)
+ */
+router.get('/users/me/notes', requireAuth, noteController.getMyNotes);
 
 export default router;

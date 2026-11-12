@@ -31,4 +31,3 @@ export function requireRole(...allowedRoles) {
 }
 
 export default requireRole;
-

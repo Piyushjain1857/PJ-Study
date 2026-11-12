@@ -1,0 +1,71 @@
+.note-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full, 9999px);
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-medium, 500);
+  line-height: 1;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.note-status-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* DRAFT */
+.note-status-badge--draft {
+  background-color: var(--color-bg-subtle, #f5f4ef);
+  color: var(--color-text-secondary, #6b6960);
+  border-color: var(--color-border, #e5e3da);
+}
+.note-status-badge--draft .note-status-badge__dot {
+  background-color: var(--color-text-tertiary, #9e9c93);
+}
+
+/* PENDING / UNDER REVIEW */
+.note-status-badge--pending {
+  background-color: #fef8ee;
+  color: #b45309;
+  border-color: #fde68a;
+}
+.note-status-badge--pending .note-status-badge__dot {
+  background-color: #f59e0b;
+}
+
+/* APPROVED */
+.note-status-badge--approved {
+  background-color: #eef8f2;
+  color: #1b633b;
+  border-color: #bbf7d0;
+}
+.note-status-badge--approved .note-status-badge__dot {
+  background-color: #22c55e;
+}
+
+/* REJECTED / REVISION REQUESTED */
+.note-status-badge--rejected {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+.note-status-badge--rejected .note-status-badge__dot {
+  background-color: #ef4444;
+}
+
+/* ARCHIVED */
+.note-status-badge--archived {
+  background-color: var(--color-bg-subtle, #f5f4ef);
+  color: var(--color-text-tertiary, #9e9c93);
+  border-color: var(--color-border, #e5e3da);
+}
+.note-status-badge--archived .note-status-badge__dot {
+  background-color: var(--color-text-tertiary, #9e9c93);
+}

@@ -37,4 +37,3 @@ export function requirePermission(...requiredPermissions) {
 }
 
 export default requirePermission;
-

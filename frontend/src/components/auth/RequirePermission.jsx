@@ -22,4 +22,3 @@ export function RequirePermission({ permission, fallback = null, children }) {
 }
 
 export default RequirePermission;
-

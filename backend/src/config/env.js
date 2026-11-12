@@ -50,6 +50,11 @@ function validateAndLoadConfig() {
   const emailFrom = process.env.EMAIL_FROM || 'noreply@pjstudy.com';
   const emailApiKey = process.env.EMAIL_API_KEY || '';
 
+  // File Storage configurations
+  const maxFileSizeMb = parseInt(process.env.MAX_FILE_SIZE_MB || '25', 10);
+  const uploadDir = process.env.UPLOAD_DIR || path.resolve(__dirname, '../../../uploads/notes');
+  const storageProvider = process.env.STORAGE_PROVIDER || 'local';
+
   const errors = [];
 
   if (Number.isNaN(port) || port <= 0 || port > 65535) {
@@ -93,6 +98,9 @@ function validateAndLoadConfig() {
     emailProvider,
     emailFrom,
     emailApiKey,
+    maxFileSizeMb,
+    uploadDir,
+    storageProvider,
     isProduction: nodeEnv === 'production',
     isDevelopment: nodeEnv === 'development',
     isTest: nodeEnv === 'test'

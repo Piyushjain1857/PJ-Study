@@ -7,6 +7,7 @@ export const NOTE_DETAIL_INCLUDE = {
   course: { select: { id: true, name: true, slug: true } },
   subject: { select: { id: true, name: true, slug: true, semester: true } },
   topic: { select: { id: true, name: true, slug: true } },
+  category: { select: { id: true, name: true, slug: true } },
   uploadedBy: { select: { id: true, name: true, avatarUrl: true, role: true } },
   _count: {
     select: { bookmarks: true, reviews: true }

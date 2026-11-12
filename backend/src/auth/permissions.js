@@ -32,4 +32,3 @@ export const PERMISSIONS = Object.freeze({
 });
 
 export default PERMISSIONS;
-

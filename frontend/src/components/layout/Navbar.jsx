@@ -65,9 +65,24 @@ export function Navbar() {
           >
             Home
           </NavLink>
-          <a href="/#features" className="navbar-nav__link">
-            Explore Notes
-          </a>
+          <NavLink
+            to="/notes"
+            className={({ isActive }) =>
+              `navbar-nav__link ${isActive ? 'navbar-nav__link--active' : ''}`
+            }
+          >
+            Notes Library
+          </NavLink>
+          {isAuthenticated && (
+            <NavLink
+              to="/my-notes"
+              className={({ isActive }) =>
+                `navbar-nav__link ${isActive ? 'navbar-nav__link--active' : ''}`
+              }
+            >
+              My Notes
+            </NavLink>
+          )}
           <a href="/#how-it-works" className="navbar-nav__link">
             How It Works
           </a>
@@ -113,6 +128,11 @@ export function Navbar() {
         <div className="navbar-actions">
           {isAuthenticated ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Link to="/notes/new">
+                <Button variant="primary" size="sm">
+                  + Upload Note
+                </Button>
+              </Link>
               <Link
                 to="/profile"
                 style={{
@@ -188,9 +208,37 @@ export function Navbar() {
               >
                 Home
               </NavLink>
-              <a href="/#features" className="navbar-mobile-link" onClick={closeMobileMenu}>
-                Explore Notes
-              </a>
+              <NavLink
+                to="/notes"
+                className={({ isActive }) =>
+                  `navbar-mobile-link ${isActive ? 'navbar-mobile-link--active' : ''}`
+                }
+                onClick={closeMobileMenu}
+              >
+                Notes Library
+              </NavLink>
+              {isAuthenticated && (
+                <>
+                  <NavLink
+                    to="/my-notes"
+                    className={({ isActive }) =>
+                      `navbar-mobile-link ${isActive ? 'navbar-mobile-link--active' : ''}`
+                    }
+                    onClick={closeMobileMenu}
+                  >
+                    My Notes
+                  </NavLink>
+                  <NavLink
+                    to="/notes/new"
+                    className={({ isActive }) =>
+                      `navbar-mobile-link ${isActive ? 'navbar-mobile-link--active' : ''}`
+                    }
+                    onClick={closeMobileMenu}
+                  >
+                    + Upload Note
+                  </NavLink>
+                </>
+              )}
               <a href="/#how-it-works" className="navbar-mobile-link" onClick={closeMobileMenu}>
                 How It Works
               </a>

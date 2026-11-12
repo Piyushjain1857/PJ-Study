@@ -144,4 +144,3 @@ export function canManageRole(callerRole, currentTargetRole, candidateRole) {
   }
   return false;
 }
-

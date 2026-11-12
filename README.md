@@ -177,54 +177,121 @@ router.patch(
 
 ---
 
-## 6. Relational Database Architecture
+## 6. Notes Management System
+
+PJ Study implements a full-lifecycle, peer-moderated academic notes management system engineered to balance student contribution freedom with rigorous academic review.
+
+### A. Note Status Lifecycle
+
+```text
+               ┌──────────┐
+               │  DRAFT   │◄──────────────┐
+               └────┬─────┘               │
+                    │ (Submit)            │ (Revise)
+                    ▼                     │
+           ┌─────────────────┐            │
+           │ PENDING_REVIEW  ├────────────┘
+           └───────┬─┬───────┘ (Rejection with Feedback)
+   (Approve)       │ │
+  ┌────────────────┘ └──────────────┐
+  ▼                                 ▼
+┌──────────┐                  ┌──────────┐
+│ APPROVED │                  │ REJECTED │
+└────┬─────┘                  └──────────┘
+     │ (Archive)
+     ▼
+┌──────────┐
+│ ARCHIVED │
+└──────────┘
+```
+
+1. **`DRAFT`:** Private working copy. Only visible and editable by the author. Can be deleted by author.
+2. **`PENDING_REVIEW` (`PENDING`):** Locked for editing by author. Visible in moderation queue for staff.
+3. **`APPROVED`:** Publicly visible in the Notes Library with publication timestamp. Downloadable by scholars.
+4. **`REJECTED`:** Retains constructive reviewer feedback so student knows exactly what to fix before editing and resubmitting.
+5. **`ARCHIVED`:** Read-only historical copy stored in author's personal archive.
+
+### B. Secure Storage & Anti-Spoofing File Validation
+
+All study materials undergo multi-layer inspection before reaching storage:
+
+- **Supported Formats:** PDF (`.pdf`), Word (`.doc`, `.docx`), PowerPoint (`.ppt`, `.pptx`), Plain Text (`.txt`), Markdown (`.md`), Images (`.png`, `.jpg`, `.jpeg`).
+- **Signature & Magic Byte Verification:** Reject files whose binary header mismatches their extension (e.g., rejecting an executable renamed to `.pdf`).
+- **Forbidden Blacklist:** Explicit rejection of all executable scripts and binaries (`.exe`, `.sh`, `.bat`, `.cmd`, `.js`, `.php`, `.py`, `.html`).
+- **Configurable Limits:** `MAX_FILE_SIZE_MB` (default `25MB`), `UPLOAD_DIR` (`uploads/notes`), and `STORAGE_PROVIDER` (`local`).
+- **Storage Abstraction:** Storage keys are cryptographically generated UUID/hashes (`crypto.randomBytes(16)`), and path resolution enforces strict containment within the upload directory to completely neutralize path traversal attacks.
+
+### C. Notes API Reference
+
+| Method   | Endpoint                         | Auth       | Purpose                                                                      |
+| :------- | :------------------------------- | :--------- | :--------------------------------------------------------------------------- |
+| `GET`    | `/api/v1/notes`                  | Public     | List approved public notes with search, filters, pagination                  |
+| `GET`    | `/api/v1/notes/me`               | Bearer JWT | Current user's notes with status filtering (`DRAFT`, `PENDING_REVIEW`, etc.) |
+| `GET`    | `/api/v1/users/me/notes`         | Bearer JWT | Alias for current user's notes dashboard                                     |
+| `GET`    | `/api/v1/notes/moderation/queue` | Staff      | Pending submissions queue for academic review                                |
+| `GET`    | `/api/v1/notes/:id`              | Optional   | View note; private drafts restricted to author and staff                     |
+| `GET`    | `/api/v1/notes/:id/file`         | Optional   | Stream file download (draft files restricted to author/staff)                |
+| `POST`   | `/api/v1/notes`                  | Bearer JWT | Create note (with optional multipart document attachment)                    |
+| `PATCH`  | `/api/v1/notes/:id`              | Bearer JWT | Update draft/rejected note with optional replacement file                    |
+| `DELETE` | `/api/v1/notes/:id`              | Bearer JWT | Delete note (author of draft/rejected or administrator)                      |
+| `POST`   | `/api/v1/notes/:id/submit`       | Bearer JWT | Submit draft or rejected note for moderation review                          |
+| `POST`   | `/api/v1/notes/:id/archive`      | Bearer JWT | Archive approved note                                                        |
+| `POST`   | `/api/v1/notes/:id/review`       | Staff      | Approve note or reject with feedback reason (writes audit log)               |
+| `GET`    | `/api/v1/categories`             | Public     | List active academic note categories                                         |
+
+---
+
+## 7. Relational Database Architecture
 
 The database architecture is normalized, strongly typed, and engineered for high data integrity using MySQL and Prisma ORM.
 
 ### A. Core Relational Models
 
-| Model                        | Table                       | Purpose                                    | Deletion Behavior / Invariants                                                                                                                               |
-| :--------------------------- | :-------------------------- | :----------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`User`**                   | `users`                     | Student, moderator, and admin accounts     | Unique email. Password hashes only. Roles: `STUDENT`, `MODERATOR`, `ADMIN`, `SUPER_ADMIN`.                                                                   |
-| **`RefreshSession`**         | `refresh_sessions`          | Active sessions & rotation hashes          | Cascades on user deletion. Token hash indexed & unique. Revoked sessions retained for reuse detection.                                                       |
-| **`EmailVerificationToken`** | `email_verification_tokens` | Single-use email confirmation links        | Cascades on user deletion. Token hash indexed & unique. `usedAt` prevents replay.                                                                            |
-| **`PasswordResetToken`**     | `password_reset_tokens`     | Single-use password reset tokens           | Cascades on user deletion. Token hash indexed & unique. Invalidates all active user sessions upon use.                                                       |
-| **`Course`**                 | `courses`                   | Academic degree / program (e.g. B.Tech CS) | Unique slug. `RESTRICT` deletion if referenced by subjects or notes.                                                                                         |
-| **`Subject`**                | `subjects`                  | Course unit / syllabus module              | Belongs to Course. Composite unique constraint `[courseId, slug]`. Semester bounded 1–12.                                                                    |
-| **`Topic`**                  | `topics`                    | Granular concept in subject                | Belongs to Subject. Composite unique constraint `[subjectId, slug]`.                                                                                         |
-| **`Note`**                   | `notes`                     | Uploaded study document manuscript         | Metadata only (storageKey, fileSize, mimeType, pageCount). No raw PDFs in MySQL. Status enum: `DRAFT`, `PENDING_REVIEW`, `APPROVED`, `REJECTED`, `ARCHIVED`. |
-| **`Bookmark`**               | `bookmarks`                 | Saved notes in student library             | Composite unique constraint `[userId, noteId]`. Cascades on user or note deletion.                                                                           |
-| **`Review`**                 | `reviews`                   | Peer ratings and written critiques         | Rating bounded 1 to 5. Composite unique `[userId, noteId]`. Authors prohibited from reviewing own notes.                                                     |
-| **`Report`**                 | `reports`                   | Inappropriate content moderation flags     | Status: `PENDING`, `REVIEWED`, `RESOLVED`, `DISMISSED`. References reporter and reviewing moderator.                                                         |
-| **`AuditLog`**               | `audit_logs`                | Administrative and moderation trail        | Retains action and JSON metadata. `SET NULL` on actor deletion to preserve audit history.                                                                    |
+| Model                        | Table                       | Purpose                                    | Deletion Behavior / Invariants                                                                                                                                                                                                                               |
+| :--------------------------- | :-------------------------- | :----------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`User`**                   | `users`                     | Student, moderator, and admin accounts     | Unique email. Password hashes only. Roles: `STUDENT`, `MODERATOR`, `ADMIN`, `SUPER_ADMIN`.                                                                                                                                                                   |
+| **`RefreshSession`**         | `refresh_sessions`          | Active sessions & rotation hashes          | Cascades on user deletion. Token hash indexed & unique. Revoked sessions retained for reuse detection.                                                                                                                                                       |
+| **`EmailVerificationToken`** | `email_verification_tokens` | Single-use email confirmation links        | Cascades on user deletion. Token hash indexed & unique. `usedAt` prevents replay.                                                                                                                                                                            |
+| **`PasswordResetToken`**     | `password_reset_tokens`     | Single-use password reset tokens           | Cascades on user deletion. Token hash indexed & unique. Invalidates all active user sessions upon use.                                                                                                                                                       |
+| **`Course`**                 | `courses`                   | Academic degree / program (e.g. B.Tech CS) | Unique slug. `RESTRICT` deletion if referenced by subjects or notes.                                                                                                                                                                                         |
+| **`Subject`**                | `subjects`                  | Course unit / syllabus module              | Belongs to Course. Composite unique constraint `[courseId, slug]`. Semester bounded 1–12.                                                                                                                                                                    |
+| **`Topic`**                  | `topics`                    | Granular concept in subject                | Belongs to Subject. Composite unique constraint `[subjectId, slug]`.                                                                                                                                                                                         |
+| **`Category`**               | `categories`                | Academic note format / genre               | Unique slug & name (e.g., Lecture Notes, Exam Solutions, Lab Manuals).                                                                                                                                                                                       |
+| **`Note`**                   | `notes`                     | Study material manuscript & document       | Supports written text content or uploaded files. Fields: `title`, `slug`, `content`, `fileName`, `storageKey`, `fileSize`, `mimeType`, `semester`, `academicYear`, `rejectionReason`. Status: `DRAFT`, `PENDING_REVIEW`, `APPROVED`, `REJECTED`, `ARCHIVED`. |
+| **`Bookmark`**               | `bookmarks`                 | Saved notes in student library             | Composite unique constraint `[userId, noteId]`. Cascades on user or note deletion.                                                                                                                                                                           |
+| **`Review`**                 | `reviews`                   | Peer ratings and written critiques         | Rating bounded 1 to 5. Composite unique `[userId, noteId]`. Authors prohibited from reviewing own notes.                                                                                                                                                     |
+| **`Report`**                 | `reports`                   | Inappropriate content moderation flags     | Status: `PENDING`, `REVIEWED`, `RESOLVED`, `DISMISSED`. References reporter and reviewing moderator.                                                                                                                                                         |
+| **`AuditLog`**               | `audit_logs`                | Administrative and moderation trail        | Retains action and JSON metadata. `SET NULL` on actor deletion to preserve audit history.                                                                                                                                                                    |
 
 ---
 
-## 7. Directory Structure
+## 8. Directory Structure
 
 ```text
 PJ Study/
 ├── backend/
 │   ├── prisma/
-│   │   ├── schema.prisma                       # Core Prisma models, Auth tables, and MySQL config
-│   │   ├── seed.js                             # Database seeder (Super Admin, Student accounts)
+│   │   ├── schema.prisma                       # Core Prisma models, Auth tables, Categories, Notes & MySQL config
+│   │   ├── seed.js                             # Database seeder (Super Admin, Moderator, Student, Categories, Subjects)
 │   │   └── migrations/
 │   │       ├── 20261101000000_init_core_schema/
 │   │       │   └── migration.sql               # Base 9 core tables DDL
-│   │       └── 20261101100000_add_auth_sessions_and_tokens/
-│   │           └── migration.sql               # Auth tables DDL (refresh_sessions, tokens)
+│   │       ├── 20261101100000_add_auth_sessions_and_tokens/
+│   │       │   └── migration.sql               # Auth tables DDL (refresh_sessions, tokens)
+│   │       └── 20261112043146_add_note_management_fields_and_categories/
+│   │           └── migration.sql               # Notes lifecycle fields, Categories model DDL
 │   ├── src/
 │   │   ├── auth/                               # Centralized RBAC Core
 │   │   │   ├── permissions.js                  # Granular capability definitions
 │   │   │   ├── rolePermissions.js              # Role hierarchy & permissions matrix
-│   │   │   ├── requireAuth.js                  # Bearer JWT & active user validator
+│   │   │   ├── requireAuth.js                  # Bearer JWT & active user validator (with optionalAuth)
 │   │   │   ├── requireRole.js                  # Role guard middleware
 │   │   │   ├── requirePermission.js            # Capability guard middleware
 │   │   │   ├── ownership.js                    # Resource ownership assertion (IDOR defense)
 │   │   │   └── index.js                        # Unified auth exports
 │   │   ├── config/
 │   │   │   ├── database.js                     # Singleton PrismaClient lifecycle
-│   │   │   └── env.js                          # Environment variable validator (JWT, email, DB)
+│   │   │   └── env.js                          # Environment variable validator (JWT, email, DB, uploads)
 │   │   ├── middleware/
 │   │   │   ├── errorHandler.js                 # Centralized JSON error formatter
 │   │   │   └── notFound.js                     # 404 unmatched route handler
@@ -232,16 +299,18 @@ PJ Study/
 │   │   │   ├── admin/                          # User governance, role assignment & audit queries
 │   │   │   ├── audit/                          # Audit log repository & immutable service
 │   │   │   ├── auth/                           # Controller, Service, Repository, Middleware, Validation
+│   │   │   ├── categories/                     # Category repository, service, controller, routes
 │   │   │   ├── users/                          # User repository & service
 │   │   │   ├── courses/                        # Course repository & service
 │   │   │   ├── subjects/                       # Subject repository & service
 │   │   │   ├── topics/                         # Topic repository & service
-│   │   │   └── notes/                          # Note, Review & Bookmark service with ownership checks
+│   │   │   └── notes/                          # Note service, repository, controller, routes, upload middleware
 │   │   ├── services/
+│   │   │   ├── storage/                        # Storage abstraction with signature validation
 │   │   │   ├── tokens/                         # Cryptographic token generator & JWT signer
 │   │   │   └── email/                          # Provider abstraction & branded HTML templates
 │   │   ├── routes/
-│   │   │   └── index.js                        # Mounted routes (/health, /config, /auth, /admin, /notes)
+│   │   │   └── index.js                        # Mounted routes (/health, /config, /auth, /admin, /notes, /categories)
 │   │   ├── utils/
 │   │   │   ├── apiResponse.js                  # Standard sendSuccess / sendError helpers
 │   │   │   ├── password.js                     # Bcrypt hashing & strength evaluation
@@ -251,6 +320,7 @@ PJ Study/
 │   └── tests/
 │       ├── auth.test.js                        # Auth unit, invariant, security & API tests (22 tests)
 │       ├── health.test.js                      # API & 404 integration tests (5 tests)
+│       ├── notes.test.js                       # Notes lifecycle, file validation, ownership & moderation tests (27 tests)
 │       ├── rbac.test.js                        # RBAC permissions, hierarchy, session revocation & audit tests (24 tests)
 │       └── schema_validation.test.js           # Domain invariants & schema tests (7 tests)
 │
@@ -259,7 +329,8 @@ PJ Study/
 │   │   ├── components/
 │   │   │   ├── auth/                           # RequirePermission, RequireRole conditional wrappers
 │   │   │   ├── common/                         # Button, Input, Badge, Avatar, Dropdown, Modal, ProtectedRoute, GuestRoute
-│   │   │   └── layout/                         # Navbar (dynamic role-based navigation), Footer, Container, PageHeader
+│   │   │   ├── layout/                         # Navbar (dynamic role navigation), Footer, Container, PageHeader
+│   │   │   └── notes/                          # NoteCard, NoteForm, NoteFilters, NoteStatusBadge, FileUpload, NotesGrid, NotesEmptyState
 │   │   ├── context/
 │   │   │   └── AuthContext.jsx                 # Global auth state, RBAC capability helpers & silent refresh
 │   │   ├── layouts/
@@ -268,6 +339,7 @@ PJ Study/
 │   │   ├── pages/
 │   │   │   ├── admin/                          # AdminDashboardPage (Users, Staff, Audit Logs, Matrix)
 │   │   │   ├── auth/                           # LoginPage, RegisterPage, VerifyEmailPage, ForgotPasswordPage, ResetPasswordPage, ProfilePage
+│   │   │   ├── notes/                          # NotesLibraryPage, NoteDetailsPage, CreateNotePage, EditNotePage, MyNotesPage
 │   │   │   ├── HomePage.jsx                    # Editorial academic landing page
 │   │   │   ├── DesignSystemPage.jsx            # Interactive design system catalog
 │   │   │   ├── DashboardShellPage.jsx          # Authenticated workspace shell
@@ -277,13 +349,14 @@ PJ Study/
 │   │   │   ├── adminService.js                 # Administrative API client
 │   │   │   ├── api.js                          # Axios instance with 401 refresh queue
 │   │   │   ├── authService.js                  # Frontend auth API methods
+│   │   │   ├── categoryService.js              # Academic category API client
 │   │   │   ├── courseService.js                # Course API client
 │   │   │   ├── subjectService.js               # Subject API client
 │   │   │   ├── topicService.js                 # Topic API client
-│   │   │   └── noteService.js                  # Notes, reviews, bookmarks client
+│   │   │   └── noteService.js                  # Notes, reviews, bookmarks, downloads, moderation client
 │   │   ├── utils/
 │   │   │   └── permissions.js                  # Client-side permission constants & role hierarchies
-│   │   └── styles/                             # variables, reset, typography, global, utilities, components
+│   │   └── styles/                             # variables, reset, typography, global, utilities, components, notes.css
 │   ├── package.json
 │   └── vite.config.js
 │
@@ -293,17 +366,17 @@ PJ Study/
 
 ---
 
-## 8. Build, Test, and Quality Commands
+## 9. Build, Test, and Quality Commands
 
 From the repository root:
 
-| Command                   | Action                                                               |
-| :------------------------ | :------------------------------------------------------------------- |
-| `npm run dev`             | Runs backend and frontend development servers concurrently           |
-| `npm test`                | Runs all backend automated unit, invariant, and API tests (58 tests) |
-| `npm run check:backend`   | Validates backend configuration and environment variables            |
-| `npm run lint`            | Runs ESLint on frontend JavaScript and JSX                           |
-| `npm run format:check`    | Verifies Prettier code style across all files                        |
-| `npm run format`          | Auto-formats code using Prettier                                     |
-| `npm run build:frontend`  | Compiles production frontend bundle with Vite                        |
-| `npm run prisma:generate` | Generates Prisma Client based on `schema.prisma`                     |
+| Command                   | Action                                                                   |
+| :------------------------ | :----------------------------------------------------------------------- |
+| `npm run dev`             | Runs backend and frontend development servers concurrently               |
+| `npm test`                | Runs all backend automated unit, invariant, and API tests (**85 tests**) |
+| `npm run check:backend`   | Validates backend configuration and environment variables                |
+| `npm run lint`            | Runs ESLint on frontend JavaScript and JSX                               |
+| `npm run format:check`    | Verifies Prettier code style across all files                            |
+| `npm run format`          | Auto-formats code using Prettier                                         |
+| `npm run build:frontend`  | Compiles production frontend bundle with Vite                            |
+| `npm run prisma:generate` | Generates Prisma Client based on `schema.prisma`                         |

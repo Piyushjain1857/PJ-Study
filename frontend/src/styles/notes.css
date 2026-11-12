@@ -1,0 +1,120 @@
+/* =============================================================================
+   PJ Study Academic Notes System Styling
+   ============================================================================= */
+
+.notes-page {
+  padding: 48px 0 80px;
+  min-height: calc(100vh - 72px);
+  background-color: var(--color-bg-base, #faf8f5);
+}
+
+.notes-page__header {
+  margin-bottom: 36px;
+}
+
+.notes-page__eyebrow {
+  display: inline-block;
+  font-size: 0.8125rem;
+  font-weight: var(--font-weight-bold, 700);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-primary, #1b4d3e);
+  margin-bottom: 8px;
+}
+
+.notes-page__title {
+  font-family: var(--font-heading, 'Instrument Serif', Georgia, serif);
+  font-size: 2.75rem;
+  font-weight: var(--font-weight-normal, 400);
+  line-height: 1.15;
+  color: var(--color-text-primary, #2d2c28);
+  margin-bottom: 12px;
+}
+
+.notes-page__subtitle {
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary, #6b6960);
+  max-width: 680px;
+}
+
+/* Pagination bar */
+.notes-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 48px;
+}
+
+.notes-pagination__btn {
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text-primary, #2d2c28);
+  background-color: var(--color-bg-surface, #ffffff);
+  border: 1px solid var(--color-border, #e5e3da);
+  border-radius: var(--radius-md, 8px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.notes-pagination__btn:hover:not(:disabled) {
+  border-color: var(--color-primary, #1b4d3e);
+  color: var(--color-primary, #1b4d3e);
+}
+
+.notes-pagination__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.notes-pagination__info {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #6b6960);
+}
+
+/* Navigation tabs in MyNotes */
+.notes-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 32px;
+  border-bottom: 1px solid var(--color-border, #e5e3da);
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.notes-tab {
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 0.9375rem;
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text-secondary, #6b6960);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.notes-tab:hover {
+  color: var(--color-text-primary, #2d2c28);
+}
+
+.notes-tab--active {
+  color: var(--color-primary, #1b4d3e);
+  border-bottom-color: var(--color-primary, #1b4d3e);
+}
+
+@media (max-width: 640px) {
+  .notes-page {
+    padding: 32px 0 60px;
+  }
+  .notes-page__title {
+    font-size: 2rem;
+  }
+  .notes-page__subtitle {
+    font-size: 1rem;
+  }
+}

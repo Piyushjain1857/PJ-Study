@@ -1,0 +1,211 @@
+.note-details__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary, #6b6960);
+  margin-bottom: 28px;
+}
+
+.note-details__back-btn {
+  background: none;
+  border: none;
+  color: var(--color-primary, #1b4d3e);
+  font-weight: var(--font-weight-medium, 500);
+  cursor: pointer;
+  padding: 0;
+}
+
+.note-details__back-btn:hover {
+  text-decoration: underline;
+}
+
+.note-details__crumb-sep {
+  color: var(--color-text-tertiary, #9e9c93);
+}
+
+.note-details__crumb-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.note-details__crumb-link:hover {
+  color: var(--color-primary, #1b4d3e);
+}
+
+.note-details__crumb-curr {
+  color: var(--color-text-primary, #2d2c28);
+  font-weight: var(--font-weight-medium, 500);
+}
+
+.note-details__header {
+  background-color: var(--color-bg-surface, #ffffff);
+  border: 1px solid var(--color-border, #e5e3da);
+  border-radius: var(--radius-lg, 12px);
+  padding: 36px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+}
+
+.note-details__badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.note-details__title {
+  font-family: var(--font-heading, 'Instrument Serif', Georgia, serif);
+  font-size: 2.75rem;
+  font-weight: var(--font-weight-normal, 400);
+  line-height: 1.2;
+  color: var(--color-text-primary, #2d2c28);
+  margin-bottom: 16px;
+}
+
+.note-details__abstract {
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary, #6b6960);
+  margin-bottom: 24px;
+}
+
+.note-details__meta-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border, #e5e3da);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.note-details__author {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.note-details__author-name {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text-primary, #2d2c28);
+}
+
+.note-details__author-date {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary, #9e9c93);
+}
+
+.note-details__counters {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary, #6b6960);
+}
+
+/* Moderation action callout */
+.note-details__moderation-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  background-color: #fef8ee;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-lg, 12px);
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.note-details__moderation-info {
+  font-size: 0.9375rem;
+  color: #92400e;
+}
+
+.note-details__moderation-btns {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Attached file card */
+.note-details__file-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background-color: var(--color-bg-surface, #ffffff);
+  border: 1px solid var(--color-border, #e5e3da);
+  border-radius: var(--radius-lg, 12px);
+  margin-bottom: 28px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.note-details__file-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.note-details__file-info {
+  flex: 1;
+  min-width: 200px;
+}
+
+.note-details__file-name {
+  display: block;
+  font-size: 1rem;
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text-primary, #2d2c28);
+}
+
+.note-details__file-meta {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary, #6b6960);
+  margin-top: 2px;
+}
+
+/* Manuscript text content */
+.note-details__content {
+  background-color: var(--color-bg-surface, #ffffff);
+  border: 1px solid var(--color-border, #e5e3da);
+  border-radius: var(--radius-lg, 12px);
+  padding: 36px;
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+}
+
+.note-details__content-title {
+  font-family: var(--font-heading, 'Instrument Serif', Georgia, serif);
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-normal, 400);
+  color: var(--color-text-primary, #2d2c28);
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border, #e5e3da);
+}
+
+.note-details__text-view {
+  font-family: var(--font-body, 'Inter', -apple-system, sans-serif);
+  font-size: 0.9375rem;
+  line-height: 1.8;
+  color: var(--color-text-primary, #2d2c28);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .note-details__header,
+  .note-details__content {
+    padding: 24px 16px;
+  }
+  .note-details__title {
+    font-size: 2rem;
+  }
+}

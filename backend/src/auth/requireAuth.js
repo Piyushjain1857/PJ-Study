@@ -71,5 +71,41 @@ export async function requireAuth(req, res, next) {
   }
 }
 
-export default requireAuth;
+/**
+ * Optional authentication middleware: populates req.user if valid token provided,
+ * otherwise sets req.user to null without returning an HTTP 401 error.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
+export async function optionalAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    req.user = null;
+    return next();
+  }
 
+  const token = authHeader.substring(7).trim();
+  try {
+    const decoded = verifyAccessToken(token);
+    const user = await userRepository.findById(decoded.sub);
+    if (user && user.isActive) {
+      req.user = {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        isEmailVerified: user.isEmailVerified,
+        isActive: user.isActive
+      };
+    } else {
+      req.user = null;
+    }
+  } catch {
+    req.user = null;
+  }
+  return next();
+}
+
+export default requireAuth;

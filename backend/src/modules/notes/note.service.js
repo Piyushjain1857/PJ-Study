@@ -1,70 +1,141 @@
+import crypto from 'crypto';
 import prisma from '../../config/database.js';
-import noteRepository from './note.repository.js';
+import noteRepository, { NoteRepository } from './note.repository.js';
 import userRepository from '../users/user.repository.js';
 import courseRepository from '../courses/course.repository.js';
 import subjectRepository from '../subjects/subject.repository.js';
 import topicRepository from '../topics/topic.repository.js';
+import categoryRepository from '../categories/category.repository.js';
+import storageService from '../../services/storage/storage.service.js';
+import { slugify } from '../courses/course.service.js';
 import { getPaginationParams, buildPaginatedResponse } from '../../utils/pagination.js';
 import { assertNoteOwnership } from '../../auth/ownership.js';
+import { ROLES } from '../../auth/rolePermissions.js';
 
-const VALID_NOTE_STATUSES = ['DRAFT', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'ARCHIVED'];
+export const VALID_NOTE_STATUSES = [
+  'DRAFT',
+  'PENDING',
+  'PENDING_REVIEW',
+  'APPROVED',
+  'REJECTED',
+  'ARCHIVED'
+];
 
 /**
- * Service encapsulating business rules for Notes, Reviews, and Bookmarks.
+ * Normalizes input status strings so 'PENDING' and 'PENDING_REVIEW' are handled interchangeably.
+ *
+ * @param {string} status
+ * @returns {string}
+ */
+export function normalizeStatus(status) {
+  if (!status) return 'DRAFT';
+  const upper = String(status).toUpperCase();
+  if (upper === 'PENDING') return 'PENDING_REVIEW';
+  return upper;
+}
+
+/**
+ * Formats note records for JSON responses, converting BigInt fileSize to string/number.
+ *
+ * @param {object} item
+ * @returns {object}
+ */
+export function sanitizeNote(item) {
+  if (!item) return null;
+  return {
+    ...item,
+    fileSize: typeof item.fileSize === 'bigint' ? item.fileSize.toString() : item.fileSize,
+    // Present normalized status alias for client consistency
+    statusAlias: item.status === 'PENDING_REVIEW' ? 'PENDING' : item.status
+  };
+}
+
+/**
+ * Service encapsulating business rules for Notes, Reviews, Bookmarks, and Moderation.
  */
 export class NoteService {
+  constructor(repo = noteRepository, storage = storageService) {
+    this.repo = repo;
+    this.storage = storage;
+  }
+
   /**
-   * Retrieves a note by ID with view count tracking.
+   * Retrieves a note by ID with view tracking and draft security isolation.
    *
    * @param {string} id
+   * @param {object|null} currentUser
    * @param {boolean} [trackView=false]
    * @returns {Promise<any>}
    */
-  async getNoteById(id, trackView = false) {
+  async getNoteById(id, currentUser = null, trackView = false) {
     if (!id) {
       const error = new Error('Note ID is required.');
       error.statusCode = 400;
       throw error;
     }
 
-    const note = await noteRepository.findById(id);
+    const note = await this.repo.findById(id);
     if (!note) {
       const error = new Error(`Note with ID "${id}" was not found.`);
       error.statusCode = 404;
+      error.code = 'NOTE_NOT_FOUND';
       throw error;
     }
 
-    if (trackView) {
-      // Non-blocking fire-and-forget view count increment
-      noteRepository.incrementViewCount(id).catch((err) => {
+    // Security check: Private drafts, pending, and rejected notes are accessible ONLY to the author or staff
+    const isPubliclyVisible = note.status === 'APPROVED';
+    if (!isPubliclyVisible) {
+      const isOwner = currentUser && note.uploadedById === currentUser.id;
+      const isStaff =
+        currentUser &&
+        (currentUser.role === ROLES.MODERATOR ||
+          currentUser.role === ROLES.ADMIN ||
+          currentUser.role === ROLES.SUPER_ADMIN);
+
+      if (!isOwner && !isStaff) {
+        const error = new Error(
+          'This study note manuscript is private or pending moderation review.'
+        );
+        error.statusCode = 403;
+        error.code = 'NOTE_ACCESS_FORBIDDEN';
+        throw error;
+      }
+    }
+
+    if (trackView && isPubliclyVisible) {
+      this.repo.incrementViewCount(id).catch((err) => {
+        // eslint-disable-next-line no-console
         console.error('Failed to increment note view count:', err.message);
       });
     }
 
-    const ratingInfo = await noteRepository.getAverageRating(id);
-    return {
+    const ratingInfo = await this.repo.getAverageRating(id);
+    return sanitizeNote({
       ...note,
       averageRating: ratingInfo.averageRating,
       totalReviews: ratingInfo.totalReviews
-    };
+    });
   }
 
   /**
-   * Creates a new Note record with relational taxonomy verification.
+   * Creates a new Note record with relational taxonomy verification and file handling.
    *
    * @param {{
    *   title: string,
    *   description?: string,
-   *   fileName: string,
-   *   storageKey: string,
-   *   fileSize: number | bigint,
-   *   mimeType?: string,
-   *   pageCount?: number,
-   *   courseId: string,
+   *   content?: string,
    *   subjectId: string,
+   *   courseId?: string,
+   *   categoryId?: string,
+   *   semester?: number,
+   *   academicYear?: string,
    *   topicId?: string,
    *   uploadedById: string,
-   *   status?: 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | 'ARCHIVED'
+   *   status?: string,
+   *   fileName?: string,
+   *   storageKey?: string,
+   *   fileSize?: number | bigint,
+   *   mimeType?: string
    * }} input
    * @returns {Promise<any>}
    */
@@ -72,60 +143,84 @@ export class NoteService {
     const {
       title,
       description,
+      content,
+      subjectId,
+      courseId: explicitCourseId,
+      categoryId,
+      semester: explicitSemester,
+      academicYear,
+      topicId,
+      uploadedById,
+      status: requestedStatus = 'DRAFT',
       fileName,
       storageKey,
       fileSize,
-      mimeType = 'application/pdf',
-      pageCount,
-      courseId,
-      subjectId,
-      topicId,
-      uploadedById,
-      status = 'PENDING_REVIEW'
+      mimeType
     } = input;
 
-    if (!title || title.trim().length === 0) {
+    // 1. Title validation
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
       const error = new Error('Note title is required.');
       error.statusCode = 400;
+      error.code = 'TITLE_REQUIRED';
       throw error;
     }
 
-    if (!fileName || !storageKey) {
-      const error = new Error('File name and storage key are required.');
-      error.statusCode = 400;
-      throw error;
-    }
+    // 2. Content or file validation
+    const hasContent = content && content.trim().length > 0;
+    const hasFile = fileName && storageKey;
 
-    const size = typeof fileSize === 'bigint' ? fileSize : BigInt(fileSize || 0);
-    if (size <= 0n) {
-      const error = new Error('File size must be greater than zero bytes.');
-      error.statusCode = 400;
-      throw error;
-    }
-
-    if (!VALID_NOTE_STATUSES.includes(status)) {
+    if (!hasContent && !hasFile) {
       const error = new Error(
-        `Invalid status "${status}". Allowed: ${VALID_NOTE_STATUSES.join(', ')}.`
+        'Please provide either written study note content or upload an educational document file.'
       );
       error.statusCode = 400;
+      error.code = 'NOTE_PAYLOAD_EMPTY';
       throw error;
     }
 
-    // Verify all relational references exist
-    const [uploader, course, subject] = await Promise.all([
+    let size = null;
+    if (hasFile) {
+      size = typeof fileSize === 'bigint' ? fileSize : BigInt(fileSize || 0);
+      if (size <= 0n) {
+        const error = new Error('File size must be greater than zero bytes.');
+        error.statusCode = 400;
+        error.code = 'INVALID_FILE_SIZE';
+        throw error;
+      }
+    }
+
+    // 3. Status invariant: Users cannot directly publish as APPROVED
+    const normalized = normalizeStatus(requestedStatus);
+    if (!VALID_NOTE_STATUSES.includes(normalized)) {
+      const error = new Error(`Invalid status "${requestedStatus}". Allowed: DRAFT, PENDING.`);
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (normalized === 'APPROVED') {
+      const error = new Error(
+        'Notes cannot be published directly. Notes must be saved as DRAFT or submitted for moderator review.'
+      );
+      error.statusCode = 403;
+      error.code = 'UNAUTHORIZED_PUBLISH';
+      throw error;
+    }
+
+    // 4. Verify relational references
+    if (!subjectId) {
+      const error = new Error('Subject is required for categorizing study notes.');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const [uploader, subject] = await Promise.all([
       userRepository.findById(uploadedById),
-      courseRepository.findById(courseId),
       subjectRepository.findById(subjectId)
     ]);
 
     if (!uploader) {
       const error = new Error(`Uploader with ID "${uploadedById}" was not found.`);
-      error.statusCode = 404;
-      throw error;
-    }
-
-    if (!course) {
-      const error = new Error(`Course with ID "${courseId}" was not found.`);
       error.statusCode = 404;
       throw error;
     }
@@ -136,14 +231,24 @@ export class NoteService {
       throw error;
     }
 
-    if (subject.courseId !== courseId) {
-      const error = new Error(
-        `Subject "${subject.name}" does not belong to course "${course.name}".`
-      );
+    const courseId = explicitCourseId || subject.courseId;
+    if (explicitCourseId && explicitCourseId !== subject.courseId) {
+      const error = new Error(`Subject does not belong to the selected course.`);
       error.statusCode = 400;
       throw error;
     }
 
+    // Verify category if provided
+    if (categoryId) {
+      const category = await categoryRepository.findById(categoryId);
+      if (!category) {
+        const error = new Error(`Category with ID "${categoryId}" was not found.`);
+        error.statusCode = 404;
+        throw error;
+      }
+    }
+
+    // Verify topic if provided
     if (topicId) {
       const topic = await topicRepository.findById(topicId);
       if (!topic) {
@@ -152,182 +257,555 @@ export class NoteService {
         throw error;
       }
       if (topic.subjectId !== subjectId) {
-        const error = new Error(
-          `Topic "${topic.name}" does not belong to subject "${subject.name}".`
-        );
+        const error = new Error(`Topic does not belong to the selected subject.`);
         error.statusCode = 400;
         throw error;
       }
     }
 
-    return noteRepository.create({
+    // Generate unique slug
+    const shortId = crypto.randomBytes(4).toString('hex');
+    const slug = `${slugify(title.trim())}-${shortId}`;
+    const semester = explicitSemester || subject.semester || 1;
+
+    const note = await this.repo.create({
       title: title.trim(),
+      slug,
       description: description?.trim() || null,
-      fileName: fileName.trim(),
-      storageKey: storageKey.trim(),
+      content: content?.trim() || null,
+      fileName: fileName?.trim() || null,
+      storageKey: storageKey?.trim() || null,
       fileSize: size,
-      mimeType: mimeType.trim(),
-      pageCount: pageCount || null,
+      mimeType: mimeType?.trim() || (hasFile ? 'application/pdf' : null),
       courseId,
       subjectId,
+      categoryId: categoryId || null,
       topicId: topicId || null,
+      semester,
+      academicYear: academicYear?.trim() || null,
       uploadedById,
-      status,
-      publishedAt: status === 'APPROVED' ? new Date() : null
+      status: normalized,
+      publishedAt: null
     });
+
+    return sanitizeNote(note);
   }
 
   /**
-   * Reviews or updates a note status (moderation flow) using a transaction with an audit log.
+   * Updates an existing note with strict state and ownership verification.
    *
    * @param {string} noteId
-   * @param {'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | 'ARCHIVED'} newStatus
-   * @param {string} actorId - Moderator or admin user ID
-   * @param {string} [reason]
+   * @param {string} userId
+   * @param {string} userRole
+   * @param {object} data
    * @returns {Promise<any>}
    */
-  async updateNoteStatus(noteId, newStatus, actorId, reason) {
-    if (!VALID_NOTE_STATUSES.includes(newStatus)) {
-      const error = new Error(`Invalid status "${newStatus}".`);
-      error.statusCode = 400;
+  async updateNote(noteId, userId, userRole, data) {
+    const note = await this.repo.findById(noteId);
+    if (!note) {
+      const error = new Error(`Note with ID "${noteId}" was not found.`);
+      error.statusCode = 404;
+      error.code = 'NOTE_NOT_FOUND';
       throw error;
     }
 
-    const note = await noteRepository.findById(noteId);
+    // Ownership check
+    assertNoteOwnership(note, userId, userRole);
+
+    const isStaff = userRole === ROLES.ADMIN || userRole === ROLES.SUPER_ADMIN;
+
+    // Invariant: Non-staff can only edit DRAFT or REJECTED notes
+    if (!isStaff && !['DRAFT', 'REJECTED'].includes(note.status)) {
+      const error = new Error(
+        `Notes with status "${note.status}" cannot be edited. Only DRAFT or REJECTED notes can be modified.`
+      );
+      error.statusCode = 403;
+      error.code = 'NOTE_EDIT_LOCKED';
+      throw error;
+    }
+
+    const updatePayload = {};
+
+    if (data.title && typeof data.title === 'string' && data.title.trim().length > 0) {
+      updatePayload.title = data.title.trim();
+    }
+    if (data.description !== undefined) {
+      updatePayload.description = data.description?.trim() || null;
+    }
+    if (data.content !== undefined) {
+      updatePayload.content = data.content?.trim() || null;
+    }
+    if (data.subjectId) {
+      const subject = await subjectRepository.findById(data.subjectId);
+      if (!subject) {
+        const error = new Error(`Subject with ID "${data.subjectId}" was not found.`);
+        error.statusCode = 404;
+        throw error;
+      }
+      updatePayload.subjectId = data.subjectId;
+      updatePayload.courseId = subject.courseId;
+    }
+    if (data.categoryId !== undefined) {
+      updatePayload.categoryId = data.categoryId || null;
+    }
+    if (data.semester !== undefined) {
+      updatePayload.semester = parseInt(data.semester, 10) || null;
+    }
+    if (data.academicYear !== undefined) {
+      updatePayload.academicYear = data.academicYear?.trim() || null;
+    }
+
+    // Replace file if new one was uploaded
+    if (data.storageKey && data.fileName) {
+      // Unlink previous file if present and different
+      if (note.storageKey && note.storageKey !== data.storageKey) {
+        this.storage.deleteFile(note.storageKey).catch(() => {});
+      }
+      updatePayload.storageKey = data.storageKey;
+      updatePayload.fileName = data.fileName;
+      updatePayload.fileSize =
+        typeof data.fileSize === 'bigint' ? data.fileSize : BigInt(data.fileSize || 0);
+      updatePayload.mimeType = data.mimeType || 'application/pdf';
+    }
+
+    const updated = await this.repo.update(noteId, updatePayload);
+    return sanitizeNote(updated);
+  }
+
+  /**
+   * Deletes a note with ownership and state verification.
+   *
+   * @param {string} noteId
+   * @param {string} userId
+   * @param {string} userRole
+   * @returns {Promise<boolean>}
+   */
+  async deleteNote(noteId, userId, userRole) {
+    const note = await this.repo.findById(noteId);
+    if (!note) {
+      const error = new Error(`Note with ID "${noteId}" was not found.`);
+      error.statusCode = 404;
+      error.code = 'NOTE_NOT_FOUND';
+      throw error;
+    }
+
+    assertNoteOwnership(note, userId, userRole);
+
+    const isStaff = userRole === ROLES.ADMIN || userRole === ROLES.SUPER_ADMIN;
+
+    // Invariant: Non-staff can only delete DRAFT or REJECTED notes
+    if (!isStaff && !['DRAFT', 'REJECTED'].includes(note.status)) {
+      const error = new Error(
+        `Notes with status "${note.status}" cannot be deleted by students. Please contact support or moderation.`
+      );
+      error.statusCode = 403;
+      error.code = 'NOTE_DELETE_LOCKED';
+      throw error;
+    }
+
+    // Delete stored file if exists
+    if (note.storageKey) {
+      await this.storage.deleteFile(note.storageKey).catch(() => {});
+    }
+
+    await this.repo.delete(noteId);
+    return true;
+  }
+
+  /**
+   * Submits a DRAFT or REJECTED note for moderation review.
+   *
+   * @param {string} noteId
+   * @param {string} userId
+   * @param {string} userRole
+   * @returns {Promise<any>}
+   */
+  async submitForReview(noteId, userId, userRole) {
+    const note = await this.repo.findById(noteId);
+    if (!note) {
+      const error = new Error(`Note with ID "${noteId}" was not found.`);
+      error.statusCode = 404;
+      error.code = 'NOTE_NOT_FOUND';
+      throw error;
+    }
+
+    assertNoteOwnership(note, userId, userRole);
+
+    if (!['DRAFT', 'REJECTED'].includes(note.status)) {
+      const error = new Error(
+        `Note cannot be submitted for review because it is currently "${note.status}".`
+      );
+      error.statusCode = 400;
+      error.code = 'INVALID_SUBMISSION_STATE';
+      throw error;
+    }
+
+    // Validate minimum required payload before submission
+    if (!note.title || (!note.content && !note.storageKey)) {
+      const error = new Error(
+        'Note must contain title and either written content or an attached study document to be submitted.'
+      );
+      error.statusCode = 400;
+      error.code = 'INCOMPLETE_NOTE';
+      throw error;
+    }
+
+    const updated = await this.repo.update(noteId, {
+      status: 'PENDING_REVIEW',
+      rejectionReason: null // clear previous feedback upon resubmission
+    });
+
+    return sanitizeNote(updated);
+  }
+
+  /**
+   * Archives an approved note.
+   *
+   * @param {string} noteId
+   * @param {string} userId
+   * @param {string} userRole
+   * @returns {Promise<any>}
+   */
+  async archiveNote(noteId, userId, userRole) {
+    const note = await this.repo.findById(noteId);
     if (!note) {
       const error = new Error(`Note with ID "${noteId}" was not found.`);
       error.statusCode = 404;
       throw error;
     }
 
-    // Execute status change and audit log entry atomically in a transaction
-    return prisma.$transaction(async (tx) => {
-      const updatedNote = await tx.note.update({
+    assertNoteOwnership(note, userId, userRole);
+
+    if (note.status !== 'APPROVED') {
+      const error = new Error('Only approved published notes can be archived.');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const updated = await this.repo.update(noteId, {
+      status: 'ARCHIVED'
+    });
+
+    return sanitizeNote(updated);
+  }
+
+  /**
+   * Reviews and approves or rejects a note (moderator workflow with audit logging).
+   *
+   * @param {string} noteId
+   * @param {'APPROVED' | 'REJECTED'} newStatus
+   * @param {string} actorId
+   * @param {string} [reason]
+   * @returns {Promise<any>}
+   */
+  async reviewNoteSubmission(noteId, newStatus, actorId, reason) {
+    const normalized = normalizeStatus(newStatus);
+    if (!['APPROVED', 'REJECTED'].includes(normalized)) {
+      const error = new Error(
+        `Invalid review decision "${newStatus}". Must be "APPROVED" or "REJECTED".`
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const note = await this.repo.findById(noteId);
+    if (!note) {
+      const error = new Error(`Note with ID "${noteId}" was not found.`);
+      error.statusCode = 404;
+      throw error;
+    }
+
+    // Invariant: Note must be pending review
+    if (!['PENDING', 'PENDING_REVIEW'].includes(note.status)) {
+      const error = new Error(
+        `Note is currently "${note.status}" and cannot be reviewed. Only pending notes can be approved or rejected.`
+      );
+      error.statusCode = 400;
+      error.code = 'NOTE_NOT_PENDING';
+      throw error;
+    }
+
+    // Author cannot review their own note
+    if (note.uploadedById === actorId) {
+      const error = new Error('Moderators cannot review their own submitted notes.');
+      error.statusCode = 403;
+      error.code = 'CANNOT_REVIEW_OWN_NOTE';
+      throw error;
+    }
+
+    if (normalized === 'REJECTED' && (!reason || reason.trim().length === 0)) {
+      const error = new Error(
+        'A constructive rejection reason is required to help the student improve their submission.'
+      );
+      error.statusCode = 400;
+      error.code = 'REJECTION_REASON_REQUIRED';
+      throw error;
+    }
+
+    // Perform update and audit log in transaction
+    const result = await prisma.$transaction(async (tx) => {
+      const updated = await tx.note.update({
         where: { id: noteId },
         data: {
-          status: newStatus,
-          publishedAt: newStatus === 'APPROVED' && !note.publishedAt ? new Date() : note.publishedAt
+          status: normalized,
+          publishedAt: normalized === 'APPROVED' ? new Date() : note.publishedAt,
+          rejectionReason: normalized === 'REJECTED' ? reason.trim() : null
+        },
+        include: {
+          course: { select: { id: true, name: true, slug: true } },
+          subject: { select: { id: true, name: true, slug: true } },
+          category: { select: { id: true, name: true, slug: true } },
+          uploadedBy: {
+            select: { id: true, name: true, email: true, avatarUrl: true }
+          }
         }
       });
 
       await tx.auditLog.create({
         data: {
           actorId,
-          action: 'NOTE_STATUS_UPDATE',
+          action: normalized === 'APPROVED' ? 'NOTE_APPROVED' : 'NOTE_REJECTED',
           entityType: 'Note',
           entityId: noteId,
           metadata: {
+            noteTitle: note.title,
             previousStatus: note.status,
-            newStatus,
-            reason: reason || 'Moderation decision'
+            decision: normalized,
+            reason: reason || null
           }
         }
       });
 
-      return updatedNote;
+      return updated;
     });
+
+    return sanitizeNote(result);
   }
 
   /**
-   * Updates note content with strict ownership verification.
+   * Lists approved notes for the public Notes Library.
    *
-   * @param {string} noteId
-   * @param {string} userId
-   * @param {string} userRole
-   * @param {{ title?: string, description?: string }} data
+   * @param {{
+   *   page?: number,
+   *   limit?: number,
+   *   search?: string,
+   *   subjectId?: string,
+   *   categoryId?: string,
+   *   courseId?: string,
+   *   semester?: number,
+   *   academicYear?: string,
+   *   sortBy?: string,
+   *   sortOrder?: string
+   * }} query
    * @returns {Promise<any>}
    */
-  async updateNote(noteId, userId, userRole, data) {
-    const note = await noteRepository.findById(noteId);
+  async listNotes(query = {}) {
+    const { page, limit, skip } = getPaginationParams(query);
+    const where = { status: 'APPROVED' };
+
+    if (query.subjectId) {
+      where.subjectId = query.subjectId;
+    }
+    if (query.categoryId) {
+      where.categoryId = query.categoryId;
+    }
+    if (query.courseId) {
+      where.courseId = query.courseId;
+    }
+    if (query.semester) {
+      where.semester = parseInt(query.semester, 10);
+    }
+    if (query.academicYear) {
+      where.academicYear = query.academicYear;
+    }
+
+    if (query.search && query.search.trim().length > 0) {
+      const search = query.search.trim();
+      where.OR = [{ title: { contains: search } }, { description: { contains: search } }];
+    }
+
+    // Dynamic sorting
+    const orderBy = {};
+    if (query.sortBy === 'mostViewed') {
+      orderBy.viewCount = 'desc';
+    } else if (query.sortBy === 'mostDownloaded') {
+      orderBy.downloadCount = 'desc';
+    } else if (query.sortBy === 'oldest') {
+      orderBy.createdAt = 'asc';
+    } else {
+      orderBy.publishedAt = 'desc';
+    }
+
+    const [items, total] = await Promise.all([
+      this.repo.findMany({ skip, take: limit, where, orderBy }),
+      this.repo.count(where)
+    ]);
+
+    const sanitized = items.map(sanitizeNote);
+    return buildPaginatedResponse(sanitized, total, page, limit);
+  }
+
+  /**
+   * Retrieves notes uploaded by the current student for the "My Notes" dashboard.
+   *
+   * @param {string} userId
+   * @param {{
+   *   page?: number,
+   *   limit?: number,
+   *   status?: string,
+   *   search?: string
+   * }} query
+   * @returns {Promise<any>}
+   */
+  async getUserNotes(userId, query = {}) {
+    const { page, limit, skip } = getPaginationParams(query);
+    const where = { uploadedById: userId };
+
+    if (query.status) {
+      const normalized = normalizeStatus(query.status);
+      if (VALID_NOTE_STATUSES.includes(normalized)) {
+        where.status = normalized;
+      }
+    }
+
+    if (query.search && query.search.trim().length > 0) {
+      where.title = { contains: query.search.trim() };
+    }
+
+    const [items, total] = await Promise.all([
+      this.repo.findMany({
+        skip,
+        take: limit,
+        where,
+        orderBy: { updatedAt: 'desc' }
+      }),
+      this.repo.count(where)
+    ]);
+
+    const sanitized = items.map(sanitizeNote);
+    return buildPaginatedResponse(sanitized, total, page, limit);
+  }
+
+  /**
+   * Retrieves pending notes in the moderation queue for staff.
+   *
+   * @param {{
+   *   page?: number,
+   *   limit?: number,
+   *   search?: string
+   * }} query
+   * @returns {Promise<any>}
+   */
+  async getModerationQueue(query = {}) {
+    const { page, limit, skip } = getPaginationParams(query);
+    const where = {
+      status: { in: ['PENDING', 'PENDING_REVIEW'] }
+    };
+
+    if (query.search && query.search.trim().length > 0) {
+      where.title = { contains: query.search.trim() };
+    }
+
+    const [items, total] = await Promise.all([
+      this.repo.findMany({
+        skip,
+        take: limit,
+        where,
+        orderBy: { createdAt: 'asc' }
+      }),
+      this.repo.count(where)
+    ]);
+
+    const sanitized = items.map(sanitizeNote);
+    return buildPaginatedResponse(sanitized, total, page, limit);
+  }
+
+  /**
+   * Authorizes and returns stream for note document download.
+   *
+   * @param {string} noteId
+   * @param {object|null} currentUser
+   * @returns {Promise<{ stream: any, fileName: string, mimeType: string, size: number }>}
+   */
+  async getNoteFileForDownload(noteId, currentUser = null) {
+    const note = await this.repo.findById(noteId);
     if (!note) {
       const error = new Error(`Note with ID "${noteId}" was not found.`);
       error.statusCode = 404;
+      error.code = 'NOTE_NOT_FOUND';
       throw error;
     }
 
-    assertNoteOwnership(note, userId, userRole);
-
-    const updatePayload = {};
-    if (data.title && typeof data.title === 'string' && data.title.trim().length > 0) {
-      updatePayload.title = data.title.trim();
-    }
-    if (data.description !== undefined) {
-      updatePayload.description = data.description;
-    }
-
-    return noteRepository.update(noteId, updatePayload);
-  }
-
-  /**
-   * Deletes a note with strict ownership verification.
-   *
-   * @param {string} noteId
-   * @param {string} userId
-   * @param {string} userRole
-   * @returns {Promise<any>}
-   */
-  async deleteNote(noteId, userId, userRole) {
-    const note = await noteRepository.findById(noteId);
-    if (!note) {
-      const error = new Error(`Note with ID "${noteId}" was not found.`);
+    if (!note.storageKey) {
+      const error = new Error('This study note does not have an attached file.');
       error.statusCode = 404;
+      error.code = 'NO_FILE_ATTACHED';
       throw error;
     }
 
-    assertNoteOwnership(note, userId, userRole);
+    // Access check: only approved notes are public; non-approved require owner or staff
+    if (note.status !== 'APPROVED') {
+      const isOwner = currentUser && note.uploadedById === currentUser.id;
+      const isStaff =
+        currentUser &&
+        (currentUser.role === ROLES.MODERATOR ||
+          currentUser.role === ROLES.ADMIN ||
+          currentUser.role === ROLES.SUPER_ADMIN);
 
-    return noteRepository.delete(noteId);
+      if (!isOwner && !isStaff) {
+        const error = new Error(
+          'File download is restricted while note is in draft or moderation review.'
+        );
+        error.statusCode = 403;
+        error.code = 'DOWNLOAD_FORBIDDEN';
+        throw error;
+      }
+    }
+
+    // Increment download count asynchronously
+    if (note.status === 'APPROVED') {
+      this.repo.incrementDownloadCount(noteId).catch(() => {});
+    }
+
+    const { stream, size } = await this.storage.getFileStream(note.storageKey);
+    return {
+      stream,
+      fileName: note.fileName || 'study-document.pdf',
+      mimeType: note.mimeType || 'application/pdf',
+      size
+    };
   }
 
-  /**
-   * Adds a note to a student's bookmarks library.
-   *
-   * @param {string} userId
-   * @param {string} noteId
-   * @returns {Promise<{ bookmarked: boolean }>}
-   */
+  // =========================================================================
+  // BOOKMARK & REVIEW METHODS
+  // =========================================================================
+
   async bookmarkNote(userId, noteId) {
-    const note = await noteRepository.findById(noteId);
+    const note = await this.repo.findById(noteId);
     if (!note) {
       const error = new Error(`Note with ID "${noteId}" was not found.`);
       error.statusCode = 404;
       throw error;
     }
 
-    const existing = await noteRepository.findBookmark(userId, noteId);
+    const existing = await this.repo.findBookmark(userId, noteId);
     if (existing) {
       return { bookmarked: true, message: 'Note is already bookmarked.' };
     }
 
-    await noteRepository.createBookmark(userId, noteId);
+    await this.repo.createBookmark(userId, noteId);
     return { bookmarked: true, message: 'Note bookmarked successfully.' };
   }
 
-  /**
-   * Removes a note from bookmarks.
-   *
-   * @param {string} userId
-   * @param {string} noteId
-   * @returns {Promise<{ bookmarked: boolean }>}
-   */
   async removeBookmark(userId, noteId) {
     try {
-      await noteRepository.deleteBookmark(userId, noteId);
+      await this.repo.deleteBookmark(userId, noteId);
       return { bookmarked: false, message: 'Bookmark removed.' };
     } catch {
       return { bookmarked: false, message: 'Bookmark not found.' };
     }
   }
 
-  /**
-   * Submits or updates a note review with rating invariant validation (1 to 5).
-   *
-   * @param {string} userId
-   * @param {string} noteId
-   * @param {number} rating
-   * @param {string} [comment]
-   * @returns {Promise<any>}
-   */
   async reviewNote(userId, noteId, rating, comment) {
     const parsedRating = parseInt(String(rating), 10);
     if (Number.isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
@@ -336,7 +814,7 @@ export class NoteService {
       throw error;
     }
 
-    const note = await noteRepository.findById(noteId);
+    const note = await this.repo.findById(noteId);
     if (!note) {
       const error = new Error(`Note with ID "${noteId}" was not found.`);
       error.statusCode = 404;
@@ -349,60 +827,7 @@ export class NoteService {
       throw error;
     }
 
-    return noteRepository.upsertReview(userId, noteId, parsedRating, comment);
-  }
-
-  /**
-   * Lists published notes with pagination, search, and course/subject filtering.
-   * Enforces public visibility invariant (status === 'APPROVED').
-   *
-   * @param {{
-   *   page?: string | number,
-   *   limit?: string | number,
-   *   courseId?: string,
-   *   subjectId?: string,
-   *   topicId?: string,
-   *   search?: string,
-   *   status?: string
-   * }} query
-   * @param {boolean} [isPublic=true] - If true, strictly restricts to APPROVED notes
-   * @returns {Promise<any>}
-   */
-  async listNotes(query = {}, isPublic = true) {
-    const pagination = getPaginationParams(query);
-    const where = {};
-
-    if (isPublic) {
-      where.status = 'APPROVED';
-    } else if (query.status && VALID_NOTE_STATUSES.includes(query.status)) {
-      where.status = query.status;
-    }
-
-    if (query.courseId) where.courseId = query.courseId;
-    if (query.subjectId) where.subjectId = query.subjectId;
-    if (query.topicId) where.topicId = query.topicId;
-
-    if (query.search && query.search.trim().length > 0) {
-      where.title = { contains: query.search.trim() };
-    }
-
-    const [items, totalItems] = await Promise.all([
-      noteRepository.findMany({
-        skip: pagination.skip,
-        take: pagination.take,
-        where,
-        orderBy: { createdAt: 'desc' }
-      }),
-      noteRepository.count(where)
-    ]);
-
-    // Format BigInt fields for JSON serialization
-    const sanitizedItems = items.map((item) => ({
-      ...item,
-      fileSize: typeof item.fileSize === 'bigint' ? item.fileSize.toString() : item.fileSize
-    }));
-
-    return buildPaginatedResponse(sanitizedItems, totalItems, pagination);
+    return this.repo.upsertReview(userId, noteId, parsedRating, comment);
   }
 }
 

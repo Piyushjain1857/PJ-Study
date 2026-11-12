@@ -16,6 +16,14 @@ import ResetPasswordPage from '../pages/auth/ResetPasswordPage.jsx';
 import ProfilePage from '../pages/auth/ProfilePage.jsx';
 import AdminDashboardPage from '../pages/admin/AdminDashboardPage.jsx';
 import UnauthorizedPage from '../pages/UnauthorizedPage.jsx';
+
+// Notes Pages
+import NotesLibraryPage from '../pages/notes/NotesLibraryPage.jsx';
+import NoteDetailsPage from '../pages/notes/NoteDetailsPage.jsx';
+import CreateNotePage from '../pages/notes/CreateNotePage.jsx';
+import EditNotePage from '../pages/notes/EditNotePage.jsx';
+import MyNotesPage from '../pages/notes/MyNotesPage.jsx';
+
 import ProtectedRoute from '../components/common/ProtectedRoute.jsx';
 import GuestRoute from '../components/common/GuestRoute.jsx';
 import { ROLES } from '../utils/permissions.js';
@@ -32,6 +40,38 @@ export const router = createBrowserRouter(
         {
           index: true,
           element: <HomePage />
+        },
+        {
+          path: 'notes',
+          element: <NotesLibraryPage />
+        },
+        {
+          path: 'notes/new',
+          element: (
+            <ProtectedRoute>
+              <CreateNotePage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'notes/:id',
+          element: <NoteDetailsPage />
+        },
+        {
+          path: 'notes/:id/edit',
+          element: (
+            <ProtectedRoute>
+              <EditNotePage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'my-notes',
+          element: (
+            <ProtectedRoute>
+              <MyNotesPage />
+            </ProtectedRoute>
+          )
         },
         {
           path: 'design-system',

@@ -63,4 +63,3 @@ export async function requireNoteOwnership(req, res, next) {
     return sendError(res, err.message, err.statusCode || 403, err.code || 'FORBIDDEN');
   }
 }
-

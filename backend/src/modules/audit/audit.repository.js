@@ -79,4 +79,3 @@ export class AuditRepository {
 
 export const auditRepository = new AuditRepository();
 export default auditRepository;
-

@@ -55,4 +55,3 @@ export function validateChangeRole(req, res, next) {
   req.body.role = role.toUpperCase().trim();
   next();
 }
-
