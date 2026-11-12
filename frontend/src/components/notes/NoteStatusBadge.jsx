@@ -48,3 +48,4 @@ export function NoteStatusBadge({ status }) {
 }
 
 export default NoteStatusBadge;
+

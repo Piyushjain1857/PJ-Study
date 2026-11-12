@@ -35,3 +35,4 @@ export function NotesEmptyState({
 }
 
 export default NotesEmptyState;
+

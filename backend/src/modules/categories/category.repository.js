@@ -39,3 +39,4 @@ export class CategoryRepository {
 
 export const categoryRepository = new CategoryRepository();
 export default categoryRepository;
+
