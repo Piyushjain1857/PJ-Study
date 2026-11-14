@@ -58,6 +58,8 @@ model User {
   // Relationships
   notes                   Note[]                   @relation("UserNotes")
   bookmarks               Bookmark[]
+  collections             StudyCollection[]
+  downloadHistory         DownloadHistory[]
   reviews                 Review[]
   reportsSubmitted        Report[]                 @relation("ReportedByUser")
   reportsReviewed         Report[]                 @relation("ReviewedByUser")
@@ -181,6 +183,8 @@ model Note {
   category      Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   uploadedBy    User        @relation("UserNotes", fields: [uploadedById], references: [id], onDelete: Restrict)
   bookmarks     Bookmark[]
+  collectionItems StudyCollectionItem[]
+  downloadHistory DownloadHistory[]
   reviews       Review[]
   reports       Report[]
 
@@ -325,4 +329,55 @@ model PasswordResetToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("password_reset_tokens")
+}
+
+/// StudyCollection represents a student-curated folder/collection of study notes.
+model StudyCollection {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  name        String   @db.VarChar(120)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       StudyCollectionItem[]
+
+  @@unique([userId, name], name: "user_collection_name_unique")
+  @@index([userId])
+  @@map("study_collections")
+}
+
+/// StudyCollectionItem represents the many-to-many relationship between a collection and a note.
+model StudyCollectionItem {
+  id           String   @id @default(uuid())
+  collectionId String   @map("collection_id")
+  noteId       String   @map("note_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relationships
+  collection   StudyCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  note         Note            @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, noteId], name: "collection_note_unique")
+  @@index([collectionId])
+  @@index([noteId])
+  @@map("study_collection_items")
+}
+
+/// DownloadHistory records actual note download events for student learning analytics.
+model DownloadHistory {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  noteId       String   @map("note_id")
+  downloadedAt DateTime @default(now()) @map("downloaded_at")
+
+  // Relationships
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note         Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([userId, downloadedAt])
+  @@index([noteId])
+  @@map("download_history")
 }

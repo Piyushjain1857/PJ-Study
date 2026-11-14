@@ -74,14 +74,24 @@ export function Navbar() {
             Explore Notes
           </NavLink>
           {isAuthenticated && (
-            <NavLink
-              to="/my-notes"
-              className={({ isActive }) =>
-                `navbar-nav__link ${isActive ? 'navbar-nav__link--active' : ''}`
-              }
-            >
-              My Notes
-            </NavLink>
+            <>
+              <NavLink
+                to="/dashboard"
+                className={({ isActive }) =>
+                  `navbar-nav__link ${isActive ? 'navbar-nav__link--active' : ''}`
+                }
+              >
+                Dashboard
+              </NavLink>
+              <NavLink
+                to="/my-notes"
+                className={({ isActive }) =>
+                  `navbar-nav__link ${isActive ? 'navbar-nav__link--active' : ''}`
+                }
+              >
+                My Notes
+              </NavLink>
+            </>
           )}
           <a href="/#how-it-works" className="navbar-nav__link">
             How It Works
@@ -219,6 +229,15 @@ export function Navbar() {
               </NavLink>
               {isAuthenticated && (
                 <>
+                  <NavLink
+                    to="/dashboard"
+                    className={({ isActive }) =>
+                      `navbar-mobile-link ${isActive ? 'navbar-mobile-link--active' : ''}`
+                    }
+                    onClick={closeMobileMenu}
+                  >
+                    Dashboard
+                  </NavLink>
                   <NavLink
                     to="/my-notes"
                     className={({ isActive }) =>

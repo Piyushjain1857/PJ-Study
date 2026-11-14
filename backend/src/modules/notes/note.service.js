@@ -919,6 +919,11 @@ export class NoteService {
       this.repo.incrementDownloadCount(noteId).catch(() => {});
     }
 
+    // Record user download history asynchronously if authenticated
+    if (currentUser && currentUser.id) {
+      this.repo.recordDownloadHistory(currentUser.id, noteId).catch(() => {});
+    }
+
     const { stream, size } = await this.storage.getFileStream(note.storageKey);
     return {
       stream,

@@ -123,6 +123,15 @@ export class NoteRepository {
     });
   }
 
+  async recordDownloadHistory(userId, noteId) {
+    return prisma.downloadHistory.create({
+      data: {
+        userId,
+        noteId
+      }
+    });
+  }
+
   // =========================================================================
   // BOOKMARK OPERATIONS
   // =========================================================================

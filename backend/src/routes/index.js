@@ -4,6 +4,7 @@ import authRoutes from '../modules/auth/auth.routes.js';
 import adminRoutes from '../modules/admin/admin.routes.js';
 import noteRoutes from '../modules/notes/note.routes.js';
 import categoryRoutes from '../modules/categories/category.routes.js';
+import dashboardRoutes from '../modules/dashboard/dashboard.routes.js';
 import { requireAuth } from '../auth/requireAuth.js';
 import noteController from '../modules/notes/note.controller.js';
 
@@ -83,6 +84,12 @@ router.use('/categories', categoryRoutes);
  * /api/v1/notes/...
  */
 router.use('/notes', noteRoutes);
+
+/**
+ * Student personalized dashboard and learning analytics.
+ * /api/v1/dashboard/...
+ */
+router.use('/dashboard', dashboardRoutes);
 
 /**
  * User personal resources shortcut (/api/v1/users/me/notes)

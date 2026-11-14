@@ -4,3 +4,4 @@ export * from './subjectService.js';
 export * from './topicService.js';
 export * from './noteService.js';
 export * from './categoryService.js';
+export * from './dashboardService.js';

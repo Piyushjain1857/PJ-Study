@@ -5,7 +5,6 @@ import AppLayout from '../layouts/AppLayout.jsx';
 import HomePage from '../pages/HomePage.jsx';
 import NotFoundPage from '../pages/NotFoundPage.jsx';
 import DesignSystemPage from '../pages/DesignSystemPage.jsx';
-import DashboardShellPage from '../pages/DashboardShellPage.jsx';
 
 // Auth Pages & Route Guards
 import LoginPage from '../pages/auth/LoginPage.jsx';
@@ -16,6 +15,7 @@ import ResetPasswordPage from '../pages/auth/ResetPasswordPage.jsx';
 import ProfilePage from '../pages/auth/ProfilePage.jsx';
 import AdminDashboardPage from '../pages/admin/AdminDashboardPage.jsx';
 import UnauthorizedPage from '../pages/UnauthorizedPage.jsx';
+import StudentDashboardPage from '../pages/dashboard/StudentDashboardPage.jsx';
 
 // Notes Pages
 import NotesExplorePage from '../pages/notes/NotesExplorePage.jsx';
@@ -74,6 +74,14 @@ export const router = createBrowserRouter(
           element: (
             <ProtectedRoute>
               <MyNotesPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'dashboard',
+          element: (
+            <ProtectedRoute>
+              <StudentDashboardPage />
             </ProtectedRoute>
           )
         },
@@ -145,15 +153,19 @@ export const router = createBrowserRouter(
     },
     {
       path: '/app',
-      element: <AppLayout />,
+      element: (
+        <ProtectedRoute>
+          <AppLayout />
+        </ProtectedRoute>
+      ),
       children: [
         {
           index: true,
-          element: <DashboardShellPage />
+          element: <StudentDashboardPage />
         },
         {
           path: '*',
-          element: <DashboardShellPage />
+          element: <StudentDashboardPage />
         }
       ]
     }

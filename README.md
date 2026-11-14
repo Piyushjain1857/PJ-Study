@@ -259,13 +259,46 @@ The database architecture is normalized, strongly typed, and engineered for high
 | **`Category`**               | `categories`                | Academic note format / genre               | Unique slug & name (e.g., Lecture Notes, Exam Solutions, Lab Manuals).                                                                                                                                                                                       |
 | **`Note`**                   | `notes`                     | Study material manuscript & document       | Supports written text content or uploaded files. Fields: `title`, `slug`, `content`, `fileName`, `storageKey`, `fileSize`, `mimeType`, `semester`, `academicYear`, `rejectionReason`. Status: `DRAFT`, `PENDING_REVIEW`, `APPROVED`, `REJECTED`, `ARCHIVED`. |
 | **`Bookmark`**               | `bookmarks`                 | Saved notes in student library             | Composite unique constraint `[userId, noteId]`. Cascades on user or note deletion.                                                                                                                                                                           |
+| **`StudyCollection`**        | `study_collections`         | Curated student binders / folders          | Composite unique `[userId, name]`. Cascades on user deletion. Notes are preserved independently.                                                                                                                                                             |
+| **`StudyCollectionItem`**    | `study_collection_items`    | Many-to-many collection note membership    | Composite unique `[collectionId, noteId]`. Deleting a collection never deletes underlying notes.                                                                                                                                                             |
+| **`DownloadHistory`**        | `download_history`          | Recorded note download events              | Indexed on `[userId, downloadedAt]`. Powers student activity analytics and offline access logs.                                                                                                                                                              |
 | **`Review`**                 | `reviews`                   | Peer ratings and written critiques         | Rating bounded 1 to 5. Composite unique `[userId, noteId]`. Authors prohibited from reviewing own notes.                                                                                                                                                     |
 | **`Report`**                 | `reports`                   | Inappropriate content moderation flags     | Status: `PENDING`, `REVIEWED`, `RESOLVED`, `DISMISSED`. References reporter and reviewing moderator.                                                                                                                                                         |
 | **`AuditLog`**               | `audit_logs`                | Administrative and moderation trail        | Retains action and JSON metadata. `SET NULL` on actor deletion to preserve audit history.                                                                                                                                                                    |
 
 ---
 
-## 8. Directory Structure
+## 8. Student Dashboard & Personalized Learning Analytics
+
+PJ Study features a production-grade, personalized Student Dashboard mounted at `/dashboard`:
+
+### A. Key Capabilities
+
+1. **Personalized Welcome:** Time-of-day greeting (morning, afternoon, evening) using client local time, authenticated student display name, role badge, and current formatted date.
+2. **Authoritative Statistics:** Four persistent metric cards displaying real database counts:
+   - **Saved Notes:** Total bookmarked notes from `Bookmark` model.
+   - **My Collections:** Number of study binders owned by student from `StudyCollection` model.
+   - **Downloads:** Real recorded download events from `DownloadHistory` model with unique document count.
+   - **My Uploads:** Count of student-authored study materials from `Note` model.
+3. **Interactive Activity Analytics & SVG Chart:**
+   - Server-side aggregation over date ranges (`7d`, `30d`, `90d`) with chronological zero-filled daily buckets.
+   - Multi-metric view switcher: All Events, Downloads, Saved Notes, Uploads.
+   - Pure React + SVG responsive chart (`0 0 700 240`) with interactive hover tooltips, smooth area gradients, and accessible legends.
+4. **Recent Study Resources:** Dual-tab workspace displaying recently bookmarked notes and student's recent uploads with status badges and quick links.
+5. **Download History & Offline Access:** Chronological table of downloaded materials with file size formatting, timestamps, and direct document access.
+6. **Collections & Recommendations:** Quick access to custom study binders and popular approved peer study notes.
+
+### B. Dashboard API Endpoints (`/api/v1/dashboard`)
+
+| Method | Endpoint                      | Auth Required | Description                                                                        |
+| :----- | :---------------------------- | :------------ | :--------------------------------------------------------------------------------- |
+| `GET`  | `/api/v1/dashboard/overview`  | Authenticated | Authoritative counts, recent bookmarks, uploads, collections, downloads, and notes |
+| `GET`  | `/api/v1/dashboard/analytics` | Authenticated | Daily activity timeline & totals for requested range (`?range=7d\|30d\|90d`)       |
+| `GET`  | `/api/v1/dashboard/downloads` | Authenticated | Paginated personal download history with file metadata                             |
+
+---
+
+## 9. Directory Structure
 
 ```text
 PJ Study/
@@ -340,6 +373,7 @@ PJ Study/
 │   │   ├── pages/
 │   │   │   ├── admin/                          # AdminDashboardPage (Users, Staff, Audit Logs, Matrix)
 │   │   │   ├── auth/                           # LoginPage, RegisterPage, VerifyEmailPage, ForgotPasswordPage, ResetPasswordPage, ProfilePage
+│   │   │   ├── dashboard/                      # StudentDashboardPage (Personalized Learning Analytics)
 │   │   │   ├── notes/                          # NotesExplorePage, NoteDetailsPage, CreateNotePage, EditNotePage, MyNotesPage
 │   │   │   ├── HomePage.jsx                    # Editorial academic landing page
 │   │   │   ├── DesignSystemPage.jsx            # Interactive design system catalog
@@ -352,6 +386,7 @@ PJ Study/
 │   │   │   ├── authService.js                  # Frontend auth API methods
 │   │   │   ├── categoryService.js              # Academic category API client
 │   │   │   ├── courseService.js                # Course API client
+│   │   │   ├── dashboardService.js             # Student analytics & overview API client
 │   │   │   ├── subjectService.js               # Subject API client
 │   │   │   ├── topicService.js                 # Topic API client
 │   │   │   └── noteService.js                  # Notes, discovery, reviews, bookmarks, downloads, moderation client
@@ -371,13 +406,13 @@ PJ Study/
 
 From the repository root:
 
-| Command                   | Action                                                                   |
-| :------------------------ | :----------------------------------------------------------------------- |
-| `npm run dev`             | Runs backend and frontend development servers concurrently               |
-| `npm test`                | Runs all backend automated unit, invariant, and API tests (**99 tests**) |
-| `npm run check:backend`   | Validates backend configuration and environment variables                |
-| `npm run lint`            | Runs ESLint on frontend JavaScript and JSX                               |
-| `npm run format:check`    | Verifies Prettier code style across all files                            |
-| `npm run format`          | Auto-formats code using Prettier                                         |
-| `npm run build:frontend`  | Compiles production frontend bundle with Vite                            |
-| `npm run prisma:generate` | Generates Prisma Client based on `schema.prisma`                         |
+| Command                   | Action                                                                    |
+| :------------------------ | :------------------------------------------------------------------------ |
+| `npm run dev`             | Runs backend and frontend development servers concurrently                |
+| `npm test`                | Runs all backend automated unit, invariant, and API tests (**106 tests**) |
+| `npm run check:backend`   | Validates backend configuration and environment variables                 |
+| `npm run lint`            | Runs ESLint on frontend JavaScript and JSX                                |
+| `npm run format:check`    | Verifies Prettier code style across all files                             |
+| `npm run format`          | Auto-formats code using Prettier                                          |
+| `npm run build:frontend`  | Compiles production frontend bundle with Vite                             |
+| `npm run prisma:generate` | Generates Prisma Client based on `schema.prisma`                          |
