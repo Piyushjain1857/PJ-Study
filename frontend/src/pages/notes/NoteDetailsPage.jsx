@@ -8,7 +8,9 @@ import Modal from '../../components/common/Modal.jsx';
 import NoteStatusBadge from '../../components/notes/NoteStatusBadge.jsx';
 import Container from '../../components/layout/Container.jsx';
 import Skeleton from '../../components/common/Skeleton.jsx';
+import NotePreview from '../../components/notes/NotePreview.jsx';
 import './NoteDetailsPage.css';
+import '../../styles/notes-discovery.css';
 import '../../styles/notes.css';
 
 /**
@@ -29,6 +31,7 @@ export function NoteDetailsPage() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [isReviewing, setIsReviewing] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
 
   useEffect(() => {
     async function loadNote() {
@@ -159,8 +162,8 @@ export function NoteDetailsPage() {
             ← Back
           </button>
           <span className="note-details__crumb-sep">/</span>
-          <Link to="/notes" className="note-details__crumb-link">
-            Notes Library
+          <Link to="/notes/explore" className="note-details__crumb-link">
+            Explore Notes
           </Link>
           {note.subject && (
             <>
@@ -273,21 +276,34 @@ export function NoteDetailsPage() {
           </aside>
         )}
 
-        {/* Attached Document File Card */}
+        {/* Attached Document File Card & Inline Document Viewer */}
         {note.fileName && (
-          <section className="note-details__file-card">
-            <div className="note-details__file-icon" aria-hidden="true">
-              📑
+          <section className="note-details__file-section">
+            <div className="note-details__file-card">
+              <div className="note-details__file-icon" aria-hidden="true">
+                📑
+              </div>
+              <div className="note-details__file-info">
+                <span className="note-details__file-name">{note.fileName}</span>
+                <span className="note-details__file-meta">
+                  {note.mimeType} {note.fileSize && `• ${formatBytes(Number(note.fileSize))}`}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <Button variant="outline" onClick={() => setShowPreview((prev) => !prev)}>
+                  {showPreview ? 'Hide Document Preview' : '👁 Preview Document'}
+                </Button>
+                <Button variant="primary" onClick={handleDownload} disabled={isDownloading}>
+                  {isDownloading ? 'Downloading...' : '📥 Download File'}
+                </Button>
+              </div>
             </div>
-            <div className="note-details__file-info">
-              <span className="note-details__file-name">{note.fileName}</span>
-              <span className="note-details__file-meta">
-                {note.mimeType} {note.fileSize && `• ${formatBytes(Number(note.fileSize))}`}
-              </span>
-            </div>
-            <Button variant="primary" onClick={handleDownload} disabled={isDownloading}>
-              {isDownloading ? 'Downloading...' : '📥 Download File'}
-            </Button>
+
+            {showPreview && (
+              <div style={{ marginTop: '16px' }}>
+                <NotePreview note={note} />
+              </div>
+            )}
           </section>
         )}
 

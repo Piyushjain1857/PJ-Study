@@ -28,6 +28,8 @@ export default [
         Blob: 'readonly',
         File: 'readonly',
         Intl: 'readonly',
+        AbortController: 'readonly',
+        URLSearchParams: 'readonly',
         import: 'readonly'
       }
     },

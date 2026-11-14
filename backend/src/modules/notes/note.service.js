@@ -597,43 +597,122 @@ export class NoteService {
    *   sortBy?: string,
    *   sortOrder?: string
    * }} query
-   * @returns {Promise<any>}
+   * Retrieves public exploration notes with search, academic filters, and deterministic sorting.
+   * STRICT INVARIANT: Only status: 'APPROVED' notes are returned.
+   *
+   * @param {{
+   *   page?: number,
+   *   limit?: number,
+   *   search?: string,
+   *   courseId?: string,
+   *   subjectId?: string,
+   *   categoryId?: string,
+   *   topicId?: string,
+   *   semester?: number,
+   *   academicYear?: string,
+   *   sort?: string,
+   *   sortBy?: string,
+   *   order?: string
+   * }} query
+   * @returns {Promise<{ notes: any[], pagination: any, items: any[], meta: any }>}
    */
   async listNotes(query = {}) {
-    const { page, limit, skip } = getPaginationParams(query);
+    const rawLimit = parseInt(query.limit, 10);
+    const limit = Math.min(Math.max(!isNaN(rawLimit) && rawLimit > 0 ? rawLimit : 12, 1), 50);
+
+    const rawPage = parseInt(query.page, 10);
+    const page = Math.max(!isNaN(rawPage) && rawPage > 0 ? rawPage : 1, 1);
+    const skip = (page - 1) * limit;
+
+    // Strict visibility invariant: approved notes only
     const where = { status: 'APPROVED' };
 
-    if (query.subjectId) {
-      where.subjectId = query.subjectId;
+    // Academic filters
+    if (query.courseId && typeof query.courseId === 'string' && query.courseId.trim().length > 0) {
+      where.courseId = query.courseId.trim();
     }
-    if (query.categoryId) {
-      where.categoryId = query.categoryId;
+    if (
+      query.subjectId &&
+      typeof query.subjectId === 'string' &&
+      query.subjectId.trim().length > 0
+    ) {
+      where.subjectId = query.subjectId.trim();
     }
-    if (query.courseId) {
-      where.courseId = query.courseId;
+    if (
+      query.categoryId &&
+      typeof query.categoryId === 'string' &&
+      query.categoryId.trim().length > 0
+    ) {
+      where.categoryId = query.categoryId.trim();
     }
-    if (query.semester) {
-      where.semester = parseInt(query.semester, 10);
+    if (query.topicId && typeof query.topicId === 'string' && query.topicId.trim().length > 0) {
+      where.topicId = query.topicId.trim();
     }
-    if (query.academicYear) {
-      where.academicYear = query.academicYear;
+    if (
+      query.semester !== undefined &&
+      query.semester !== null &&
+      String(query.semester).trim() !== ''
+    ) {
+      const parsedSem = parseInt(query.semester, 10);
+      if (!isNaN(parsedSem) && parsedSem >= 1 && parsedSem <= 12) {
+        where.semester = parsedSem;
+      }
+    }
+    if (
+      query.academicYear &&
+      typeof query.academicYear === 'string' &&
+      query.academicYear.trim().length > 0
+    ) {
+      where.academicYear = query.academicYear.trim();
     }
 
-    if (query.search && query.search.trim().length > 0) {
-      const search = query.search.trim();
-      where.OR = [{ title: { contains: search } }, { description: { contains: search } }];
+    // Keyword search with length constraint (max 100 characters)
+    if (query.search && typeof query.search === 'string') {
+      const trimmedSearch = query.search.trim().slice(0, 100);
+      if (trimmedSearch.length > 0) {
+        where.OR = [
+          { title: { contains: trimmedSearch } },
+          { description: { contains: trimmedSearch } },
+          { subject: { name: { contains: trimmedSearch } } },
+          { course: { name: { contains: trimmedSearch } } }
+        ];
+      }
     }
 
-    // Dynamic sorting
-    const orderBy = {};
-    if (query.sortBy === 'mostViewed') {
-      orderBy.viewCount = 'desc';
-    } else if (query.sortBy === 'mostDownloaded') {
-      orderBy.downloadCount = 'desc';
-    } else if (query.sortBy === 'oldest') {
-      orderBy.createdAt = 'asc';
-    } else {
-      orderBy.publishedAt = 'desc';
+    // Deterministic sorting with allowlist
+    const sortKey = (query.sort || query.sortBy || 'newest').toLowerCase();
+    const orderDirection = (query.order || '').toLowerCase() === 'asc' ? 'asc' : 'desc';
+
+    let orderBy;
+    switch (sortKey) {
+      case 'oldest':
+        orderBy = [{ publishedAt: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }];
+        break;
+      case 'title_asc':
+      case 'titleasc':
+      case 'title-a-z':
+        orderBy = [{ title: 'asc' }, { id: 'asc' }];
+        break;
+      case 'title_desc':
+      case 'titledesc':
+      case 'title-z-a':
+        orderBy = [{ title: 'desc' }, { id: 'desc' }];
+        break;
+      case 'title':
+        orderBy = [{ title: orderDirection }, { id: orderDirection }];
+        break;
+      case 'downloads':
+      case 'mostdownloaded':
+        orderBy = [{ downloadCount: 'desc' }, { publishedAt: 'desc' }, { id: 'desc' }];
+        break;
+      case 'views':
+      case 'mostviewed':
+        orderBy = [{ viewCount: 'desc' }, { publishedAt: 'desc' }, { id: 'desc' }];
+        break;
+      case 'newest':
+      default:
+        orderBy = [{ publishedAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }];
+        break;
     }
 
     const [items, total] = await Promise.all([
@@ -642,7 +721,80 @@ export class NoteService {
     ]);
 
     const sanitized = items.map(sanitizeNote);
-    return buildPaginatedResponse(sanitized, total, page, limit);
+    const totalPages = Math.ceil(total / limit) || (total === 0 ? 0 : 1);
+
+    return {
+      notes: sanitized,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages
+      },
+      items: sanitized,
+      meta: {
+        page,
+        limit,
+        totalItems: total,
+        totalPages
+      }
+    };
+  }
+
+  /**
+   * Retrieves academic filter taxonomies for the discovery experience.
+   *
+   * @returns {Promise<{
+   *   courses: any[],
+   *   categories: any[],
+   *   subjects: any[],
+   *   semesters: number[],
+   *   totalApprovedNotes: number
+   * }>}
+   */
+  async getExploreFilters() {
+    const [courses, categories, subjects, totalApprovedNotes] = await Promise.all([
+      courseRepository.findMany({
+        take: 100,
+        where: { isActive: true }
+      }),
+      categoryRepository.findAll({ isActive: true }),
+      subjectRepository.findMany({
+        take: 500,
+        where: { isActive: true }
+      }),
+      this.repo.count({ status: 'APPROVED' })
+    ]);
+
+    // Unique active semesters from subjects
+    const semesterSet = new Set(subjects.map((s) => s.semester).filter(Boolean));
+    const semesters = Array.from(semesterSet).sort((a, b) => a - b);
+    if (semesters.length === 0) {
+      semesters.push(1, 2, 3, 4, 5, 6, 7, 8);
+    }
+
+    return {
+      courses: courses.map((c) => ({
+        id: c.id,
+        name: c.name,
+        slug: c.slug
+      })),
+      categories: categories.map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        slug: cat.slug,
+        noteCount: cat._count?.notes || 0
+      })),
+      subjects: subjects.map((s) => ({
+        id: s.id,
+        name: s.name,
+        slug: s.slug,
+        courseId: s.courseId,
+        semester: s.semester
+      })),
+      semesters,
+      totalApprovedNotes
+    };
   }
 
   /**

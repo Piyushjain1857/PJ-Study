@@ -1,9 +1,32 @@
-import apiClient from './api.js';
+import apiClient, { API_BASE_URL } from './api.js';
 
 /**
  * Service for fetching notes, managing scholar manuscripts, file downloads, and moderation.
  */
 export const noteService = {
+  /**
+   * Explores published notes with keyword search, academic filters, sorting, and pagination.
+   *
+   * @param {object} [params]
+   * @param {AbortSignal} [signal]
+   * @returns {Promise<{ notes: any[], pagination: any, items: any[], meta: any }>}
+   */
+  async exploreNotes(params = {}, signal = null) {
+    const response = await apiClient.get('/notes/explore', { params, signal });
+    return response.data?.data;
+  },
+
+  /**
+   * Retrieves academic filter taxonomies (courses, categories, subjects, semesters).
+   *
+   * @param {AbortSignal} [signal]
+   * @returns {Promise<{ courses: any[], categories: any[], subjects: any[], semesters: number[], totalApprovedNotes: number }>}
+   */
+  async getExploreFilters(signal = null) {
+    const response = await apiClient.get('/notes/explore/filters', { signal });
+    return response.data?.data;
+  },
+
   /**
    * Fetches published notes for the public library with search, pagination, and academic filters.
    *
@@ -18,11 +41,32 @@ export const noteService = {
    *   search?: string,
    *   sortBy?: string
    * }} [params]
-   * @returns {Promise<{ items: any[], meta: any }>}
+   * @param {AbortSignal} [signal]
+   * @returns {Promise<{ notes: any[], pagination: any, items: any[], meta: any }>}
    */
-  async listNotes(params = {}) {
-    const response = await apiClient.get('/notes', { params });
+  async listNotes(params = {}, signal = null) {
+    const response = await apiClient.get('/notes', { params, signal });
     return response.data?.data;
+  },
+
+  /**
+   * Generates public URL for inline preview of an approved note document.
+   *
+   * @param {string} id
+   * @returns {string}
+   */
+  getFilePreviewUrl(id) {
+    return `${API_BASE_URL}/notes/${encodeURIComponent(id)}/file?inline=true`;
+  },
+
+  /**
+   * Generates direct download URL for an approved note document.
+   *
+   * @param {string} id
+   * @returns {string}
+   */
+  getFileDownloadUrl(id) {
+    return `${API_BASE_URL}/notes/${encodeURIComponent(id)}/download`;
   },
 
   /**

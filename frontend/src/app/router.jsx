@@ -18,7 +18,7 @@ import AdminDashboardPage from '../pages/admin/AdminDashboardPage.jsx';
 import UnauthorizedPage from '../pages/UnauthorizedPage.jsx';
 
 // Notes Pages
-import NotesLibraryPage from '../pages/notes/NotesLibraryPage.jsx';
+import NotesExplorePage from '../pages/notes/NotesExplorePage.jsx';
 import NoteDetailsPage from '../pages/notes/NoteDetailsPage.jsx';
 import CreateNotePage from '../pages/notes/CreateNotePage.jsx';
 import EditNotePage from '../pages/notes/EditNotePage.jsx';
@@ -43,7 +43,11 @@ export const router = createBrowserRouter(
         },
         {
           path: 'notes',
-          element: <NotesLibraryPage />
+          element: <NotesExplorePage />
+        },
+        {
+          path: 'notes/explore',
+          element: <NotesExplorePage />
         },
         {
           path: 'notes/new',

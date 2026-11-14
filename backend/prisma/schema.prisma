@@ -185,6 +185,8 @@ model Note {
   reports       Report[]
 
   @@index([status, publishedAt])
+  @@index([status, downloadCount])
+  @@index([status, viewCount])
   @@index([courseId, subjectId])
   @@index([subjectId, semester])
   @@index([categoryId])

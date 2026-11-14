@@ -319,6 +319,7 @@ PJ Study/
 │   │   └── server.js                           # Server listener & graceful shutdown
 │   └── tests/
 │       ├── auth.test.js                        # Auth unit, invariant, security & API tests (22 tests)
+│       ├── discovery.test.js                   # Advanced notes discovery, search, academic filters & download tests (14 tests)
 │       ├── health.test.js                      # API & 404 integration tests (5 tests)
 │       ├── notes.test.js                       # Notes lifecycle, file validation, ownership & moderation tests (27 tests)
 │       ├── rbac.test.js                        # RBAC permissions, hierarchy, session revocation & audit tests (24 tests)
@@ -330,7 +331,7 @@ PJ Study/
 │   │   │   ├── auth/                           # RequirePermission, RequireRole conditional wrappers
 │   │   │   ├── common/                         # Button, Input, Badge, Avatar, Dropdown, Modal, ProtectedRoute, GuestRoute
 │   │   │   ├── layout/                         # Navbar (dynamic role navigation), Footer, Container, PageHeader
-│   │   │   └── notes/                          # NoteCard, NoteForm, NoteFilters, NoteStatusBadge, FileUpload, NotesGrid, NotesEmptyState
+│   │   │   └── notes/                          # NoteCard, NoteListCard, NotesSearchBar, NotesFilterPanel, NotesSortControl, NotesViewToggle, NotesResultsGrid, NotesResultsList, NotesPagination, NotePreview, FileUpload, NoteForm
 │   │   ├── context/
 │   │   │   └── AuthContext.jsx                 # Global auth state, RBAC capability helpers & silent refresh
 │   │   ├── layouts/
@@ -339,7 +340,7 @@ PJ Study/
 │   │   ├── pages/
 │   │   │   ├── admin/                          # AdminDashboardPage (Users, Staff, Audit Logs, Matrix)
 │   │   │   ├── auth/                           # LoginPage, RegisterPage, VerifyEmailPage, ForgotPasswordPage, ResetPasswordPage, ProfilePage
-│   │   │   ├── notes/                          # NotesLibraryPage, NoteDetailsPage, CreateNotePage, EditNotePage, MyNotesPage
+│   │   │   ├── notes/                          # NotesExplorePage, NoteDetailsPage, CreateNotePage, EditNotePage, MyNotesPage
 │   │   │   ├── HomePage.jsx                    # Editorial academic landing page
 │   │   │   ├── DesignSystemPage.jsx            # Interactive design system catalog
 │   │   │   ├── DashboardShellPage.jsx          # Authenticated workspace shell
@@ -353,10 +354,10 @@ PJ Study/
 │   │   │   ├── courseService.js                # Course API client
 │   │   │   ├── subjectService.js               # Subject API client
 │   │   │   ├── topicService.js                 # Topic API client
-│   │   │   └── noteService.js                  # Notes, reviews, bookmarks, downloads, moderation client
+│   │   │   └── noteService.js                  # Notes, discovery, reviews, bookmarks, downloads, moderation client
 │   │   ├── utils/
 │   │   │   └── permissions.js                  # Client-side permission constants & role hierarchies
-│   │   └── styles/                             # variables, reset, typography, global, utilities, components, notes.css
+│   │   └── styles/                             # variables, reset, typography, global, utilities, components, notes-discovery.css, notes.css
 │   ├── package.json
 │   └── vite.config.js
 │
@@ -373,7 +374,7 @@ From the repository root:
 | Command                   | Action                                                                   |
 | :------------------------ | :----------------------------------------------------------------------- |
 | `npm run dev`             | Runs backend and frontend development servers concurrently               |
-| `npm test`                | Runs all backend automated unit, invariant, and API tests (**85 tests**) |
+| `npm test`                | Runs all backend automated unit, invariant, and API tests (**99 tests**) |
 | `npm run check:backend`   | Validates backend configuration and environment variables                |
 | `npm run lint`            | Runs ESLint on frontend JavaScript and JSX                               |
 | `npm run format:check`    | Verifies Prettier code style across all files                            |

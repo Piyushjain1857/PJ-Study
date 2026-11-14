@@ -11,8 +11,10 @@ const router = Router();
 // LISTING & QUEUES (order matters so /me and /moderation don't match /:id)
 // =============================================================================
 
-// Public note reading (approved notes only)
+// Public note reading & discovery (approved notes only)
 router.get('/', noteController.listNotes);
+router.get('/explore', noteController.exploreNotes);
+router.get('/explore/filters', noteController.getExploreFilters);
 
 // Current scholar's personal notes dashboard
 router.get('/me', requireAuth, noteController.getMyNotes);

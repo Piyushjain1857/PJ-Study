@@ -7,13 +7,21 @@ import './NoteCard.css';
 /**
  * Editorial note card displaying curriculum metadata, author details, and file stats.
  */
-export function NoteCard({ note, showStatus = false, actions = null, onAction = null }) {
+export function NoteCard({
+  note,
+  showStatus = false,
+  actions = null,
+  onAction = null,
+  showActions = false,
+  onDownload = null
+}) {
   const {
     id,
     title,
     description,
     content,
     subject,
+    course,
     category,
     semester,
     uploadedBy,
@@ -21,6 +29,7 @@ export function NoteCard({ note, showStatus = false, actions = null, onAction = 
     createdAt,
     status,
     fileName,
+    fileSize,
     viewCount = 0,
     downloadCount = 0,
     rejectionReason
@@ -42,18 +51,36 @@ export function NoteCard({ note, showStatus = false, actions = null, onAction = 
     fileBadge = 'TEXT';
   }
 
+  function formatBytes(bytes) {
+    if (!bytes) return '';
+    const num = Number(bytes);
+    if (isNaN(num) || num <= 0) return '';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(num) / Math.log(k));
+    return `${parseFloat((num / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+  }
+
+  const formattedSize = formatBytes(fileSize);
+
   return (
     <article className="note-card">
       <div className="note-card__header">
         <div className="note-card__tags">
           {category && <span className="note-card__category">{category.name}</span>}
           {subject && <span className="note-card__subject">{subject.name}</span>}
+          {course && <span className="note-card__course">{course.name}</span>}
           {semester && <span className="note-card__semester">Sem {semester}</span>}
         </div>
 
         <div className="note-card__header-right">
           {showStatus && <NoteStatusBadge status={status} />}
-          {fileBadge && <span className="note-card__badge">{fileBadge}</span>}
+          {fileBadge && (
+            <span className="note-card__badge" title={formattedSize || fileBadge}>
+              {fileBadge}
+              {formattedSize && ` • ${formattedSize}`}
+            </span>
+          )}
         </div>
       </div>
 
@@ -108,6 +135,31 @@ export function NoteCard({ note, showStatus = false, actions = null, onAction = 
       {actions && (
         <div className="note-card__actions">
           {typeof actions === 'function' ? actions(note, onAction) : actions}
+        </div>
+      )}
+
+      {showActions && !actions && (
+        <div className="note-card__discovery-actions">
+          <Link to={`/notes/${id}`} className="btn btn--outline btn--sm">
+            View Details
+          </Link>
+          {fileName && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                if (onDownload) {
+                  onDownload(note);
+                } else {
+                  window.open(`/api/v1/notes/${id}/download`, '_blank');
+                }
+              }}
+              className="btn btn--primary btn--sm"
+              aria-label={`Download ${fileName}`}
+            >
+              📥 Download
+            </button>
+          )}
         </div>
       )}
     </article>

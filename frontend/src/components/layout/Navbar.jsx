@@ -66,12 +66,12 @@ export function Navbar() {
             Home
           </NavLink>
           <NavLink
-            to="/notes"
+            to="/notes/explore"
             className={({ isActive }) =>
               `navbar-nav__link ${isActive ? 'navbar-nav__link--active' : ''}`
             }
           >
-            Notes Library
+            Explore Notes
           </NavLink>
           {isAuthenticated && (
             <NavLink
@@ -209,13 +209,13 @@ export function Navbar() {
                 Home
               </NavLink>
               <NavLink
-                to="/notes"
+                to="/notes/explore"
                 className={({ isActive }) =>
                   `navbar-mobile-link ${isActive ? 'navbar-mobile-link--active' : ''}`
                 }
                 onClick={closeMobileMenu}
               >
-                Notes Library
+                Explore Notes
               </NavLink>
               {isAuthenticated && (
                 <>

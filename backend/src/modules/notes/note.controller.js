@@ -24,6 +24,30 @@ export class NoteController {
   };
 
   /**
+   * Explores approved notes with search, academic filters, sorting, and pagination.
+   */
+  exploreNotes = async (req, res, next) => {
+    try {
+      const notes = await this.service.listNotes(req.query);
+      return sendSuccess(res, notes);
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  /**
+   * Retrieves available academic filters for notes discovery.
+   */
+  getExploreFilters = async (req, res, next) => {
+    try {
+      const filters = await this.service.getExploreFilters();
+      return sendSuccess(res, filters);
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  /**
    * Retrieves single note by ID with draft isolation check.
    */
   getNoteById = async (req, res, next) => {
