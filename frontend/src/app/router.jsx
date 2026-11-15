@@ -31,16 +31,30 @@ import { ROLES } from '../utils/permissions.js';
 
 /**
  * Application routing table for PJ Study.
+ * - PublicLayout: Editorial marketing pages, login/registration, public auth verification
+ * - AppLayout: Notion/Linear-grade academic workspace (dashboard, notes discovery, library, recommendations, moderation)
  */
 export const router = createBrowserRouter(
   [
     {
       path: '/',
-      element: <PublicLayout />,
+      element: <AppLayout />,
       children: [
         {
-          index: true,
-          element: <HomePage />
+          path: 'dashboard',
+          element: (
+            <ProtectedRoute>
+              <StudentDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'app',
+          element: (
+            <ProtectedRoute>
+              <StudentDashboardPage />
+            </ProtectedRoute>
+          )
         },
         {
           path: 'notes',
@@ -87,16 +101,34 @@ export const router = createBrowserRouter(
           )
         },
         {
-          path: 'dashboard',
+          path: 'profile',
           element: (
             <ProtectedRoute>
-              <StudentDashboardPage />
+              <ProfilePage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
             </ProtectedRoute>
           )
         },
         {
           path: 'design-system',
           element: <DesignSystemPage />
+        }
+      ]
+    },
+    {
+      path: '/',
+      element: <PublicLayout />,
+      children: [
+        {
+          index: true,
+          element: <HomePage />
         },
         {
           path: 'login',
@@ -135,46 +167,12 @@ export const router = createBrowserRouter(
           )
         },
         {
-          path: 'profile',
-          element: (
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          )
-        },
-        {
-          path: 'admin',
-          element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
-              <AdminDashboardPage />
-            </ProtectedRoute>
-          )
-        },
-        {
           path: 'unauthorized',
           element: <UnauthorizedPage />
         },
         {
           path: '*',
           element: <NotFoundPage />
-        }
-      ]
-    },
-    {
-      path: '/app',
-      element: (
-        <ProtectedRoute>
-          <AppLayout />
-        </ProtectedRoute>
-      ),
-      children: [
-        {
-          index: true,
-          element: <StudentDashboardPage />
-        },
-        {
-          path: '*',
-          element: <StudentDashboardPage />
         }
       ]
     }

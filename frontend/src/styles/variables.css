@@ -1,44 +1,71 @@
 /**
  * PJ Study Design Tokens
- * Academic & Editorial Palette: Deep Library Green, Warm Cream, Antique Gold Accent
+ * Academic Editorial Palette: Deep Library Forest, Warm Sand/Cream Surface, Antique Gold Accent
+ * Inspired by Notion (clean whitespace), Linear (refined micro-spacing), Vercel (precision minimalism)
  */
 
 :root {
-  /* Color Palette */
-  --color-background: #f9f8f6;
+  /* Color Palette - Neutral Surfaces */
+  --color-background: #fbfaf8;
   --color-surface: #ffffff;
-  --color-surface-hover: #f2efe9;
-  --color-surface-subtle: #f4f2ed;
+  --color-surface-hover: #f5f3ee;
+  --color-surface-subtle: #f8f6f1;
+  --color-surface-elevated: #ffffff;
+  --color-surface-dark: #191b18;
+
+  /* Color Palette - Text & Ink */
   --color-text-primary: #191b18;
-  --color-text-secondary: #74756f;
-  --color-text-tertiary: #a2a29c;
+  --color-text-secondary: #5e605a;
+  --color-text-tertiary: #8f908a;
+  --color-text-muted: #b0b1ab;
   --color-text-inverse: #ffffff;
 
-  --color-primary: #285943;
-  --color-primary-hover: #214936;
-  --color-primary-subtle: #ebf2ee;
-  --color-primary-light: #d7e5dd;
+  /* Color Palette - Brand Primary (Deep Library Emerald) */
+  --color-primary: #1e4a38;
+  --color-primary-hover: #16392b;
+  --color-primary-active: #0f281e;
+  --color-primary-subtle: #edf4f0;
+  --color-primary-light: #d6e7de;
+  --color-primary-border: #b8d4c5;
 
-  --color-accent: #c58a43;
-  --color-accent-hover: #b07834;
-  --color-accent-subtle: #faf3eb;
+  /* Color Palette - Antique Gold Accent */
+  --color-accent: #b87a28;
+  --color-accent-hover: #9e671e;
+  --color-accent-subtle: #fdf6ec;
+  --color-accent-light: #f7e7cf;
+  --color-accent-border: #ebd0a8;
 
+  /* Color Palette - Borders & Hairlines */
   --color-border: #e6e3dc;
-  --color-border-hover: #d0ccc2;
+  --color-border-subtle: #eeece6;
+  --color-border-hover: #d2cec3;
+  --color-border-strong: #bbb6a9;
 
-  --color-success: #347a55;
-  --color-success-subtle: #ecf5f0;
-  --color-warning: #b7791f;
-  --color-warning-subtle: #fdf7ec;
-  --color-danger: #b54747;
-  --color-danger-subtle: #fdf0f0;
-  --color-verified: #2d68c4;
-  --color-verified-subtle: #eef4fd;
+  /* Semantic Feedback Colors */
+  --color-success: #28734a;
+  --color-success-hover: #1f5b3a;
+  --color-success-subtle: #edf7f1;
+  --color-success-border: #bce3cc;
 
-  /* Typography */
+  --color-warning: #b26a15;
+  --color-warning-hover: #92550e;
+  --color-warning-subtle: #fdf5e9;
+  --color-warning-border: #f5dcaf;
+
+  --color-danger: #b93838;
+  --color-danger-hover: #982d2d;
+  --color-danger-subtle: #fdf1f1;
+  --color-danger-border: #f8c3c3;
+
+  --color-verified: #2762b8;
+  --color-verified-subtle: #edf4fd;
+  --color-verified-border: #bad5f9;
+
+  /* Typography Families */
   --font-heading: 'Instrument Serif', Georgia, Cambria, serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, Monaco, Consolas, monospace;
+  --font-body:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Font Weights */
   --font-weight-regular: 400;
@@ -47,27 +74,32 @@
   --font-weight-bold: 700;
 
   /* Fluid Font Sizes */
+  --font-size-2xs: 0.6875rem; /* 11px */
   --font-size-xs: 0.75rem; /* 12px */
   --font-size-sm: 0.875rem; /* 14px */
   --font-size-base: 1rem; /* 16px */
   --font-size-lg: 1.125rem; /* 18px */
   --font-size-xl: 1.25rem; /* 20px */
-  --font-size-2xl: clamp(1.4rem, 1.2rem + 1vw, 1.75rem);
-  --font-size-3xl: clamp(1.75rem, 1.4rem + 1.5vw, 2.35rem);
-  --font-size-4xl: clamp(2.25rem, 1.6rem + 2.5vw, 3.25rem);
-  --font-size-display: clamp(2.75rem, 2rem + 3.5vw, 4.5rem);
+  --font-size-2xl: clamp(1.35rem, 1.2rem + 0.8vw, 1.65rem);
+  --font-size-3xl: clamp(1.75rem, 1.4rem + 1.2vw, 2.25rem);
+  --font-size-4xl: clamp(2.25rem, 1.6rem + 2vw, 3rem);
+  --font-size-display: clamp(2.75rem, 2rem + 3vw, 4.25rem);
 
   /* Line Heights */
   --line-height-none: 1;
   --line-height-tight: 1.15;
   --line-height-snug: 1.35;
-  --line-height-normal: 1.6;
-  --line-height-relaxed: 1.75;
+  --line-height-normal: 1.55;
+  --line-height-relaxed: 1.7;
 
-  /* Spacing Scale */
+  /* Refined Spacing Scale (Linear/Notion consistent) */
+  --space-0-5: 0.125rem; /* 2px */
   --space-1: 0.25rem; /* 4px */
+  --space-1-5: 0.375rem; /* 6px */
   --space-2: 0.5rem; /* 8px */
+  --space-2-5: 0.625rem; /* 10px */
   --space-3: 0.75rem; /* 12px */
+  --space-3-5: 0.875rem; /* 14px */
   --space-4: 1rem; /* 16px */
   --space-5: 1.25rem; /* 20px */
   --space-6: 1.5rem; /* 24px */
@@ -79,29 +111,46 @@
   --space-24: 6rem; /* 96px */
 
   /* Border Radii */
+  --radius-xs: 4px;
   --radius-small: 6px;
+  --radius-sm: 6px;
   --radius-medium: 10px;
-  --radius-large: 16px;
+  --radius-md: 10px;
+  --radius-large: 14px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
   --radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-subtle: 0 2px 8px rgba(25, 27, 24, 0.04);
+  /* Layered Shadow System (Restrained, elegant Vercel & Linear grade) */
+  --shadow-xs: 0 1px 2px rgba(25, 27, 24, 0.04);
+  --shadow-sm: 0 1px 3px rgba(25, 27, 24, 0.05), 0 1px 2px rgba(25, 27, 24, 0.03);
+  --shadow-subtle: 0 2px 6px rgba(25, 27, 24, 0.04);
+  --shadow-md: 0 4px 12px -1px rgba(25, 27, 24, 0.06), 0 2px 4px -1px rgba(25, 27, 24, 0.03);
   --shadow-medium: 0 6px 16px rgba(25, 27, 24, 0.06);
-  --shadow-dropdown: 0 10px 25px rgba(25, 27, 24, 0.08), 0 2px 6px rgba(25, 27, 24, 0.04);
-  --shadow-modal: 0 20px 40px rgba(25, 27, 24, 0.12), 0 4px 12px rgba(25, 27, 24, 0.06);
+  --shadow-lg: 0 12px 28px -4px rgba(25, 27, 24, 0.08), 0 4px 8px -2px rgba(25, 27, 24, 0.03);
+  --shadow-dropdown: 0 10px 24px -2px rgba(25, 27, 24, 0.09), 0 3px 6px -1px rgba(25, 27, 24, 0.04);
+  --shadow-modal: 0 20px 48px -8px rgba(25, 27, 24, 0.14), 0 6px 16px -2px rgba(25, 27, 24, 0.06);
 
-  /* Layout */
-  --container-width: 1280px;
-  --navbar-height: 4.5rem;
-  --sidebar-width: 260px;
+  /* Layout Constants */
+  --container-width: 1240px;
+  --container-wide: 1360px;
+  --navbar-height: 4rem; /* 64px */
+  --sidebar-width: 250px;
+  --sidebar-collapsed-width: 68px;
 
-  /* Transitions (short, subtle) */
-  --transition-fast: 150ms ease;
-  --transition-normal: 250ms ease;
+  /* Micro-Interaction Transitions */
+  --transition-fast: 140ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: 320ms cubic-bezier(0.16, 1, 0.3, 1);
 
   /* Z-index Scale */
+  --z-base: 1;
+  --z-sticky: 40;
+  --z-header: 80;
+  --z-sidebar: 90;
   --z-navbar: 100;
   --z-dropdown: 200;
   --z-modal-backdrop: 500;
   --z-modal: 600;
+  --z-toast: 700;
 }

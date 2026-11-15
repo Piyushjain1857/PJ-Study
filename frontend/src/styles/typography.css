@@ -17,7 +17,7 @@ h4,
 .font-heading {
   font-family: var(--font-heading);
   color: var(--color-text-primary);
-  font-weight: 400; /* Instrument Serif has a natural display weight */
+  font-weight: 400; /* Instrument Serif has natural display weight */
   letter-spacing: -0.015em;
   line-height: var(--line-height-tight);
 }
@@ -36,7 +36,7 @@ h1,
 .heading-page {
   font-size: var(--font-size-4xl);
   line-height: var(--line-height-tight);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 /* Section Heading (h2) */
@@ -44,7 +44,7 @@ h2,
 .heading-section {
   font-size: var(--font-size-3xl);
   line-height: var(--line-height-tight);
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
 }
 
 /* Subsection Heading (h3) */
@@ -68,6 +68,8 @@ h4,
 p {
   color: var(--color-text-secondary);
   line-height: var(--line-height-normal);
+  margin-top: 0;
+  margin-bottom: var(--space-3);
 }
 
 .body-large {
@@ -98,18 +100,7 @@ p {
   font-family: var(--font-body);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  letter-spacing: 0.1em;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: var(--color-accent);
-}
-
-/* Metadata & Small Text */
-.text-meta {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  letter-spacing: 0.02em;
-}
-
-.font-mono {
-  font-family: var(--font-mono);
 }

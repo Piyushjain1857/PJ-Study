@@ -1,20 +1,24 @@
 /**
  * AppLayout Component Styles
+ * Notion-grade clean structure, Linear-level micro-interactions, Vercel precision minimalism
  */
 
 .app-shell {
   display: flex;
   min-height: 100dvh;
   background-color: var(--color-background);
+  position: relative;
 }
 
-/* Sidebar */
+/* =============================================================================
+   SIDEBAR
+   ============================================================================= */
 .app-shell__sidebar {
   position: fixed;
   top: 0;
   bottom: 0;
   left: 0;
-  z-index: var(--z-navbar);
+  z-index: var(--z-sidebar);
   width: var(--sidebar-width);
   background-color: var(--color-surface);
   border-right: 1px solid var(--color-border);
@@ -23,15 +27,17 @@
   transition:
     width var(--transition-normal),
     transform var(--transition-normal);
+  user-select: none;
 }
 
 .app-shell--collapsed .app-shell__sidebar {
-  width: 72px;
+  width: var(--sidebar-collapsed-width);
 }
 
 @media (max-width: 860px) {
   .app-shell__sidebar {
     transform: translateX(-100%);
+    box-shadow: none;
   }
 
   .app-shell__sidebar--mobile-open {
@@ -43,17 +49,20 @@
 .app-shell__mobile-backdrop {
   position: fixed;
   inset: 0;
-  background-color: rgba(25, 27, 24, 0.4);
-  z-index: calc(var(--z-navbar) - 1);
+  background-color: rgba(25, 27, 24, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: calc(var(--z-sidebar) - 1);
+  animation: backdrop-fade-in var(--transition-fast);
 }
 
+/* Sidebar Brand Header */
 .app-shell__sidebar-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: var(--navbar-height);
   padding: 0 var(--space-4);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .app-shell__sidebar-brand {
@@ -61,6 +70,7 @@
   align-items: center;
   gap: var(--space-3);
   text-decoration: none;
+  overflow: hidden;
 }
 
 .app-shell__sidebar-logo {
@@ -69,33 +79,39 @@
   justify-content: center;
   width: 2rem;
   height: 2rem;
-  background-color: var(--color-primary);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   color: var(--color-text-inverse);
   font-family: var(--font-heading);
-  font-size: 1rem;
-  border-radius: var(--radius-small);
+  font-size: 1.05rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
   flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(30, 74, 56, 0.25);
 }
 
 .app-shell__sidebar-brand-text {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .app-shell__sidebar-title {
   font-family: var(--font-heading);
   font-size: 1.25rem;
+  font-weight: 400;
   color: var(--color-text-primary);
-  line-height: 1;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .app-shell__sidebar-subtitle {
-  font-size: 0.65rem;
+  font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--color-accent);
   font-weight: var(--font-weight-semibold);
-  margin-top: 2px;
+  margin-top: 1px;
+  white-space: nowrap;
 }
 
 .app-shell__collapse-btn {
@@ -104,17 +120,21 @@
   justify-content: center;
   width: 1.75rem;
   height: 1.75rem;
-  border-radius: var(--radius-small);
+  border-radius: var(--radius-sm);
   color: var(--color-text-secondary);
-  border: 1px solid var(--color-border);
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  cursor: pointer;
   transition:
     background-color var(--transition-fast),
-    color var(--transition-fast);
+    color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .app-shell__collapse-btn:hover {
   background-color: var(--color-surface-hover);
   color: var(--color-text-primary);
+  border-color: var(--color-border);
 }
 
 .app-shell__collapse-btn svg {
@@ -122,20 +142,20 @@
   height: 1rem;
 }
 
-/* Sidebar Navigation */
+/* Sidebar Navigation Items */
 .app-shell__nav {
   display: flex;
   flex-direction: column;
-  padding: var(--space-4) var(--space-2);
+  padding: var(--space-3) var(--space-2);
   flex: 1;
   overflow-y: auto;
-  gap: var(--space-6);
+  gap: var(--space-4);
 }
 
 .app-shell__nav-group {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 2px;
 }
 
 .app-shell__nav-label {
@@ -151,8 +171,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-small);
+  padding: 0.5rem var(--space-3);
+  border-radius: var(--radius-sm);
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
@@ -160,6 +180,7 @@
     background-color var(--transition-fast),
     color var(--transition-fast);
   text-decoration: none;
+  position: relative;
 }
 
 .app-shell__nav-item:hover {
@@ -173,6 +194,21 @@
   font-weight: var(--font-weight-semibold);
 }
 
+.app-shell__nav-item--active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+  background-color: var(--color-primary);
+}
+
+.app-shell__nav-item--highlight {
+  color: var(--color-primary);
+}
+
 .app-shell__nav-icon {
   display: flex;
   align-items: center;
@@ -181,44 +217,62 @@
 }
 
 .app-shell__nav-icon svg {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 .app-shell__nav-text {
   white-space: nowrap;
 }
 
-.ml-auto {
-  margin-left: auto;
-}
-
+/* Sidebar Footer User info */
 .app-shell__sidebar-footer {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-subtle);
   background-color: var(--color-surface-subtle);
+}
+
+.app-shell__user-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  overflow: hidden;
 }
 
 .app-shell__user-info {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .app-shell__user-name {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .app-shell__user-role {
   font-size: 0.6875rem;
   color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Main Content Wrapper */
+.app-shell__guest-container {
+  width: 100%;
+}
+
+/* =============================================================================
+   MAIN CONTENT WRAPPER & TOP BAR
+   ============================================================================= */
 .app-shell__main-wrapper {
   flex: 1;
   display: flex;
@@ -229,7 +283,7 @@
 }
 
 .app-shell--collapsed .app-shell__main-wrapper {
-  margin-left: 72px;
+  margin-left: var(--sidebar-collapsed-width);
 }
 
 @media (max-width: 860px) {
@@ -239,30 +293,34 @@
   }
 }
 
+/* Sticky Top Bar */
 .app-shell__top-bar {
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: var(--z-sticky);
   height: var(--navbar-height);
-  background-color: rgba(249, 248, 246, 0.94);
-  backdrop-filter: blur(8px);
+  background-color: rgba(251, 250, 248, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--space-6);
+  gap: var(--space-4);
 }
 
 .app-shell__mobile-menu-btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
   color: var(--color-text-primary);
-}
-
-.app-shell__mobile-menu-btn svg {
-  width: 1.25rem;
-  height: 1.25rem;
+  cursor: pointer;
 }
 
 @media (min-width: 861px) {
@@ -271,22 +329,116 @@
   }
 }
 
-.app-shell__breadcrumb-current {
-  font-size: var(--font-size-sm);
+/* Breadcrumb Context */
+.app-shell__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.app-shell__breadcrumb-sub {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
   font-weight: var(--font-weight-medium);
+}
+
+.app-shell__breadcrumb-sep {
+  font-size: var(--font-size-xs);
+  color: var(--color-border);
+}
+
+.app-shell__breadcrumb-current {
+  font-family: var(--font-body);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
+  margin: 0;
+}
+
+/* Quick Search Shortcut Pill (Notion / Linear style) */
+.app-shell__search-pill {
+  display: none;
+  align-items: center;
+  gap: var(--space-2);
+  height: 2.125rem; /* 34px */
+  padding: 0 var(--space-3);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  box-shadow: var(--shadow-xs);
+  transition:
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+@media (min-width: 640px) {
+  .app-shell__search-pill {
+    display: inline-flex;
+  }
+}
+
+.app-shell__search-pill:hover {
+  border-color: var(--color-border-hover);
+  color: var(--color-text-secondary);
+  background-color: var(--color-surface-hover);
+}
+
+.app-shell__search-text {
+  font-family: var(--font-body);
+}
+
+.app-shell__search-kbd {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+  background-color: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
 }
 
 .app-shell__avatar-btn {
   display: flex;
   align-items: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
   border-radius: var(--radius-full);
+  transition: transform var(--transition-fast);
 }
 
+.app-shell__avatar-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Responsive Content Container */
 .app-shell__content {
   flex: 1;
-  padding: var(--space-8) var(--space-6);
+  padding: var(--space-6) var(--space-6) var(--space-12) var(--space-6);
   max-width: var(--container-width);
   width: 100%;
   margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.app-shell__content > .container,
+.app-shell__content .layout-container {
+  padding-left: 0;
+  padding-right: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  .app-shell__top-bar {
+    padding: 0 var(--space-4);
+  }
+
+  .app-shell__content {
+    padding: var(--space-4) var(--space-4) var(--space-8) var(--space-4);
+  }
 }

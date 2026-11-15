@@ -1,53 +1,58 @@
-/* Profile Page Styling */
+/**
+ * Profile Page Styling
+ * Notion & Linear-grade account management, security settings & verification status
+ */
+
 .profile-container {
-  max-width: 800px;
-  margin: 40px auto;
-  padding: 0 16px;
+  max-width: 820px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .profile-header-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-large);
-  padding: 32px;
+  padding: var(--space-6) var(--space-8);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  box-shadow: 0 4px 16px rgba(25, 27, 24, 0.03);
-  margin-bottom: 32px;
+  gap: var(--space-6);
+  box-shadow: var(--shadow-xs);
+  margin-bottom: var(--space-6);
 }
 
 .profile-user-info {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: var(--space-4);
 }
 
 .profile-details {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .profile-name {
   font-family: var(--font-heading);
-  font-size: 1.8rem;
-  font-weight: 700;
+  font-size: var(--font-size-2xl);
+  font-weight: 400;
   color: var(--color-text-primary);
   margin: 0;
+  line-height: var(--line-height-tight);
 }
 
 .profile-email {
   color: var(--color-text-secondary);
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
   margin: 0;
 }
 
 .profile-badges {
   display: flex;
-  gap: 8px;
-  margin-top: 6px;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
   align-items: center;
 }
 
@@ -55,26 +60,32 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-large);
-  padding: 32px;
-  box-shadow: 0 4px 16px rgba(25, 27, 24, 0.03);
-  margin-bottom: 32px;
+  padding: var(--space-6) var(--space-8);
+  box-shadow: var(--shadow-xs);
+  margin-bottom: var(--space-6);
 }
 
 .profile-section-title {
   font-family: var(--font-heading);
-  font-size: 1.4rem;
-  font-weight: 700;
-  margin: 0 0 8px 0;
+  font-size: var(--font-size-xl);
+  font-weight: 400;
+  margin: 0 0 var(--space-1) 0;
   color: var(--color-text-primary);
 }
 
 .profile-section-desc {
   color: var(--color-text-secondary);
-  font-size: 0.9rem;
-  margin: 0 0 24px 0;
+  font-size: var(--font-size-sm);
+  margin: 0 0 var(--space-6) 0;
+  line-height: var(--line-height-normal);
 }
 
 @media (max-width: 640px) {
+  .profile-header-card,
+  .profile-section-card {
+    padding: var(--space-5) var(--space-4);
+  }
+
   .profile-header-card {
     flex-direction: column;
     align-items: flex-start;

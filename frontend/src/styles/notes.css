@@ -1,67 +1,69 @@
 /* =============================================================================
    PJ Study Academic Notes System Styling
+   Refined for seamless integration in AppLayout and Notion/Linear aesthetic
    ============================================================================= */
 
 .notes-page {
-  padding: 48px 0 80px;
-  min-height: calc(100vh - 72px);
-  background-color: var(--color-bg-base, #faf8f5);
+  padding: 0 0 var(--space-12) 0;
+  width: 100%;
 }
 
 .notes-page__header {
-  margin-bottom: 36px;
+  margin-bottom: var(--space-6);
 }
 
 .notes-page__eyebrow {
   display: inline-block;
-  font-size: 0.8125rem;
-  font-weight: var(--font-weight-bold, 700);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--color-primary, #1b4d3e);
-  margin-bottom: 8px;
+  color: var(--color-primary);
+  margin-bottom: var(--space-1-5);
 }
 
 .notes-page__title {
-  font-family: var(--font-heading, 'Instrument Serif', Georgia, serif);
-  font-size: 2.75rem;
-  font-weight: var(--font-weight-normal, 400);
-  line-height: 1.15;
-  color: var(--color-text-primary, #2d2c28);
-  margin-bottom: 12px;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-3xl);
+  font-weight: 400;
+  line-height: var(--line-height-tight);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
 }
 
 .notes-page__subtitle {
-  font-size: 1.125rem;
-  line-height: 1.6;
-  color: var(--color-text-secondary, #6b6960);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-secondary);
   max-width: 680px;
+  margin: 0;
 }
 
-/* Pagination bar */
+/* Pagination Bar */
 .notes-pagination {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  margin-top: 48px;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
 }
 
 .notes-pagination__btn {
-  padding: 8px 16px;
-  font-size: 0.875rem;
-  font-weight: var(--font-weight-medium, 500);
-  color: var(--color-text-primary, #2d2c28);
-  background-color: var(--color-bg-surface, #ffffff);
-  border: 1px solid var(--color-border, #e5e3da);
-  border-radius: var(--radius-md, 8px);
+  padding: 6px 14px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--transition-fast);
 }
 
 .notes-pagination__btn:hover:not(:disabled) {
-  border-color: var(--color-primary, #1b4d3e);
-  color: var(--color-primary, #1b4d3e);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background-color: var(--color-primary-subtle);
 }
 
 .notes-pagination__btn:disabled {
@@ -70,51 +72,48 @@
 }
 
 .notes-pagination__info {
-  font-size: 0.875rem;
-  color: var(--color-text-secondary, #6b6960);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
 }
 
-/* Navigation tabs in MyNotes */
+/* Navigation Tabs in MyNotes */
 .notes-tabs {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 32px;
-  border-bottom: 1px solid var(--color-border, #e5e3da);
+  gap: var(--space-1);
+  margin-bottom: var(--space-6);
+  border-bottom: 1px solid var(--color-border);
   overflow-x: auto;
   padding-bottom: 2px;
 }
 
 .notes-tab {
-  padding: 10px 16px;
+  padding: 8px 14px;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
-  font-size: 0.9375rem;
-  font-weight: var(--font-weight-medium, 500);
-  color: var(--color-text-secondary, #6b6960);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--transition-fast);
   white-space: nowrap;
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
 }
 
 .notes-tab:hover {
-  color: var(--color-text-primary, #2d2c28);
+  color: var(--color-text-primary);
+  background-color: var(--color-surface-hover);
 }
 
 .notes-tab--active {
-  color: var(--color-primary, #1b4d3e);
-  border-bottom-color: var(--color-primary, #1b4d3e);
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
 }
 
 @media (max-width: 640px) {
-  .notes-page {
-    padding: 32px 0 60px;
-  }
   .notes-page__title {
-    font-size: 2rem;
-  }
-  .notes-page__subtitle {
-    font-size: 1rem;
+    font-size: var(--font-size-2xl);
   }
 }

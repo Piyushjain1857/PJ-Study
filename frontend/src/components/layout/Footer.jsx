@@ -19,8 +19,8 @@ export function Footer() {
             </Link>
             <p className="footer-tagline">Your Entire Study World, One Place.</p>
             <p className="footer-description">
-              A curated academic repository and AI-assisted study workspace designed for students,
-              researchers, and educators pursuing academic excellence.
+              A curated academic repository and study workspace designed for students, researchers,
+              and educators pursuing academic excellence.
             </p>
           </div>
 
@@ -32,7 +32,7 @@ export function Footer() {
                 <Link to="/">Home</Link>
               </li>
               <li>
-                <a href="/#features">Explore Notes</a>
+                <Link to="/notes/explore">Explore Notes</Link>
               </li>
               <li>
                 <a href="/#how-it-works">How It Works</a>
@@ -41,7 +41,7 @@ export function Footer() {
                 <Link to="/design-system">Design System</Link>
               </li>
               <li>
-                <Link to="/app">Student Dashboard Shell</Link>
+                <Link to="/dashboard">Student Dashboard</Link>
               </li>
             </ul>
           </div>
@@ -60,45 +60,40 @@ export function Footer() {
                 <span>Peer Review System</span>
               </li>
               <li>
-                <span>Author Attribution</span>
+                <span>Open Science Policy</span>
               </li>
             </ul>
           </div>
 
-          {/* Architecture Status */}
+          {/* Institutional / Contact */}
           <div className="footer-col">
-            <h4 className="footer-col__title">Architecture</h4>
-            <ul className="footer-links footer-links--meta">
+            <h4 className="footer-col__title">Legal & Security</h4>
+            <ul className="footer-links">
               <li>
-                <span>API Version 1.0 (REST)</span>
+                <span>Terms of Service</span>
               </li>
               <li>
-                <span>Prisma ORM & MySQL</span>
+                <span>Privacy Protocol</span>
               </li>
               <li>
-                <span>Node.js ES Modules</span>
+                <span>Security Overview</span>
               </li>
               <li>
-                <span>Standard CSS Tokens</span>
+                <span>Cookie Directives</span>
               </li>
             </ul>
           </div>
         </div>
 
+        {/* Bottom Colophon */}
         <div className="footer-bottom">
-          <p className="footer-copyright">
-            &copy; {currentYear} PJ Study. Preserving academic rigor in the digital age.
-          </p>
-          <div className="footer-bottom-meta">
-            <span>Clean Architecture</span>
-            <span className="footer-sep" aria-hidden="true">
-              &bull;
-            </span>
-            <span>Accessibility First</span>
-            <span className="footer-sep" aria-hidden="true">
-              &bull;
-            </span>
-            <span>Zero Tracking Bloat</span>
+          <div className="footer-bottom__copy">
+            &copy; {currentYear} PJ Study. All rights reserved. Built with precision for higher
+            education.
+          </div>
+          <div className="footer-bottom__status">
+            <span className="footer-status-indicator" aria-hidden="true" />
+            <span className="footer-status-text">All Systems Operational</span>
           </div>
         </div>
       </div>

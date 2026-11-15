@@ -1,5 +1,6 @@
 /**
  * Modal Component Styles
+ * Linear & Vercel-grade accessible modal dialogs with backdrop blur and smooth scale-in
  */
 
 /* Modal Dialog */
@@ -24,7 +25,7 @@ dialog:modal {
 
 dialog::backdrop {
   background-color: rgba(25, 27, 24, 0.45);
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
   overflow: hidden;
   overscroll-behavior: contain;
   animation: backdrop-fade-in var(--transition-normal);
@@ -39,8 +40,8 @@ dialog::backdrop {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: var(--space-6) var(--space-6) var(--space-4) var(--space-6);
-  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-5) var(--space-6) var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .modal-dialog__titles {
@@ -55,11 +56,13 @@ dialog::backdrop {
   font-weight: 400;
   color: var(--color-text-primary);
   line-height: var(--line-height-tight);
+  margin: 0;
 }
 
 .modal-dialog__desc {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+  margin: 0;
 }
 
 .modal-dialog__close-btn {
@@ -68,8 +71,11 @@ dialog::backdrop {
   justify-content: center;
   width: 2rem;
   height: 2rem;
-  border-radius: var(--radius-small);
+  border-radius: var(--radius-sm);
   color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
   transition:
     background-color var(--transition-fast),
     color var(--transition-fast);
@@ -102,8 +108,8 @@ dialog::backdrop {
   justify-content: flex-end;
   gap: var(--space-3);
   padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--color-border-subtle);
   background-color: var(--color-surface-subtle);
-  border-top: 1px solid var(--color-border);
   border-bottom-left-radius: var(--radius-large);
   border-bottom-right-radius: var(--radius-large);
 }

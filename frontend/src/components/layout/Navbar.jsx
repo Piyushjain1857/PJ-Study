@@ -2,14 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import Button from '../common/Button.jsx';
 import Avatar from '../common/Avatar.jsx';
+import Dropdown from '../common/Dropdown.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import './Navbar.css';
 
 /**
  * Public navigation bar with responsive mobile menu and authentication state.
+ * Refined for clean editorial elegance on marketing & guest pages.
  */
 export function Navbar() {
-  const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { user, isAuthenticated, isAdmin, isModerator, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -39,6 +41,17 @@ export function Navbar() {
     await logout();
     navigate('/');
   }
+
+  const userMenuItems = [
+    { label: 'Student Dashboard', onClick: () => navigate('/dashboard') },
+    { label: 'My Study Library', onClick: () => navigate('/my-notes') },
+    { label: 'Scholar Profile', onClick: () => navigate('/profile') },
+    ...(isAdmin || isModerator
+      ? [{ label: 'Admin Portal', onClick: () => navigate('/admin') }]
+      : []),
+    { divider: true },
+    { label: 'Sign Out', danger: true, onClick: handleLogout }
+  ];
 
   return (
     <header className="navbar-root">
@@ -73,34 +86,6 @@ export function Navbar() {
           >
             Explore Notes
           </NavLink>
-          {isAuthenticated && (
-            <>
-              <NavLink
-                to="/dashboard"
-                className={({ isActive }) =>
-                  `navbar-nav__link ${isActive ? 'navbar-nav__link--active' : ''}`
-                }
-              >
-                Dashboard
-              </NavLink>
-              <NavLink
-                to="/notes/recommended"
-                className={({ isActive }) =>
-                  `navbar-nav__link ${isActive ? 'navbar-nav__link--active' : ''}`
-                }
-              >
-                Recommended
-              </NavLink>
-              <NavLink
-                to="/my-notes"
-                className={({ isActive }) =>
-                  `navbar-nav__link ${isActive ? 'navbar-nav__link--active' : ''}`
-                }
-              >
-                My Notes
-              </NavLink>
-            </>
-          )}
           <a href="/#how-it-works" className="navbar-nav__link">
             How It Works
           </a>
@@ -112,66 +97,38 @@ export function Navbar() {
           >
             Design System
           </NavLink>
-          <NavLink
-            to="/app"
-            className={({ isActive }) =>
-              `navbar-nav__link ${isActive ? 'navbar-nav__link--active' : ''}`
-            }
-          >
-            App Shell
-          </NavLink>
-          {isAdmin && (
-            <NavLink
-              to="/admin"
-              className={({ isActive }) =>
-                `navbar-nav__link ${isActive ? 'navbar-nav__link--active' : ''}`
-              }
-            >
-              Admin Portal
-            </NavLink>
-          )}
-          {isAuthenticated && (
-            <NavLink
-              to="/profile"
-              className={({ isActive }) =>
-                `navbar-nav__link ${isActive ? 'navbar-nav__link--active' : ''}`
-              }
-            >
-              Account
-            </NavLink>
-          )}
         </nav>
 
         {/* Desktop Actions */}
         <div className="navbar-actions">
           {isAuthenticated ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="d-flex items-center gap-3">
               <Link to="/notes/new">
-                <Button variant="primary" size="sm">
+                <Button variant="outline" size="sm">
                   + Upload Note
                 </Button>
               </Link>
-              <Link
-                to="/profile"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  textDecoration: 'none',
-                  color: 'var(--color-text-primary)'
-                }}
-              >
-                <Avatar name={user?.name || 'Scholar'} size="sm" />
-                <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>
-                  {user?.name?.split(' ')[0]}
-                </span>
+              <Link to="/dashboard">
+                <Button variant="primary" size="sm">
+                  Dashboard
+                </Button>
               </Link>
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
-                Sign Out
-              </Button>
+              <Dropdown
+                trigger={
+                  <button
+                    type="button"
+                    className="navbar-avatar-btn"
+                    aria-label="Scholar account menu"
+                  >
+                    <Avatar name={user?.name || 'Scholar'} size="sm" />
+                  </button>
+                }
+                items={userMenuItems}
+                align="right"
+              />
             </div>
           ) : (
-            <>
+            <div className="d-flex items-center gap-2">
               <Link to="/login">
                 <Button variant="ghost" size="sm">
                   Sign In
@@ -182,7 +139,7 @@ export function Navbar() {
                   Get Started
                 </Button>
               </Link>
-            </>
+            </div>
           )}
         </div>
 
@@ -206,139 +163,132 @@ export function Navbar() {
         </button>
       </div>
 
-      {/* Mobile Drawer Navigation */}
-      {mobileMenuOpen && (
-        <div
-          className="navbar-mobile-drawer"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Mobile Navigation"
-        >
-          <div className="navbar-mobile-backdrop" onClick={closeMobileMenu} />
-          <div className="navbar-mobile-content">
-            <nav className="navbar-mobile-nav" aria-label="Mobile links">
-              <NavLink
-                to="/"
-                end
-                className={({ isActive }) =>
-                  `navbar-mobile-link ${isActive ? 'navbar-mobile-link--active' : ''}`
-                }
-              >
-                Home
-              </NavLink>
-              <NavLink
-                to="/notes/explore"
-                className={({ isActive }) =>
-                  `navbar-mobile-link ${isActive ? 'navbar-mobile-link--active' : ''}`
-                }
-                onClick={closeMobileMenu}
-              >
-                Explore Notes
-              </NavLink>
-              {isAuthenticated && (
-                <>
-                  <NavLink
-                    to="/dashboard"
-                    className={({ isActive }) =>
-                      `navbar-mobile-link ${isActive ? 'navbar-mobile-link--active' : ''}`
-                    }
-                    onClick={closeMobileMenu}
-                  >
-                    Dashboard
-                  </NavLink>
-                  <NavLink
-                    to="/notes/recommended"
-                    className={({ isActive }) =>
-                      `navbar-mobile-link ${isActive ? 'navbar-mobile-link--active' : ''}`
-                    }
-                    onClick={closeMobileMenu}
-                  >
-                    Recommended
-                  </NavLink>
-                  <NavLink
-                    to="/my-notes"
-                    className={({ isActive }) =>
-                      `navbar-mobile-link ${isActive ? 'navbar-mobile-link--active' : ''}`
-                    }
-                    onClick={closeMobileMenu}
-                  >
-                    My Notes
-                  </NavLink>
-                  <NavLink
-                    to="/notes/new"
-                    className={({ isActive }) =>
-                      `navbar-mobile-link ${isActive ? 'navbar-mobile-link--active' : ''}`
-                    }
-                    onClick={closeMobileMenu}
-                  >
-                    + Upload Note
-                  </NavLink>
-                </>
-              )}
-              <a href="/#how-it-works" className="navbar-mobile-link" onClick={closeMobileMenu}>
-                How It Works
-              </a>
-              <NavLink
-                to="/design-system"
-                className={({ isActive }) =>
-                  `navbar-mobile-link ${isActive ? 'navbar-mobile-link--active' : ''}`
-                }
-              >
-                Design System
-              </NavLink>
-              <NavLink
-                to="/app"
-                className={({ isActive }) =>
-                  `navbar-mobile-link ${isActive ? 'navbar-mobile-link--active' : ''}`
-                }
-              >
-                App Shell
-              </NavLink>
-              {isAdmin && (
+      {/* Mobile Drawer Menu */}
+      <div
+        className={`navbar-mobile-menu ${mobileMenuOpen ? 'navbar-mobile-menu--open' : ''}`}
+        aria-hidden={!mobileMenuOpen}
+      >
+        <div className="navbar-mobile-menu__inner">
+          <nav className="navbar-mobile-nav" aria-label="Mobile Navigation">
+            <NavLink
+              to="/"
+              end
+              onClick={closeMobileMenu}
+              className={({ isActive }) =>
+                `navbar-mobile-nav__link ${isActive ? 'navbar-mobile-nav__link--active' : ''}`
+              }
+            >
+              Home
+            </NavLink>
+            <NavLink
+              to="/notes/explore"
+              onClick={closeMobileMenu}
+              className={({ isActive }) =>
+                `navbar-mobile-nav__link ${isActive ? 'navbar-mobile-nav__link--active' : ''}`
+              }
+            >
+              Explore Notes
+            </NavLink>
+            <a href="/#how-it-works" onClick={closeMobileMenu} className="navbar-mobile-nav__link">
+              How It Works
+            </a>
+            <NavLink
+              to="/design-system"
+              onClick={closeMobileMenu}
+              className={({ isActive }) =>
+                `navbar-mobile-nav__link ${isActive ? 'navbar-mobile-nav__link--active' : ''}`
+              }
+            >
+              Design System
+            </NavLink>
+
+            {isAuthenticated && (
+              <>
+                <div className="navbar-mobile-divider" />
                 <NavLink
-                  to="/admin"
+                  to="/dashboard"
+                  onClick={closeMobileMenu}
                   className={({ isActive }) =>
-                    `navbar-mobile-link ${isActive ? 'navbar-mobile-link--active' : ''}`
+                    `navbar-mobile-nav__link ${isActive ? 'navbar-mobile-nav__link--active' : ''}`
                   }
                 >
-                  Admin Governance
+                  Dashboard
                 </NavLink>
-              )}
-              {isAuthenticated && (
+                <NavLink
+                  to="/my-notes"
+                  onClick={closeMobileMenu}
+                  className={({ isActive }) =>
+                    `navbar-mobile-nav__link ${isActive ? 'navbar-mobile-nav__link--active' : ''}`
+                  }
+                >
+                  My Study Library
+                </NavLink>
+                <NavLink
+                  to="/notes/new"
+                  onClick={closeMobileMenu}
+                  className={({ isActive }) =>
+                    `navbar-mobile-nav__link ${isActive ? 'navbar-mobile-nav__link--active' : ''}`
+                  }
+                >
+                  + Upload Note
+                </NavLink>
                 <NavLink
                   to="/profile"
+                  onClick={closeMobileMenu}
                   className={({ isActive }) =>
-                    `navbar-mobile-link ${isActive ? 'navbar-mobile-link--active' : ''}`
+                    `navbar-mobile-nav__link ${isActive ? 'navbar-mobile-nav__link--active' : ''}`
                   }
                 >
-                  Account Profile
+                  Scholar Profile
                 </NavLink>
-              )}
-            </nav>
+                {(isAdmin || isModerator) && (
+                  <NavLink
+                    to="/admin"
+                    onClick={closeMobileMenu}
+                    className={({ isActive }) =>
+                      `navbar-mobile-nav__link ${isActive ? 'navbar-mobile-nav__link--active' : ''}`
+                    }
+                  >
+                    Admin Portal
+                  </NavLink>
+                )}
+              </>
+            )}
+          </nav>
 
-            <div className="navbar-mobile-actions">
-              {isAuthenticated ? (
-                <Button variant="secondary" size="md" className="w-100" onClick={handleLogout}>
-                  Sign Out ({user?.name?.split(' ')[0]})
+          <div className="navbar-mobile-footer">
+            {isAuthenticated ? (
+              <div className="d-flex flex-col gap-2">
+                <div className="d-flex items-center gap-3 mb-2">
+                  <Avatar name={user?.name || 'Scholar'} size="sm" />
+                  <div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{user?.name}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
+                      {user?.email}
+                    </div>
+                  </div>
+                </div>
+                <Button variant="danger" size="sm" onClick={handleLogout} style={{ width: '100%' }}>
+                  Sign Out
                 </Button>
-              ) : (
-                <>
-                  <Link to="/login" className="d-block mb-2" onClick={closeMobileMenu}>
-                    <Button variant="secondary" size="md" className="w-100">
-                      Sign In
-                    </Button>
-                  </Link>
-                  <Link to="/register" className="d-block" onClick={closeMobileMenu}>
-                    <Button variant="primary" size="md" className="w-100">
-                      Get Started
-                    </Button>
-                  </Link>
-                </>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="d-flex flex-col gap-2">
+                <Link to="/login" className="d-block" onClick={closeMobileMenu}>
+                  <Button variant="secondary" size="md" style={{ width: '100%' }}>
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/register" className="d-block" onClick={closeMobileMenu}>
+                  <Button variant="primary" size="md" style={{ width: '100%' }}>
+                    Get Started
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
     </header>
   );
 }

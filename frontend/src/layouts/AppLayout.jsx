@@ -1,34 +1,102 @@
-import React, { useState } from 'react';
-import { Outlet, Link, NavLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Outlet, Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import Avatar from '../components/common/Avatar.jsx';
 import Dropdown from '../components/common/Dropdown.jsx';
 import Badge from '../components/common/Badge.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import './AppLayout.css';
 
 /**
- * Authenticated application shell for student workspace and dashboard.
+ * Premium Educational SaaS Application Shell for PJ Study.
+ * Inspired by Notion (clarity), Linear (refined micro-spacing), and Vercel (precision minimalism).
  */
 export function AppLayout() {
+  const { user, isAuthenticated, isAdmin, isModerator, logout } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setMobileSidebarOpen(false);
+  }, [location.pathname]);
+
+  // Global Command+K / Ctrl+K shortcut to jump to Explore Notes search
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        navigate('/notes/explore');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
+
+  // Lock background scroll when mobile sidebar is open
+  useEffect(() => {
+    if (mobileSidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileSidebarOpen]);
 
   const toggleSidebar = () => setSidebarCollapsed((prev) => !prev);
   const toggleMobileSidebar = () => setMobileSidebarOpen((prev) => !prev);
   const closeMobileSidebar = () => setMobileSidebarOpen(false);
 
+  async function handleLogout() {
+    closeMobileSidebar();
+    await logout();
+    navigate('/');
+  }
+
+  // Derive human-readable page context based on route
+  const getPageTitle = (path) => {
+    if (path === '/dashboard' || path === '/app') return 'Student Dashboard';
+    if (path.startsWith('/notes/explore') || path === '/notes') return 'Explore Notes';
+    if (path.startsWith('/notes/recommended')) return 'Recommended For You';
+    if (path.startsWith('/my-notes')) return 'My Study Library';
+    if (path.startsWith('/notes/new')) return 'Upload Study Note';
+    if (path.includes('/edit')) return 'Edit Study Note';
+    if (path.startsWith('/notes/')) return 'Study Manuscript Details';
+    if (path.startsWith('/profile')) return 'Scholar Profile & Security';
+    if (path.startsWith('/admin')) return 'Academic Moderation Console';
+    if (path.startsWith('/design-system')) return 'Design System Reference';
+    return 'PJ Study Workspace';
+  };
+
   const userMenuItems = [
-    { label: 'View Profile', onClick: () => {} },
-    { label: 'Study Preferences', onClick: () => {} },
-    { label: 'Platform Settings', onClick: () => {} },
-    { label: 'Log Out', danger: true, onClick: () => {} }
+    { label: 'View Profile', onClick: () => navigate('/profile') },
+    { label: 'My Study Library', onClick: () => navigate('/my-notes') },
+    { label: 'Explore Notes', onClick: () => navigate('/notes/explore') },
+    ...(isAdmin || isModerator
+      ? [{ label: 'Admin Portal', onClick: () => navigate('/admin') }]
+      : []),
+    { divider: true },
+    { label: 'Sign Out', danger: true, onClick: handleLogout }
   ];
 
-  const navItems = [
+  // Core navigation items per specification
+  const primaryNavItems = [
     {
-      to: '/app',
-      label: 'Workspace Overview',
+      to: '/dashboard',
+      label: 'Dashboard',
+      requiresAuth: true,
       icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <rect x="3" y="3" width="7" height="7" rx="1" />
           <rect x="14" y="3" width="7" height="7" rx="1" />
           <rect x="14" y="14" width="7" height="7" rx="1" />
@@ -37,33 +105,136 @@ export function AppLayout() {
       )
     },
     {
-      to: '/app/notes',
-      label: 'My Study Notes',
-      badge: 'Phase 2',
+      to: '/notes/explore',
+      label: 'Explore Notes',
       icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      )
+    },
+    {
+      to: '/notes/recommended',
+      label: 'Recommended',
+      requiresAuth: true,
+      badge: 'AI',
+      icon: (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        </svg>
+      )
+    },
+    {
+      to: '/my-notes',
+      label: 'My Library',
+      requiresAuth: true,
+      icon: (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
         </svg>
       )
     },
     {
-      to: '/app/ai-tutor',
-      label: 'AI Study Assistant',
-      badge: 'Planned',
+      to: '/notes/new',
+      label: 'Upload Note',
+      requiresAuth: true,
+      highlight: true,
       icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="16" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+        </svg>
+      )
+    }
+  ];
+
+  // System & Management nav items
+  const secondaryNavItems = [
+    {
+      to: '/profile',
+      label: 'Scholar Profile',
+      requiresAuth: true,
+      icon: (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
         </svg>
       )
     },
+    ...(isAdmin || isModerator
+      ? [
+          {
+            to: '/admin',
+            label: 'Admin Portal',
+            badge: 'Staff',
+            icon: (
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            )
+          }
+        ]
+      : []),
     {
-      to: '/app/flashcards',
-      label: 'Recall & Quizzes',
-      badge: 'Planned',
+      to: '/design-system',
+      label: 'Design System',
       icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
         </svg>
       )
     }
@@ -71,7 +242,7 @@ export function AppLayout() {
 
   return (
     <div className={`app-shell ${sidebarCollapsed ? 'app-shell--collapsed' : ''}`}>
-      {/* Mobile Backdrop */}
+      {/* Mobile Drawer Backdrop */}
       {mobileSidebarOpen && (
         <div
           className="app-shell__mobile-backdrop"
@@ -80,22 +251,23 @@ export function AppLayout() {
         />
       )}
 
-      {/* Sidebar Navigation */}
+      {/* Main Sidebar Navigation */}
       <aside
         className={`app-shell__sidebar ${
           mobileSidebarOpen ? 'app-shell__sidebar--mobile-open' : ''
         }`}
-        aria-label="Workspace Navigation"
+        aria-label="Application Navigation"
       >
+        {/* Brand Wordmark & Collapse Toggle */}
         <div className="app-shell__sidebar-header">
-          <Link to="/" className="app-shell__sidebar-brand">
+          <Link to="/" className="app-shell__sidebar-brand" title="PJ Study Homepage">
             <span className="app-shell__sidebar-logo" aria-hidden="true">
               PJ
             </span>
             {!sidebarCollapsed && (
               <span className="app-shell__sidebar-brand-text">
                 <span className="app-shell__sidebar-title">PJ Study</span>
-                <span className="app-shell__sidebar-subtitle">Workspace</span>
+                <span className="app-shell__sidebar-subtitle">Academic Library</span>
               </span>
             )}
           </Link>
@@ -104,6 +276,7 @@ export function AppLayout() {
             onClick={toggleSidebar}
             className="app-shell__collapse-btn d-none d-md-flex"
             aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               {sidebarCollapsed ? <path d="M9 18l6-6-6-6" /> : <path d="M15 18l-6-6-6-6" />}
@@ -111,53 +284,67 @@ export function AppLayout() {
           </button>
         </div>
 
+        {/* Navigation Items */}
         <nav className="app-shell__nav">
           <div className="app-shell__nav-group">
-            {!sidebarCollapsed && <span className="app-shell__nav-label">Academic Tools</span>}
-            {navItems.map((item, idx) => (
-              <NavLink
-                key={idx}
-                to={item.to}
-                end={item.to === '/app'}
-                onClick={closeMobileSidebar}
-                className={({ isActive }) =>
-                  `app-shell__nav-item ${isActive ? 'app-shell__nav-item--active' : ''}`
-                }
-                title={sidebarCollapsed ? item.label : undefined}
-              >
-                <span className="app-shell__nav-icon" aria-hidden="true">
-                  {item.icon}
-                </span>
-                {!sidebarCollapsed && <span className="app-shell__nav-text">{item.label}</span>}
-                {!sidebarCollapsed && item.badge && (
-                  <Badge variant="default" size="sm" className="ml-auto">
-                    {item.badge}
-                  </Badge>
-                )}
-              </NavLink>
-            ))}
+            {!sidebarCollapsed && <span className="app-shell__nav-label">Study Workspace</span>}
+            {primaryNavItems
+              .filter((item) => !item.requiresAuth || isAuthenticated)
+              .map((item, idx) => (
+                <NavLink
+                  key={idx}
+                  to={item.to}
+                  onClick={closeMobileSidebar}
+                  className={({ isActive }) =>
+                    `app-shell__nav-item ${isActive ? 'app-shell__nav-item--active' : ''} ${
+                      item.highlight ? 'app-shell__nav-item--highlight' : ''
+                    }`
+                  }
+                  title={sidebarCollapsed ? item.label : undefined}
+                >
+                  <span className="app-shell__nav-icon" aria-hidden="true">
+                    {item.icon}
+                  </span>
+                  {!sidebarCollapsed && <span className="app-shell__nav-text">{item.label}</span>}
+                  {!sidebarCollapsed && item.badge && (
+                    <Badge variant="primary" size="sm" className="ml-auto">
+                      {item.badge}
+                    </Badge>
+                  )}
+                </NavLink>
+              ))}
           </div>
 
           <div className="app-shell__nav-group mt-auto">
-            {!sidebarCollapsed && <span className="app-shell__nav-label">System</span>}
-            <Link
-              to="/design-system"
-              onClick={closeMobileSidebar}
-              className="app-shell__nav-item"
-              title={sidebarCollapsed ? 'Design System' : undefined}
-            >
-              <span className="app-shell__nav-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                </svg>
-              </span>
-              {!sidebarCollapsed && <span className="app-shell__nav-text">Design System</span>}
-            </Link>
+            {!sidebarCollapsed && <span className="app-shell__nav-label">Platform</span>}
+            {secondaryNavItems
+              .filter((item) => !item.requiresAuth || isAuthenticated)
+              .map((item, idx) => (
+                <NavLink
+                  key={idx}
+                  to={item.to}
+                  onClick={closeMobileSidebar}
+                  className={({ isActive }) =>
+                    `app-shell__nav-item ${isActive ? 'app-shell__nav-item--active' : ''}`
+                  }
+                  title={sidebarCollapsed ? item.label : undefined}
+                >
+                  <span className="app-shell__nav-icon" aria-hidden="true">
+                    {item.icon}
+                  </span>
+                  {!sidebarCollapsed && <span className="app-shell__nav-text">{item.label}</span>}
+                  {!sidebarCollapsed && item.badge && (
+                    <Badge variant="accent" size="sm" className="ml-auto">
+                      {item.badge}
+                    </Badge>
+                  )}
+                </NavLink>
+              ))}
             <Link
               to="/"
               onClick={closeMobileSidebar}
               className="app-shell__nav-item"
-              title={sidebarCollapsed ? 'Return Home' : undefined}
+              title={sidebarCollapsed ? 'Public Homepage' : undefined}
             >
               <span className="app-shell__nav-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -165,58 +352,144 @@ export function AppLayout() {
                   <polyline points="9 22 9 12 15 12 15 22" />
                 </svg>
               </span>
-              {!sidebarCollapsed && <span className="app-shell__nav-text">Return to Site</span>}
+              {!sidebarCollapsed && <span className="app-shell__nav-text">Public Site</span>}
             </Link>
           </div>
         </nav>
 
-        {/* Sidebar Footer User info */}
+        {/* Sidebar Footer User Info or Guest Action */}
         <div className="app-shell__sidebar-footer">
-          <Avatar name="Piyush Student" size={sidebarCollapsed ? 'sm' : 'md'} />
-          {!sidebarCollapsed && (
-            <div className="app-shell__user-info">
-              <span className="app-shell__user-name">Scholar Account</span>
-              <span className="app-shell__user-role">Student Member</span>
+          {isAuthenticated ? (
+            <div className="app-shell__user-container">
+              <Avatar name={user?.name || 'Scholar'} size={sidebarCollapsed ? 'sm' : 'md'} />
+              {!sidebarCollapsed && (
+                <div className="app-shell__user-info">
+                  <span className="app-shell__user-name">{user?.name || 'Scholar'}</span>
+                  <span className="app-shell__user-role">
+                    {user?.role === 'SUPER_ADMIN'
+                      ? 'Super Admin'
+                      : user?.role === 'MODERATOR'
+                        ? 'Academic Moderator'
+                        : 'Verified Scholar'}
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="app-shell__guest-container">
+              {!sidebarCollapsed ? (
+                <div className="d-flex flex-col gap-2 w-full">
+                  <Link to="/login" className="btn btn--sm btn--primary w-full text-center">
+                    Sign In
+                  </Link>
+                  <Link to="/register" className="btn btn--sm btn--secondary w-full text-center">
+                    Get Started
+                  </Link>
+                </div>
+              ) : (
+                <Link to="/login" className="app-shell__nav-icon" title="Sign In">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    width="20"
+                    height="20"
+                  >
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                    <polyline points="10 17 15 12 10 7" />
+                    <line x1="15" y1="12" x2="3" y2="12" />
+                  </svg>
+                </Link>
+              )}
             </div>
           )}
         </div>
       </aside>
 
-      {/* Main Content Shell */}
+      {/* Main Content Area */}
       <div className="app-shell__main-wrapper">
-        {/* Top Header */}
+        {/* Top Header Bar */}
         <header className="app-shell__top-bar">
           <div className="d-flex items-center gap-3">
             <button
               type="button"
               onClick={toggleMobileSidebar}
               className="app-shell__mobile-menu-btn"
-              aria-label="Toggle workspace navigation"
+              aria-label="Toggle navigation menu"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                width="20"
+                height="20"
+              >
                 <line x1="3" y1="12" x2="21" y2="12" />
                 <line x1="3" y1="6" x2="21" y2="6" />
                 <line x1="3" y1="18" x2="21" y2="18" />
               </svg>
             </button>
-            <span className="app-shell__breadcrumb-current">PJ Study Workspace</span>
+            <div className="app-shell__breadcrumb">
+              <span className="app-shell__breadcrumb-sub">PJ Study</span>
+              <span className="app-shell__breadcrumb-sep">/</span>
+              <h1 className="app-shell__breadcrumb-current">{getPageTitle(location.pathname)}</h1>
+            </div>
           </div>
 
           <div className="d-flex items-center gap-3">
-            <Badge variant="verified" label="Academic Plan" dot />
-            <Dropdown
-              trigger={
-                <button type="button" className="app-shell__avatar-btn" aria-label="Open user menu">
-                  <Avatar name="Piyush Student" size="sm" />
-                </button>
-              }
-              items={userMenuItems}
-              align="right"
-            />
+            {/* Quick Search Shortcut Pill */}
+            <button
+              type="button"
+              onClick={() => navigate('/notes/explore')}
+              className="app-shell__search-pill"
+              aria-label="Search study notes"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                width="15"
+                height="15"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <span className="app-shell__search-text">Search notes, subjects...</span>
+              <kbd className="app-shell__search-kbd">⌘K</kbd>
+            </button>
+
+            {/* User Account Menu or Guest Action */}
+            {isAuthenticated ? (
+              <Dropdown
+                trigger={
+                  <button
+                    type="button"
+                    className="app-shell__avatar-btn"
+                    aria-label="Open scholar account menu"
+                  >
+                    <Avatar name={user?.name || 'Scholar'} size="sm" />
+                  </button>
+                }
+                items={userMenuItems}
+                align="right"
+              />
+            ) : (
+              <div className="d-flex items-center gap-2">
+                <Link to="/login" className="btn btn--sm btn--ghost">
+                  Sign In
+                </Link>
+                <Link to="/register" className="btn btn--sm btn--primary">
+                  Get Started
+                </Link>
+              </div>
+            )}
           </div>
         </header>
 
-        {/* Dynamic Workspace Content */}
+        {/* Responsive Content Container */}
         <main className="app-shell__content">
           <Outlet />
         </main>
