@@ -48,17 +48,50 @@ router.delete(
 );
 
 /**
- * Academic Content Management (Courses, Subjects, Categories)
+ * Academic Content Management (Universities, Schools, Courses, Semesters, Subjects, Categories)
  * GET /api/v1/admin/academics
- * POST/PATCH /api/v1/admin/academics/courses
- * POST/PATCH /api/v1/admin/academics/subjects
- * POST/PATCH /api/v1/admin/academics/categories
  */
 router.get(
   '/academics',
   requirePermission(PERMISSIONS.CATEGORIES_MANAGE),
   adminController.getAcademics
 );
+
+// Universities
+router.post(
+  '/academics/universities',
+  requirePermission(PERMISSIONS.CATEGORIES_MANAGE),
+  adminController.createUniversity
+);
+router.patch(
+  '/academics/universities/:id',
+  requirePermission(PERMISSIONS.CATEGORIES_MANAGE),
+  adminController.updateUniversity
+);
+router.delete(
+  '/academics/universities/:id',
+  requirePermission(PERMISSIONS.CATEGORIES_MANAGE),
+  adminController.deleteUniversity
+);
+
+// Schools
+router.post(
+  '/academics/schools',
+  requirePermission(PERMISSIONS.CATEGORIES_MANAGE),
+  adminController.createSchool
+);
+router.patch(
+  '/academics/schools/:id',
+  requirePermission(PERMISSIONS.CATEGORIES_MANAGE),
+  adminController.updateSchool
+);
+router.delete(
+  '/academics/schools/:id',
+  requirePermission(PERMISSIONS.CATEGORIES_MANAGE),
+  adminController.deleteSchool
+);
+
+// Courses & Dynamic Semesters
 router.post(
   '/academics/courses',
   requirePermission(PERMISSIONS.CATEGORIES_MANAGE),
@@ -69,6 +102,18 @@ router.patch(
   requirePermission(PERMISSIONS.CATEGORIES_MANAGE),
   adminController.updateCourse
 );
+router.delete(
+  '/academics/courses/:id',
+  requirePermission(PERMISSIONS.CATEGORIES_MANAGE),
+  adminController.deleteCourse
+);
+router.get(
+  '/academics/courses/:id/semesters',
+  requirePermission(PERMISSIONS.CATEGORIES_MANAGE),
+  adminController.getCourseSemesters
+);
+
+// Subjects
 router.post(
   '/academics/subjects',
   requirePermission(PERMISSIONS.CATEGORIES_MANAGE),
@@ -79,6 +124,13 @@ router.patch(
   requirePermission(PERMISSIONS.CATEGORIES_MANAGE),
   adminController.updateSubject
 );
+router.delete(
+  '/academics/subjects/:id',
+  requirePermission(PERMISSIONS.CATEGORIES_MANAGE),
+  adminController.deleteSubject
+);
+
+// Categories
 router.post(
   '/academics/categories',
   requirePermission(PERMISSIONS.CATEGORIES_MANAGE),
@@ -88,6 +140,11 @@ router.patch(
   '/academics/categories/:id',
   requirePermission(PERMISSIONS.CATEGORIES_MANAGE),
   adminController.updateCategory
+);
+router.delete(
+  '/academics/categories/:id',
+  requirePermission(PERMISSIONS.CATEGORIES_MANAGE),
+  adminController.deleteCategory
 );
 
 /**

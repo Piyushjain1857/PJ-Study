@@ -151,6 +151,8 @@ export class NoteService {
       content,
       subjectId,
       courseId: explicitCourseId,
+      universityId,
+      schoolId,
       categoryId,
       semester: explicitSemester,
       academicYear,
@@ -257,12 +259,66 @@ export class NoteService {
       throw error;
     }
 
+    const course = await prisma.course.findUnique({ where: { id: courseId } });
+    if (!course) {
+      const error = new Error(`Course with ID "${courseId}" was not found.`);
+      error.statusCode = 404;
+      throw error;
+    }
+    if (!course.isActive) {
+      const error = new Error(`Selected academic course "${course.name}" is currently inactive.`);
+      error.statusCode = 400;
+      throw error;
+    }
+    if (!subject.isActive) {
+      const error = new Error(`Selected subject "${subject.name}" is currently inactive.`);
+      error.statusCode = 400;
+      throw error;
+    }
+
+    // Dynamic semester hierarchy validation
+    const semester = Number(explicitSemester || subject.semester || 1);
+    if (course.semestersCount && semester > course.semestersCount) {
+      const error = new Error(
+        `Semester ${semester} exceeds valid course duration (${course.semestersCount} semesters) for ${course.name}.`
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    // Validate university if provided
+    const finalUniversityId = universityId || course.universityId || null;
+    if (universityId) {
+      const uni = await prisma.university.findUnique({ where: { id: universityId } });
+      if (!uni || !uni.isActive) {
+        const error = new Error('Selected university is invalid or inactive.');
+        error.statusCode = 400;
+        throw error;
+      }
+    }
+
+    // Validate school if provided
+    const finalSchoolId = schoolId || course.schoolId || null;
+    if (schoolId) {
+      const sch = await prisma.school.findUnique({ where: { id: schoolId } });
+      if (!sch || !sch.isActive) {
+        const error = new Error('Selected school is invalid or inactive.');
+        error.statusCode = 400;
+        throw error;
+      }
+    }
+
     // Verify category if provided
     if (categoryId) {
       const category = await categoryRepository.findById(categoryId);
       if (!category) {
         const error = new Error(`Category with ID "${categoryId}" was not found.`);
         error.statusCode = 404;
+        throw error;
+      }
+      if (!category.isActive) {
+        const error = new Error(`Selected category "${category.name}" is currently inactive.`);
+        error.statusCode = 400;
         throw error;
       }
     }
@@ -285,7 +341,6 @@ export class NoteService {
     // Generate unique slug
     const shortId = crypto.randomBytes(4).toString('hex');
     const slug = `${slugify(title.trim())}-${shortId}`;
-    const semester = explicitSemester || subject.semester || 1;
 
     const note = await this.repo.create({
       title: title.trim(),
@@ -296,6 +351,8 @@ export class NoteService {
       storageKey: storageKey?.trim() || null,
       fileSize: size,
       mimeType: mimeType?.trim() || (hasFile ? 'application/pdf' : null),
+      universityId: finalUniversityId,
+      schoolId: finalSchoolId,
       courseId,
       subjectId,
       categoryId: categoryId || null,
@@ -693,6 +750,16 @@ export class NoteService {
     const where = { status: 'APPROVED' };
 
     // Academic filters
+    if (
+      query.universityId &&
+      typeof query.universityId === 'string' &&
+      query.universityId.trim().length > 0
+    ) {
+      where.universityId = query.universityId.trim();
+    }
+    if (query.schoolId && typeof query.schoolId === 'string' && query.schoolId.trim().length > 0) {
+      where.schoolId = query.schoolId.trim();
+    }
     if (query.courseId && typeof query.courseId === 'string' && query.courseId.trim().length > 0) {
       where.courseId = query.courseId.trim();
     }
@@ -818,7 +885,12 @@ export class NoteService {
    * }>}
    */
   async getExploreFilters() {
-    const [courses, categories, subjects, totalApprovedNotes] = await Promise.all([
+    const [universities, courses, categories, subjects, totalApprovedNotes] = await Promise.all([
+      prisma.university.findMany({
+        where: { isActive: true },
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true, shortName: true }
+      }),
       courseRepository.findMany({
         take: 100,
         where: { isActive: true }
@@ -849,10 +921,15 @@ export class NoteService {
     });
 
     return {
+      universities,
       courses: sortedCourses.map((c) => ({
         id: c.id,
         name: c.name,
-        slug: c.slug
+        slug: c.slug,
+        code: c.code,
+        degreeLevel: c.degreeLevel,
+        semestersCount: c.semestersCount || 8,
+        universityId: c.universityId
       })),
       categories: categories.map((cat) => ({
         id: cat.id,
@@ -864,6 +941,7 @@ export class NoteService {
         id: s.id,
         name: s.name,
         slug: s.slug,
+        code: s.code,
         courseId: s.courseId,
         semester: s.semester
       })),

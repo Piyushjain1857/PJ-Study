@@ -79,6 +79,94 @@ export const adminService = {
   async getStats() {
     const response = await apiClient.get('/admin/stats');
     return response.data?.data;
+  },
+
+  /**
+   * Academic Taxonomy Management
+   */
+  async getAcademics() {
+    const response = await apiClient.get('/admin/academics');
+    return response.data?.data;
+  },
+
+  async createUniversity(data) {
+    const response = await apiClient.post('/admin/academics/universities', data);
+    return response.data?.data;
+  },
+
+  async updateUniversity(id, data) {
+    const response = await apiClient.patch(`/admin/academics/universities/${id}`, data);
+    return response.data?.data;
+  },
+
+  async deleteUniversity(id) {
+    const response = await apiClient.delete(`/admin/academics/universities/${id}`);
+    return response.data?.data;
+  },
+
+  async createSchool(data) {
+    const response = await apiClient.post('/admin/academics/schools', data);
+    return response.data?.data;
+  },
+
+  async updateSchool(id, data) {
+    const response = await apiClient.patch(`/admin/academics/schools/${id}`, data);
+    return response.data?.data;
+  },
+
+  async deleteSchool(id) {
+    const response = await apiClient.delete(`/admin/academics/schools/${id}`);
+    return response.data?.data;
+  },
+
+  async createCourse(data) {
+    const response = await apiClient.post('/admin/academics/courses', data);
+    return response.data?.data;
+  },
+
+  async updateCourse(id, data) {
+    const response = await apiClient.patch(`/admin/academics/courses/${id}`, data);
+    return response.data?.data;
+  },
+
+  async deleteCourse(id) {
+    const response = await apiClient.delete(`/admin/academics/courses/${id}`);
+    return response.data?.data;
+  },
+
+  async getCourseSemesters(id) {
+    const response = await apiClient.get(`/admin/academics/courses/${id}/semesters`);
+    return response.data?.data;
+  },
+
+  async createSubject(data) {
+    const response = await apiClient.post('/admin/academics/subjects', data);
+    return response.data?.data;
+  },
+
+  async updateSubject(id, data) {
+    const response = await apiClient.patch(`/admin/academics/subjects/${id}`, data);
+    return response.data?.data;
+  },
+
+  async deleteSubject(id) {
+    const response = await apiClient.delete(`/admin/academics/subjects/${id}`);
+    return response.data?.data;
+  },
+
+  async createCategory(data) {
+    const response = await apiClient.post('/admin/academics/categories', data);
+    return response.data?.data;
+  },
+
+  async updateCategory(id, data) {
+    const response = await apiClient.patch(`/admin/academics/categories/${id}`, data);
+    return response.data?.data;
+  },
+
+  async deleteCategory(id) {
+    const response = await apiClient.delete(`/admin/academics/categories/${id}`);
+    return response.data?.data;
   }
 };
 

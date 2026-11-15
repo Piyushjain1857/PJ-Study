@@ -2,6 +2,7 @@ import { Router } from 'express';
 import env from '../config/env.js';
 import authRoutes from '../modules/auth/auth.routes.js';
 import adminRoutes from '../modules/admin/admin.routes.js';
+import academicRoutes from '../modules/academics/academic.routes.js';
 import noteRoutes from '../modules/notes/note.routes.js';
 import categoryRoutes from '../modules/categories/category.routes.js';
 import courseRoutes from '../modules/courses/course.routes.js';
@@ -79,6 +80,12 @@ router.use('/auth', authRoutes);
  * /api/v1/admin/...
  */
 router.use('/admin', adminRoutes);
+
+/**
+ * Unified Academic Content Management & Dynamic Course Hierarchy
+ * /api/v1/academics/...
+ */
+router.use('/academics', academicRoutes);
 
 /**
  * Academic category metadata routes.

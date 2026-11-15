@@ -67,6 +67,32 @@ export function AdminDashboardPage() {
   const [isSubmittingSuspend, setIsSubmittingSuspend] = useState(false);
   const [suspendError, setSuspendError] = useState('');
 
+  // Academic Architecture State (Step 16)
+  const [academicSubTab, setAcademicSubTab] = useState('universities');
+  const [academics, setAcademics] = useState({
+    universities: [],
+    schools: [],
+    courses: [],
+    subjects: [],
+    categories: [],
+    summary: {}
+  });
+  const [isLoadingAcademics, setIsLoadingAcademics] = useState(false);
+  const [academicSearch, setAcademicSearch] = useState('');
+  const [academicStatusFilter, setAcademicStatusFilter] = useState('ALL');
+  const [subjectCourseFilter, setSubjectCourseFilter] = useState('');
+
+  // Academic Modal State (Create, Edit, Delete)
+  const [academicModal, setAcademicModal] = useState({
+    isOpen: false,
+    type: null, // 'university' | 'school' | 'course' | 'subject' | 'category' | 'delete'
+    mode: 'create', // 'create' | 'edit'
+    entity: null
+  });
+  const [academicFormData, setAcademicFormData] = useState({});
+  const [isSubmittingAcademic, setIsSubmittingAcademic] = useState(false);
+  const [academicModalError, setAcademicModalError] = useState('');
+
   // Load KPI metrics
   const fetchStats = useCallback(async () => {
     try {
@@ -166,6 +192,31 @@ export function AdminDashboardPage() {
     }
   }, [reportFilter]);
 
+  // Fetch Academic Architecture (Step 16)
+  const fetchAcademics = useCallback(async () => {
+    setIsLoadingAcademics(true);
+    try {
+      const data = await adminService.getAcademics();
+      setAcademics(
+        data || {
+          universities: [],
+          schools: [],
+          courses: [],
+          subjects: [],
+          categories: [],
+          summary: {}
+        }
+      );
+    } catch (err) {
+      setActionNotice({
+        type: 'danger',
+        message: err.message || 'Failed to load academic architecture.'
+      });
+    } finally {
+      setIsLoadingAcademics(false);
+    }
+  }, []);
+
   // Initial load on mount
   useEffect(() => {
     fetchStats();
@@ -178,6 +229,8 @@ export function AdminDashboardPage() {
       fetchAuditLogs(1);
     } else if (activeTab === 'reviews') {
       fetchReviewReports();
+    } else if (activeTab === 'academics') {
+      fetchAcademics();
     } else if (activeTab === 'users' || activeTab === 'staff') {
       fetchUsers(1);
     }
@@ -220,9 +273,247 @@ export function AdminDashboardPage() {
         ? fetchAuditLogs(auditPagination.page)
         : activeTab === 'reviews'
           ? fetchReviewReports()
-          : fetchUsers(pagination.page)
+          : activeTab === 'academics'
+            ? fetchAcademics()
+            : fetchUsers(pagination.page)
     ]);
     setTimeout(() => setIsRefreshing(false), 400);
+  }
+
+  // --- Academic Entity Handlers (Step 16) ---
+  function handleOpenCreateModal(type) {
+    setAcademicModalError('');
+    let initial = { isActive: true };
+    if (type === 'university') {
+      initial = { name: '', shortName: '', code: '', description: '', website: '', isActive: true };
+    } else if (type === 'school') {
+      const defaultUniId = academics.universities[0]?.id || '';
+      initial = { universityId: defaultUniId, name: '', code: '', description: '', isActive: true };
+    } else if (type === 'course') {
+      const defaultUniId = academics.universities[0]?.id || '';
+      const defaultSchool = academics.schools.find((s) => !defaultUniId || s.universityId === defaultUniId);
+      initial = {
+        universityId: defaultUniId,
+        schoolId: defaultSchool?.id || '',
+        name: '',
+        code: '',
+        degreeLevel: 'UNDERGRADUATE',
+        semestersCount: 8,
+        isActive: true
+      };
+    } else if (type === 'subject') {
+      const defaultCourse = academics.courses[0];
+      initial = {
+        courseId: defaultCourse?.id || '',
+        name: '',
+        code: '',
+        semester: 1,
+        credits: 3,
+        isActive: true
+      };
+    } else if (type === 'category') {
+      initial = { name: '', description: '', isActive: true };
+    }
+    setAcademicFormData(initial);
+    setAcademicModal({ isOpen: true, type, mode: 'create', entity: null });
+  }
+
+  function handleOpenEditModal(type, entity) {
+    setAcademicModalError('');
+    const formValues = { ...entity };
+    if (type === 'course') {
+      formValues.semestersCount = entity.semestersCount || 8;
+    }
+    if (type === 'subject') {
+      formValues.semester = entity.semester || 1;
+      formValues.credits = entity.credits || 3;
+    }
+    setAcademicFormData(formValues);
+    setAcademicModal({ isOpen: true, type, mode: 'edit', entity });
+  }
+
+  function handleOpenDeleteModal(type, entity) {
+    setAcademicModalError('');
+    setAcademicModal({ isOpen: true, type: 'delete', mode: type, entity });
+  }
+
+  function handleCloseAcademicModal() {
+    setAcademicModal({ isOpen: false, type: null, mode: 'create', entity: null });
+    setAcademicFormData({});
+    setAcademicModalError('');
+  }
+
+  async function handleSubmitAcademicForm(e) {
+    e.preventDefault();
+    setIsSubmittingAcademic(true);
+    setAcademicModalError('');
+
+    try {
+      const { type, mode, entity } = academicModal;
+
+      if (type === 'university') {
+        if (!academicFormData.name?.trim()) throw new Error('University name is required.');
+        if (mode === 'create') {
+          await adminService.createUniversity(academicFormData);
+          setActionNotice({
+            type: 'success',
+            message: `University "${academicFormData.name}" added successfully.`
+          });
+        } else {
+          await adminService.updateUniversity(entity.id, academicFormData);
+          setActionNotice({
+            type: 'success',
+            message: `University "${academicFormData.name}" updated successfully.`
+          });
+        }
+      } else if (type === 'school') {
+        if (!academicFormData.name?.trim()) throw new Error('School/Faculty name is required.');
+        if (!academicFormData.universityId) throw new Error('Affiliated university is required.');
+        if (mode === 'create') {
+          await adminService.createSchool(academicFormData);
+          setActionNotice({
+            type: 'success',
+            message: `School "${academicFormData.name}" created successfully.`
+          });
+        } else {
+          await adminService.updateSchool(entity.id, academicFormData);
+          setActionNotice({
+            type: 'success',
+            message: `School "${academicFormData.name}" updated successfully.`
+          });
+        }
+      } else if (type === 'course') {
+        if (!academicFormData.name?.trim()) throw new Error('Degree Course name is required.');
+        const count = Number(academicFormData.semestersCount) || 8;
+        if (count < 1 || count > 20) throw new Error('Semesters count must be between 1 and 20.');
+        const payload = {
+          ...academicFormData,
+          semestersCount: count,
+          universityId: academicFormData.universityId || null,
+          schoolId: academicFormData.schoolId || null
+        };
+        if (mode === 'create') {
+          await adminService.createCourse(payload);
+          setActionNotice({
+            type: 'success',
+            message: `Course "${academicFormData.name}" created with ${count} dynamic semesters.`
+          });
+        } else {
+          await adminService.updateCourse(entity.id, payload);
+          setActionNotice({
+            type: 'success',
+            message: `Course "${academicFormData.name}" updated successfully.`
+          });
+        }
+      } else if (type === 'subject') {
+        if (!academicFormData.name?.trim()) throw new Error('Subject name is required.');
+        if (!academicFormData.courseId) throw new Error('Parent degree course is required.');
+        const sem = Number(academicFormData.semester) || 1;
+        const targetCourse = academics.courses.find((c) => c.id === academicFormData.courseId);
+        const maxSem = targetCourse?.semestersCount || 8;
+        if (sem < 1 || sem > maxSem) {
+          throw new Error(`Semester must be between 1 and ${maxSem} for ${targetCourse?.name || 'this course'}.`);
+        }
+        const payload = {
+          ...academicFormData,
+          semester: sem,
+          credits: Number(academicFormData.credits) || 3
+        };
+        if (mode === 'create') {
+          await adminService.createSubject(payload);
+          setActionNotice({
+            type: 'success',
+            message: `Subject "${academicFormData.name}" created successfully.`
+          });
+        } else {
+          await adminService.updateSubject(entity.id, payload);
+          setActionNotice({
+            type: 'success',
+            message: `Subject "${academicFormData.name}" updated successfully.`
+          });
+        }
+      } else if (type === 'category') {
+        if (!academicFormData.name?.trim()) throw new Error('Category name is required.');
+        if (mode === 'create') {
+          await adminService.createCategory(academicFormData);
+          setActionNotice({
+            type: 'success',
+            message: `Category "${academicFormData.name}" created successfully.`
+          });
+        } else {
+          await adminService.updateCategory(entity.id, academicFormData);
+          setActionNotice({
+            type: 'success',
+            message: `Category "${academicFormData.name}" updated successfully.`
+          });
+        }
+      }
+
+      handleCloseAcademicModal();
+      await fetchAcademics();
+    } catch (err) {
+      setAcademicModalError(err.message || 'Operation failed');
+    } finally {
+      setIsSubmittingAcademic(false);
+    }
+  }
+
+  async function handleToggleAcademicStatus(type, entity) {
+    try {
+      const newStatus = !entity.isActive;
+      if (type === 'university') {
+        await adminService.updateUniversity(entity.id, { isActive: newStatus });
+      } else if (type === 'school') {
+        await adminService.updateSchool(entity.id, { isActive: newStatus });
+      } else if (type === 'course') {
+        await adminService.updateCourse(entity.id, { isActive: newStatus });
+      } else if (type === 'subject') {
+        await adminService.updateSubject(entity.id, { isActive: newStatus });
+      } else if (type === 'category') {
+        await adminService.updateCategory(entity.id, { isActive: newStatus });
+      }
+      setActionNotice({
+        type: 'success',
+        message: `${entity.name} is now ${newStatus ? 'active' : 'inactive'}.`
+      });
+      await fetchAcademics();
+    } catch (err) {
+      setActionNotice({
+        type: 'danger',
+        message: err.message || 'Failed to update active status.'
+      });
+    }
+  }
+
+  async function handleConfirmDeleteAcademic() {
+    setIsSubmittingAcademic(true);
+    setAcademicModalError('');
+    try {
+      const { mode: type, entity } = academicModal;
+      if (type === 'university') {
+        await adminService.deleteUniversity(entity.id);
+      } else if (type === 'school') {
+        await adminService.deleteSchool(entity.id);
+      } else if (type === 'course') {
+        await adminService.deleteCourse(entity.id);
+      } else if (type === 'subject') {
+        await adminService.deleteSubject(entity.id);
+      } else if (type === 'category') {
+        await adminService.deleteCategory(entity.id);
+      }
+      setActionNotice({
+        type: 'success',
+        message: `Deleted "${entity.name}" successfully.`
+      });
+      handleCloseAcademicModal();
+      await fetchAcademics();
+    } catch (err) {
+      setAcademicModalError(
+        err.message || 'Cannot delete item due to relational integrity constraints (notes or users attached).'
+      );
+    } finally {
+      setIsSubmittingAcademic(false);
+    }
   }
 
   // Open Role Modal
@@ -840,6 +1131,30 @@ export function AdminDashboardPage() {
             </svg>
             Permissions Matrix
           </button>
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === 'academics' ? 'admin-tab-btn--active' : ''}`}
+            onClick={() => setActiveTab('academics')}
+          >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+              <path d="M6 12v5c3 3 9 3 12 0v-5" />
+            </svg>
+            Academic Architecture
+            {academics.courses?.length > 0 && (
+              <span className="admin-tab-count">{academics.courses.length}</span>
+            )}
+          </button>
         </nav>
 
         {/* TAB 1: USER DIRECTORY & TAB 2: STAFF */}
@@ -1337,7 +1652,6 @@ export function AdminDashboardPage() {
             )}
           </div>
         )}
-
         {/* TAB 4: PERMISSIONS MATRIX */}
         {activeTab === 'matrix' && (
           <div className="admin-table-container">
@@ -1621,6 +1935,752 @@ export function AdminDashboardPage() {
           </div>
         )}
 
+        {/* TAB 6: ACADEMIC ARCHITECTURE & COURSE CONTENT MANAGEMENT (STEP 16) */}
+        {activeTab === 'academics' && (
+          <div>
+            {isLoadingAcademics ? (
+              <div style={{ padding: '24px 0' }}>
+                <Skeleton count={5} height="48px" style={{ marginBottom: '12px' }} />
+              </div>
+            ) : (
+              <>
+                {/* Metric KPI Overview */}
+                <div className="admin-academic-overview">
+              <div className="admin-academic-stat-card">
+                <span className="admin-academic-stat-label">Universities</span>
+                <span className="admin-academic-stat-value">{academics.universities.length}</span>
+              </div>
+              <div className="admin-academic-stat-card">
+                <span className="admin-academic-stat-label">Schools / Faculties</span>
+                <span className="admin-academic-stat-value">{academics.schools.length}</span>
+              </div>
+              <div className="admin-academic-stat-card">
+                <span className="admin-academic-stat-label">Degree Programs</span>
+                <span className="admin-academic-stat-value">{academics.courses.length}</span>
+              </div>
+              <div className="admin-academic-stat-card">
+                <span className="admin-academic-stat-label">Subjects</span>
+                <span className="admin-academic-stat-value">{academics.subjects.length}</span>
+              </div>
+              <div className="admin-academic-stat-card">
+                <span className="admin-academic-stat-label">Note Categories</span>
+                <span className="admin-academic-stat-value">{academics.categories.length}</span>
+              </div>
+            </div>
+
+            {/* Sub-navigation Pills */}
+            <div className="admin-academic-subnav" role="tablist" aria-label="Academic Subsections">
+              <button
+                type="button"
+                className={`admin-academic-subnav-btn ${
+                  academicSubTab === 'universities' ? 'admin-academic-subnav-btn--active' : ''
+                }`}
+                onClick={() => setAcademicSubTab('universities')}
+              >
+                Universities
+                <span className="admin-academic-subnav-badge">{academics.universities.length}</span>
+              </button>
+              <button
+                type="button"
+                className={`admin-academic-subnav-btn ${
+                  academicSubTab === 'schools' ? 'admin-academic-subnav-btn--active' : ''
+                }`}
+                onClick={() => setAcademicSubTab('schools')}
+              >
+                Schools / Faculties
+                <span className="admin-academic-subnav-badge">{academics.schools.length}</span>
+              </button>
+              <button
+                type="button"
+                className={`admin-academic-subnav-btn ${
+                  academicSubTab === 'courses' ? 'admin-academic-subnav-btn--active' : ''
+                }`}
+                onClick={() => setAcademicSubTab('courses')}
+              >
+                Degree Courses
+                <span className="admin-academic-subnav-badge">{academics.courses.length}</span>
+              </button>
+              <button
+                type="button"
+                className={`admin-academic-subnav-btn ${
+                  academicSubTab === 'semesters' ? 'admin-academic-subnav-btn--active' : ''
+                }`}
+                onClick={() => setAcademicSubTab('semesters')}
+              >
+                Dynamic Semesters
+                <span className="admin-academic-subnav-badge">{academics.courses.length}</span>
+              </button>
+              <button
+                type="button"
+                className={`admin-academic-subnav-btn ${
+                  academicSubTab === 'subjects' ? 'admin-academic-subnav-btn--active' : ''
+                }`}
+                onClick={() => setAcademicSubTab('subjects')}
+              >
+                Subjects
+                <span className="admin-academic-subnav-badge">{academics.subjects.length}</span>
+              </button>
+              <button
+                type="button"
+                className={`admin-academic-subnav-btn ${
+                  academicSubTab === 'categories' ? 'admin-academic-subnav-btn--active' : ''
+                }`}
+                onClick={() => setAcademicSubTab('categories')}
+              >
+                Categories
+                <span className="admin-academic-subnav-badge">{academics.categories.length}</span>
+              </button>
+            </div>
+
+            {/* Academic Toolbar */}
+            <div className="admin-toolbar" style={{ flexWrap: 'wrap', gap: '10px' }}>
+              <div className="admin-search-wrapper" style={{ minWidth: '220px' }}>
+                <svg
+                  className="admin-search-icon"
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input
+                  type="search"
+                  placeholder={`Search ${academicSubTab}...`}
+                  value={academicSearch}
+                  onChange={(e) => setAcademicSearch(e.target.value)}
+                  className="admin-search-input"
+                />
+              </div>
+
+              <div className="admin-select-wrapper">
+                <select
+                  value={academicStatusFilter}
+                  onChange={(e) => setAcademicStatusFilter(e.target.value)}
+                  className="admin-select"
+                >
+                  <option value="ALL">All Statuses</option>
+                  <option value="ACTIVE">Active Only</option>
+                  <option value="INACTIVE">Inactive Only</option>
+                </select>
+              </div>
+
+              {academicSubTab === 'subjects' && (
+                <div className="admin-select-wrapper">
+                  <select
+                    value={subjectCourseFilter}
+                    onChange={(e) => setSubjectCourseFilter(e.target.value)}
+                    className="admin-select"
+                  >
+                    <option value="">All Degree Courses</option>
+                    {academics.courses.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div style={{ marginLeft: 'auto' }}>
+                {academicSubTab === 'universities' && (
+                  <Button variant="primary" size="sm" onClick={() => handleOpenCreateModal('university')}>
+                    + Add University
+                  </Button>
+                )}
+                {academicSubTab === 'schools' && (
+                  <Button variant="primary" size="sm" onClick={() => handleOpenCreateModal('school')}>
+                    + Add School / Faculty
+                  </Button>
+                )}
+                {academicSubTab === 'courses' && (
+                  <Button variant="primary" size="sm" onClick={() => handleOpenCreateModal('course')}>
+                    + Add Degree Course
+                  </Button>
+                )}
+                {academicSubTab === 'semesters' && (
+                  <Button variant="primary" size="sm" onClick={() => handleOpenCreateModal('course')}>
+                    + Add Degree Course
+                  </Button>
+                )}
+                {academicSubTab === 'subjects' && (
+                  <Button variant="primary" size="sm" onClick={() => handleOpenCreateModal('subject')}>
+                    + Add Subject
+                  </Button>
+                )}
+                {academicSubTab === 'categories' && (
+                  <Button variant="primary" size="sm" onClick={() => handleOpenCreateModal('category')}>
+                    + Add Category
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* SUB-TAB 1: UNIVERSITIES */}
+            {academicSubTab === 'universities' && (
+              <div className="admin-table-container">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>University / Institution</th>
+                      <th>Short / Code</th>
+                      <th>Website</th>
+                      <th>Affiliated Schools & Courses</th>
+                      <th>Status</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {academics.universities
+                      .filter((u) => {
+                        if (academicStatusFilter === 'ACTIVE' && !u.isActive) return false;
+                        if (academicStatusFilter === 'INACTIVE' && u.isActive) return false;
+                        if (academicSearch) {
+                          const q = academicSearch.toLowerCase();
+                          return (
+                            u.name?.toLowerCase().includes(q) ||
+                            u.shortName?.toLowerCase().includes(q) ||
+                            u.code?.toLowerCase().includes(q)
+                          );
+                        }
+                        return true;
+                      })
+                      .map((uni) => (
+                        <tr key={uni.id}>
+                          <td>
+                            <strong>{uni.name}</strong>
+                            {uni.description && (
+                              <p
+                                style={{
+                                  margin: '2px 0 0',
+                                  fontSize: '11px',
+                                  color: 'var(--color-text-secondary)'
+                                }}
+                              >
+                                {uni.description}
+                              </p>
+                            )}
+                          </td>
+                          <td>
+                            <code>{uni.shortName || uni.code || '—'}</code>
+                          </td>
+                          <td>
+                            {uni.website ? (
+                              <a
+                                href={uni.website}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{ fontSize: '12px', color: 'var(--color-primary)' }}
+                              >
+                                Visit Link ↗
+                              </a>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                          <td>
+                            <span style={{ fontSize: '12px' }}>
+                              {uni._count?.schools ?? uni.schools?.length ?? 0} Schools •{' '}
+                              {uni._count?.courses ?? uni.courses?.length ?? 0} Courses
+                            </span>
+                          </td>
+                          <td>
+                            <Badge variant={uni.isActive ? 'success' : 'neutral'} size="sm">
+                              {uni.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <div
+                              style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}
+                            >
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenEditModal('university', uni)}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleAcademicStatus('university', uni)}
+                              >
+                                {uni.isActive ? 'Deactivate' : 'Activate'}
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleOpenDeleteModal('university', uni)}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* SUB-TAB 2: SCHOOLS / FACULTIES */}
+            {academicSubTab === 'schools' && (
+              <div className="admin-table-container">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>School / Faculty</th>
+                      <th>Code / Slug</th>
+                      <th>Affiliated University</th>
+                      <th>Courses</th>
+                      <th>Status</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {academics.schools
+                      .filter((s) => {
+                        if (academicStatusFilter === 'ACTIVE' && !s.isActive) return false;
+                        if (academicStatusFilter === 'INACTIVE' && s.isActive) return false;
+                        if (academicSearch) {
+                          const q = academicSearch.toLowerCase();
+                          return (
+                            s.name?.toLowerCase().includes(q) ||
+                            s.code?.toLowerCase().includes(q) ||
+                            s.slug?.toLowerCase().includes(q)
+                          );
+                        }
+                        return true;
+                      })
+                      .map((school) => (
+                        <tr key={school.id}>
+                          <td>
+                            <strong>{school.name}</strong>
+                            {school.description && (
+                              <p
+                                style={{
+                                  margin: '2px 0 0',
+                                  fontSize: '11px',
+                                  color: 'var(--color-text-secondary)'
+                                }}
+                              >
+                                {school.description}
+                              </p>
+                            )}
+                          </td>
+                          <td>
+                            <code>{school.code || school.slug || '—'}</code>
+                          </td>
+                          <td>
+                            {school.university?.name ||
+                              academics.universities.find((u) => u.id === school.universityId)?.name ||
+                              '—'}
+                          </td>
+                          <td>
+                            <span style={{ fontSize: '12px' }}>
+                              {school._count?.courses ?? school.courses?.length ?? 0} Courses
+                            </span>
+                          </td>
+                          <td>
+                            <Badge variant={school.isActive ? 'success' : 'neutral'} size="sm">
+                              {school.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <div
+                              style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}
+                            >
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenEditModal('school', school)}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleAcademicStatus('school', school)}
+                              >
+                                {school.isActive ? 'Deactivate' : 'Activate'}
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleOpenDeleteModal('school', school)}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* SUB-TAB 3: DEGREE COURSES */}
+            {academicSubTab === 'courses' && (
+              <div className="admin-table-container">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Degree Course</th>
+                      <th>Code / Slug</th>
+                      <th>Affiliation</th>
+                      <th>Level</th>
+                      <th>Dynamic Semesters</th>
+                      <th>Subjects</th>
+                      <th>Status</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {academics.courses
+                      .filter((c) => {
+                        if (academicStatusFilter === 'ACTIVE' && !c.isActive) return false;
+                        if (academicStatusFilter === 'INACTIVE' && c.isActive) return false;
+                        if (academicSearch) {
+                          const q = academicSearch.toLowerCase();
+                          return (
+                            c.name?.toLowerCase().includes(q) ||
+                            c.code?.toLowerCase().includes(q) ||
+                            c.slug?.toLowerCase().includes(q)
+                          );
+                        }
+                        return true;
+                      })
+                      .map((course) => (
+                        <tr key={course.id}>
+                          <td>
+                            <strong>{course.name}</strong>
+                          </td>
+                          <td>
+                            <code>{course.code || course.slug || '—'}</code>
+                          </td>
+                          <td>
+                            <div style={{ fontSize: '12px' }}>
+                              {course.university?.shortName || course.university?.name || 'All Institutions'}
+                              {course.school?.name && (
+                                <div
+                                  style={{
+                                    color: 'var(--color-text-secondary)',
+                                    fontSize: '11px'
+                                  }}
+                                >
+                                  {course.school.name}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <Badge variant="neutral" size="sm">
+                              {course.degreeLevel || 'UNDERGRADUATE'}
+                            </Badge>
+                          </td>
+                          <td>
+                            <span className="admin-semester-card__count-badge">
+                              {course.semestersCount || 8} Semesters
+                            </span>
+                          </td>
+                          <td>
+                            <span style={{ fontSize: '12px' }}>
+                              {course._count?.subjects ?? course.subjects?.length ?? 0} Subjects
+                            </span>
+                          </td>
+                          <td>
+                            <Badge variant={course.isActive ? 'success' : 'neutral'} size="sm">
+                              {course.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <div
+                              style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}
+                            >
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenEditModal('course', course)}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleAcademicStatus('course', course)}
+                              >
+                                {course.isActive ? 'Deactivate' : 'Activate'}
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleOpenDeleteModal('course', course)}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* SUB-TAB 4: DYNAMIC SEMESTERS VISUAL ARCHITECTURE */}
+            {academicSubTab === 'semesters' && (
+              <div className="admin-semesters-grid">
+                {academics.courses
+                  .filter((c) => {
+                    if (academicStatusFilter === 'ACTIVE' && !c.isActive) return false;
+                    if (academicStatusFilter === 'INACTIVE' && c.isActive) return false;
+                    if (academicSearch) {
+                      const q = academicSearch.toLowerCase();
+                      return c.name?.toLowerCase().includes(q) || c.code?.toLowerCase().includes(q);
+                    }
+                    return true;
+                  })
+                  .map((course) => {
+                    const totalSem = course.semestersCount || 8;
+                    const courseSubjects = academics.subjects.filter((s) => s.courseId === course.id);
+                    return (
+                      <div key={course.id} className="admin-semester-card">
+                        <div className="admin-semester-card__header">
+                          <div>
+                            <h4 className="admin-semester-card__title">{course.name}</h4>
+                            <div className="admin-semester-card__meta">
+                              {course.degreeLevel || 'UNDERGRADUATE'} • {course.code || course.slug}
+                            </div>
+                          </div>
+                          <span className="admin-semester-card__count-badge">
+                            {totalSem} Semesters
+                          </span>
+                        </div>
+
+                        <div className="admin-semester-chips">
+                          {Array.from({ length: totalSem }, (_, i) => i + 1).map((semNum) => {
+                            const semSubjects = courseSubjects.filter((s) => s.semester === semNum);
+                            return (
+                              <div key={semNum} className="admin-semester-chip">
+                                <span className="admin-semester-chip__num">Sem {semNum}</span>
+                                <span className="admin-semester-chip__sub">{semSubjects.length} subj</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginTop: 'auto',
+                            paddingTop: '8px'
+                          }}
+                        >
+                          <span
+                            style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}
+                          >
+                            Total Subjects: {courseSubjects.length}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenEditModal('course', course)}
+                          >
+                            Configure Semesters
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+
+            {/* SUB-TAB 5: SUBJECTS */}
+            {academicSubTab === 'subjects' && (
+              <div className="admin-table-container">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Subject Name</th>
+                      <th>Code / Slug</th>
+                      <th>Degree Course</th>
+                      <th>Semester</th>
+                      <th>Credits</th>
+                      <th>Notes</th>
+                      <th>Status</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {academics.subjects
+                      .filter((s) => {
+                        if (subjectCourseFilter && s.courseId !== subjectCourseFilter) return false;
+                        if (academicStatusFilter === 'ACTIVE' && !s.isActive) return false;
+                        if (academicStatusFilter === 'INACTIVE' && s.isActive) return false;
+                        if (academicSearch) {
+                          const q = academicSearch.toLowerCase();
+                          return (
+                            s.name?.toLowerCase().includes(q) ||
+                            s.code?.toLowerCase().includes(q) ||
+                            s.slug?.toLowerCase().includes(q)
+                          );
+                        }
+                        return true;
+                      })
+                      .map((subj) => (
+                        <tr key={subj.id}>
+                          <td>
+                            <strong>{subj.name}</strong>
+                          </td>
+                          <td>
+                            <code>{subj.code || subj.slug || '—'}</code>
+                          </td>
+                          <td>
+                            {subj.course?.name ||
+                              academics.courses.find((c) => c.id === subj.courseId)?.name ||
+                              '—'}
+                          </td>
+                          <td>
+                            <Badge variant="neutral" size="sm">
+                              Semester {subj.semester}
+                            </Badge>
+                          </td>
+                          <td>{subj.credits || 3}</td>
+                          <td>
+                            <span style={{ fontSize: '12px' }}>
+                              {subj._count?.notes ?? subj.notes?.length ?? 0} Notes
+                            </span>
+                          </td>
+                          <td>
+                            <Badge variant={subj.isActive ? 'success' : 'neutral'} size="sm">
+                              {subj.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <div
+                              style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}
+                            >
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenEditModal('subject', subj)}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleAcademicStatus('subject', subj)}
+                              >
+                                {subj.isActive ? 'Deactivate' : 'Activate'}
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleOpenDeleteModal('subject', subj)}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* SUB-TAB 6: CATEGORIES */}
+            {academicSubTab === 'categories' && (
+              <div className="admin-table-container">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Category Name</th>
+                      <th>Slug</th>
+                      <th>Description</th>
+                      <th>Notes Count</th>
+                      <th>Status</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {academics.categories
+                      .filter((cat) => {
+                        if (academicStatusFilter === 'ACTIVE' && !cat.isActive) return false;
+                        if (academicStatusFilter === 'INACTIVE' && cat.isActive) return false;
+                        if (academicSearch) {
+                          const q = academicSearch.toLowerCase();
+                          return cat.name?.toLowerCase().includes(q) || cat.slug?.toLowerCase().includes(q);
+                        }
+                        return true;
+                      })
+                      .map((cat) => (
+                        <tr key={cat.id}>
+                          <td>
+                            <strong>{cat.name}</strong>
+                          </td>
+                          <td>
+                            <code>{cat.slug}</code>
+                          </td>
+                          <td>{cat.description || '—'}</td>
+                          <td>
+                            <span style={{ fontSize: '12px' }}>
+                              {cat._count?.notes ?? cat.notes?.length ?? 0} Notes
+                            </span>
+                          </td>
+                          <td>
+                            <Badge variant={cat.isActive ? 'success' : 'neutral'} size="sm">
+                              {cat.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <div
+                              style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}
+                            >
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenEditModal('category', cat)}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleAcademicStatus('category', cat)}
+                              >
+                                {cat.isActive ? 'Deactivate' : 'Activate'}
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleOpenDeleteModal('category', cat)}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+              </>
+            )}
+          </div>
+        )}
+
         {/* ROLE CHANGE MODAL */}
         <Modal
           isOpen={Boolean(roleModalUser)}
@@ -1788,6 +2848,559 @@ export function AdminDashboardPage() {
             });
           }}
         />
+
+        {/* ACADEMIC ENTITY MODAL (CREATE / EDIT - STEP 16) */}
+        <Modal
+          isOpen={academicModal.isOpen && academicModal.type !== 'delete'}
+          onClose={handleCloseAcademicModal}
+          title={`${academicModal.mode === 'create' ? 'Add New' : 'Edit'} ${
+            academicModal.type === 'university'
+              ? 'University / Institution'
+              : academicModal.type === 'school'
+                ? 'School / Faculty'
+                : academicModal.type === 'course'
+                  ? 'Degree Course'
+                  : academicModal.type === 'subject'
+                    ? 'Curriculum Subject'
+                    : 'Note Category'
+          }`}
+        >
+          <form onSubmit={handleSubmitAcademicForm} className="admin-modal-content">
+            {academicModalError && (
+              <div className="auth-alert auth-alert--danger">
+                <span>{academicModalError}</span>
+              </div>
+            )}
+
+            {/* UNIVERSITY FIELDS */}
+            {academicModal.type === 'university' && (
+              <>
+                <Input
+                  label="University / Institution Name *"
+                  id="acad-uni-name"
+                  type="text"
+                  placeholder="e.g. Delhi Technological University"
+                  value={academicFormData.name || ''}
+                  onChange={(e) =>
+                    setAcademicFormData((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  required
+                />
+                <div className="admin-form-grid">
+                  <Input
+                    label="Short Name / Acronym"
+                    id="acad-uni-short"
+                    type="text"
+                    placeholder="e.g. DTU"
+                    value={academicFormData.shortName || ''}
+                    onChange={(e) =>
+                      setAcademicFormData((prev) => ({ ...prev, shortName: e.target.value }))
+                    }
+                  />
+                  <Input
+                    label="University Code"
+                    id="acad-uni-code"
+                    type="text"
+                    placeholder="e.g. DTU-01"
+                    value={academicFormData.code || ''}
+                    onChange={(e) =>
+                      setAcademicFormData((prev) => ({ ...prev, code: e.target.value }))
+                    }
+                  />
+                </div>
+                <Input
+                  label="Official Website URL"
+                  id="acad-uni-site"
+                  type="url"
+                  placeholder="https://..."
+                  value={academicFormData.website || ''}
+                  onChange={(e) =>
+                    setAcademicFormData((prev) => ({ ...prev, website: e.target.value }))
+                  }
+                />
+                <div className="input-group">
+                  <label htmlFor="acad-uni-desc" className="input-label">
+                    Description & Overview
+                  </label>
+                  <textarea
+                    id="acad-uni-desc"
+                    className="admin-search-input"
+                    rows="2"
+                    style={{ width: '100%', resize: 'vertical' }}
+                    placeholder="Optional institutional notes or overview..."
+                    value={academicFormData.description || ''}
+                    onChange={(e) =>
+                      setAcademicFormData((prev) => ({ ...prev, description: e.target.value }))
+                    }
+                  />
+                </div>
+              </>
+            )}
+
+            {/* SCHOOL / FACULTY FIELDS */}
+            {academicModal.type === 'school' && (
+              <>
+                <div className="input-group">
+                  <label htmlFor="acad-school-uni" className="input-label">
+                    Affiliated University *
+                  </label>
+                  <div className="admin-select-wrapper" style={{ width: '100%' }}>
+                    <select
+                      id="acad-school-uni"
+                      className="admin-select"
+                      style={{ width: '100%' }}
+                      value={academicFormData.universityId || ''}
+                      onChange={(e) =>
+                        setAcademicFormData((prev) => ({ ...prev, universityId: e.target.value }))
+                      }
+                      required
+                    >
+                      <option value="">Select University...</option>
+                      {academics.universities.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name} {u.shortName ? `(${u.shortName})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <Input
+                  label="School / Faculty Name *"
+                  id="acad-school-name"
+                  type="text"
+                  placeholder="e.g. School of Computer Engineering"
+                  value={academicFormData.name || ''}
+                  onChange={(e) =>
+                    setAcademicFormData((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  required
+                />
+                <Input
+                  label="School Code / Identifier"
+                  id="acad-school-code"
+                  type="text"
+                  placeholder="e.g. SCSE"
+                  value={academicFormData.code || ''}
+                  onChange={(e) =>
+                    setAcademicFormData((prev) => ({ ...prev, code: e.target.value }))
+                  }
+                />
+                <div className="input-group">
+                  <label htmlFor="acad-school-desc" className="input-label">
+                    Description
+                  </label>
+                  <textarea
+                    id="acad-school-desc"
+                    className="admin-search-input"
+                    rows="2"
+                    style={{ width: '100%', resize: 'vertical' }}
+                    placeholder="Optional faculty details..."
+                    value={academicFormData.description || ''}
+                    onChange={(e) =>
+                      setAcademicFormData((prev) => ({ ...prev, description: e.target.value }))
+                    }
+                  />
+                </div>
+              </>
+            )}
+
+            {/* DEGREE COURSE FIELDS */}
+            {academicModal.type === 'course' && (
+              <>
+                <div className="admin-form-grid">
+                  <div className="input-group">
+                    <label htmlFor="acad-course-uni" className="input-label">
+                      University (Optional)
+                    </label>
+                    <div className="admin-select-wrapper" style={{ width: '100%' }}>
+                      <select
+                        id="acad-course-uni"
+                        className="admin-select"
+                        style={{ width: '100%' }}
+                        value={academicFormData.universityId || ''}
+                        onChange={(e) => {
+                          const uniId = e.target.value;
+                          setAcademicFormData((prev) => ({
+                            ...prev,
+                            universityId: uniId,
+                            schoolId: '' // reset school on uni switch
+                          }));
+                        }}
+                      >
+                        <option value="">General / All Universities</option>
+                        {academics.universities.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="input-group">
+                    <label htmlFor="acad-course-school" className="input-label">
+                      School / Faculty (Optional)
+                    </label>
+                    <div className="admin-select-wrapper" style={{ width: '100%' }}>
+                      <select
+                        id="acad-course-school"
+                        className="admin-select"
+                        style={{ width: '100%' }}
+                        value={academicFormData.schoolId || ''}
+                        onChange={(e) =>
+                          setAcademicFormData((prev) => ({ ...prev, schoolId: e.target.value }))
+                        }
+                      >
+                        <option value="">None / General</option>
+                        {academics.schools
+                          .filter(
+                            (s) =>
+                              !academicFormData.universityId ||
+                              s.universityId === academicFormData.universityId
+                          )
+                          .map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <Input
+                  label="Course / Degree Name *"
+                  id="acad-course-name"
+                  type="text"
+                  placeholder="e.g. Bachelor of Technology (Computer Science)"
+                  value={academicFormData.name || ''}
+                  onChange={(e) =>
+                    setAcademicFormData((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  required
+                />
+
+                <div className="admin-form-grid">
+                  <Input
+                    label="Course Code / Acronym"
+                    id="acad-course-code"
+                    type="text"
+                    placeholder="e.g. BTECH-CSE"
+                    value={academicFormData.code || ''}
+                    onChange={(e) =>
+                      setAcademicFormData((prev) => ({ ...prev, code: e.target.value }))
+                    }
+                  />
+
+                  <div className="input-group">
+                    <label htmlFor="acad-course-level" className="input-label">
+                      Degree Level
+                    </label>
+                    <div className="admin-select-wrapper" style={{ width: '100%' }}>
+                      <select
+                        id="acad-course-level"
+                        className="admin-select"
+                        style={{ width: '100%' }}
+                        value={academicFormData.degreeLevel || 'UNDERGRADUATE'}
+                        onChange={(e) =>
+                          setAcademicFormData((prev) => ({ ...prev, degreeLevel: e.target.value }))
+                        }
+                      >
+                        <option value="UNDERGRADUATE">Undergraduate (UG)</option>
+                        <option value="POSTGRADUATE">Postgraduate (PG)</option>
+                        <option value="DIPLOMA">Diploma</option>
+                        <option value="DOCTORAL">Doctoral (PhD)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="input-group">
+                  <label htmlFor="acad-course-semesters" className="input-label">
+                    Dynamic Semesters Count * (Configures Semester Selectors)
+                  </label>
+                  <input
+                    id="acad-course-semesters"
+                    type="number"
+                    min="1"
+                    max="20"
+                    className="admin-search-input"
+                    style={{ width: '100%' }}
+                    value={academicFormData.semestersCount || 8}
+                    onChange={(e) =>
+                      setAcademicFormData((prev) => ({
+                        ...prev,
+                        semestersCount: parseInt(e.target.value, 10) || 1
+                      }))
+                    }
+                    required
+                  />
+                  <div className="admin-form-hint">
+                    Controls dynamic semester rendering (1 to N) across Note Discovery, Note Uploads,
+                    and Scholar Profiles. Typical: B.Tech = 8, BCA = 6, MCA = 4, M.Tech = 4.
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* SUBJECT FIELDS */}
+            {academicModal.type === 'subject' && (
+              <>
+                <div className="input-group">
+                  <label htmlFor="acad-subject-course" className="input-label">
+                    Parent Degree Course *
+                  </label>
+                  <div className="admin-select-wrapper" style={{ width: '100%' }}>
+                    <select
+                      id="acad-subject-course"
+                      className="admin-select"
+                      style={{ width: '100%' }}
+                      value={academicFormData.courseId || ''}
+                      onChange={(e) => {
+                        const newCId = e.target.value;
+                        setAcademicFormData((prev) => ({
+                          ...prev,
+                          courseId: newCId,
+                          semester: 1 // reset semester to 1
+                        }));
+                      }}
+                      required
+                    >
+                      <option value="">Select Degree Course...</option>
+                      {academics.courses.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.semestersCount || 8} Semesters)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <Input
+                  label="Subject Title *"
+                  id="acad-subj-name"
+                  type="text"
+                  placeholder="e.g. Data Structures & Algorithms"
+                  value={academicFormData.name || ''}
+                  onChange={(e) =>
+                    setAcademicFormData((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  required
+                />
+
+                <div className="admin-form-grid">
+                  <Input
+                    label="Subject Code"
+                    id="acad-subj-code"
+                    type="text"
+                    placeholder="e.g. CS201"
+                    value={academicFormData.code || ''}
+                    onChange={(e) =>
+                      setAcademicFormData((prev) => ({ ...prev, code: e.target.value }))
+                    }
+                  />
+
+                  <div className="input-group">
+                    <label htmlFor="acad-subj-sem" className="input-label">
+                      Semester *
+                    </label>
+                    <div className="admin-select-wrapper" style={{ width: '100%' }}>
+                      <select
+                        id="acad-subj-sem"
+                        className="admin-select"
+                        style={{ width: '100%' }}
+                        value={academicFormData.semester || 1}
+                        onChange={(e) =>
+                          setAcademicFormData((prev) => ({
+                            ...prev,
+                            semester: parseInt(e.target.value, 10) || 1
+                          }))
+                        }
+                        required
+                      >
+                        {(() => {
+                          const targetC = academics.courses.find(
+                            (c) => c.id === academicFormData.courseId
+                          );
+                          const maxSem = targetC?.semestersCount || 8;
+                          return Array.from({ length: maxSem }, (_, i) => i + 1).map((s) => (
+                            <option key={s} value={s}>
+                              Semester {s}
+                            </option>
+                          ));
+                        })()}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="input-group">
+                  <label htmlFor="acad-subj-credits" className="input-label">
+                    Academic Credits (Optional)
+                  </label>
+                  <input
+                    id="acad-subj-credits"
+                    type="number"
+                    min="1"
+                    max="10"
+                    className="admin-search-input"
+                    style={{ width: '100%' }}
+                    value={academicFormData.credits || 3}
+                    onChange={(e) =>
+                      setAcademicFormData((prev) => ({
+                        ...prev,
+                        credits: parseInt(e.target.value, 10) || 1
+                      }))
+                    }
+                  />
+                </div>
+              </>
+            )}
+
+            {/* CATEGORY FIELDS */}
+            {academicModal.type === 'category' && (
+              <>
+                <Input
+                  label="Category Name *"
+                  id="acad-cat-name"
+                  type="text"
+                  placeholder="e.g. Lecture Notes, Lab Manuals, PYQs"
+                  value={academicFormData.name || ''}
+                  onChange={(e) =>
+                    setAcademicFormData((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  required
+                />
+                <div className="input-group">
+                  <label htmlFor="acad-cat-desc" className="input-label">
+                    Description
+                  </label>
+                  <textarea
+                    id="acad-cat-desc"
+                    className="admin-search-input"
+                    rows="2"
+                    style={{ width: '100%', resize: 'vertical' }}
+                    placeholder="Short description of notes in this category..."
+                    value={academicFormData.description || ''}
+                    onChange={(e) =>
+                      setAcademicFormData((prev) => ({ ...prev, description: e.target.value }))
+                    }
+                  />
+                </div>
+              </>
+            )}
+
+            {/* ACTIVE STATUS TOGGLE */}
+            <label className="admin-checkbox-row">
+              <input
+                type="checkbox"
+                checked={Boolean(academicFormData.isActive ?? true)}
+                onChange={(e) =>
+                  setAcademicFormData((prev) => ({ ...prev, isActive: e.target.checked }))
+                }
+              />
+              <span style={{ fontSize: '13px', fontWeight: '500' }}>
+                Active in System (Visible in Note discovery, upload forms, and scholar profiles)
+              </span>
+            </label>
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '12px',
+                marginTop: '16px'
+              }}
+            >
+              <Button
+                type="button"
+                variant="outline"
+                size="md"
+                onClick={handleCloseAcademicModal}
+                disabled={isSubmittingAcademic}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                size="md"
+                isLoading={isSubmittingAcademic}
+              >
+                {academicModal.mode === 'create' ? 'Create Record' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+
+        {/* ACADEMIC DELETE CONFIRMATION MODAL */}
+        <Modal
+          isOpen={academicModal.isOpen && academicModal.type === 'delete'}
+          onClose={handleCloseAcademicModal}
+          title={`Delete ${
+            academicModal.mode === 'university'
+              ? 'University'
+              : academicModal.mode === 'school'
+                ? 'School / Faculty'
+                : academicModal.mode === 'course'
+                  ? 'Degree Course'
+                  : academicModal.mode === 'subject'
+                    ? 'Subject'
+                    : 'Category'
+          }`}
+        >
+          {academicModal.entity && (
+            <div className="admin-modal-content">
+              {academicModalError && (
+                <div className="auth-alert auth-alert--danger">
+                  <span>{academicModalError}</span>
+                </div>
+              )}
+
+              <p className="admin-modal-desc">
+                Are you sure you want to permanently delete{' '}
+                <strong>{academicModal.entity.name}</strong>?
+              </p>
+
+              <p
+                className="admin-modal-desc"
+                style={{ color: 'var(--color-danger)', fontSize: '12px', marginTop: '6px' }}
+              >
+                PJ Study enforces strict relational integrity. Deleting this record will fail if
+                there are active notes, registered scholars, or curriculum dependencies associated
+                with it.
+              </p>
+
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '12px',
+                  marginTop: '16px'
+                }}
+              >
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  onClick={handleCloseAcademicModal}
+                  disabled={isSubmittingAcademic}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="danger"
+                  size="md"
+                  isLoading={isSubmittingAcademic}
+                  onClick={handleConfirmDeleteAcademic}
+                >
+                  Confirm Delete
+                </Button>
+              </div>
+            </div>
+          )}
+        </Modal>
       </div>
     </div>
   );

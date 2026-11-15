@@ -2,6 +2,7 @@ import prisma from '../../config/database.js';
 import userRepository, { USER_SAFE_SELECT } from '../users/user.repository.js';
 import authRepository from '../auth/auth.repository.js';
 import auditService from '../audit/audit.service.js';
+import academicService from '../academics/academic.service.js';
 import { ROLES, canRoleManageTarget, ROLE_PERMISSIONS } from '../../auth/rolePermissions.js';
 import { PERMISSIONS } from '../../auth/permissions.js';
 import { getPaginationParams, buildPaginatedResponse } from '../../utils/pagination.js';
@@ -752,247 +753,74 @@ export class AdminService {
   }
 
   /**
-   * Retrieves all academic taxonomy records (courses, subjects, categories).
+   * Retrieves all academic taxonomy records (universities, schools, courses, subjects, categories).
    */
   async getAcademics() {
-    const [courses, subjects, categories] = await Promise.all([
-      prisma.course.findMany({
-        orderBy: { name: 'asc' },
-        include: {
-          _count: { select: { subjects: true, notes: true, users: true } }
-        }
-      }),
-      prisma.subject.findMany({
-        orderBy: [{ course: { name: 'asc' } }, { semester: 'asc' }, { name: 'asc' }],
-        include: {
-          course: { select: { id: true, name: true } },
-          _count: { select: { notes: true } }
-        }
-      }),
-      prisma.category.findMany({
-        orderBy: { name: 'asc' },
-        include: {
-          _count: { select: { notes: true } }
-        }
-      })
-    ]);
+    return academicService.getUnifiedAcademicOverview();
+  }
 
-    return {
-      courses: courses.map((c) => ({
-        id: c.id,
-        name: c.name,
-        slug: c.slug,
-        description: c.description,
-        isActive: c.isActive,
-        subjectCount: c._count.subjects,
-        noteCount: c._count.notes,
-        userCount: c._count.users,
-        createdAt: c.createdAt
-      })),
-      subjects: subjects.map((s) => ({
-        id: s.id,
-        name: s.name,
-        slug: s.slug,
-        description: s.description,
-        semester: s.semester,
-        courseId: s.courseId,
-        courseName: s.course.name,
-        isActive: s.isActive,
-        noteCount: s._count.notes,
-        createdAt: s.createdAt
-      })),
-      categories: categories.map((cat) => ({
-        id: cat.id,
-        name: cat.name,
-        slug: cat.slug,
-        description: cat.description,
-        isActive: cat.isActive,
-        noteCount: cat._count.notes,
-        createdAt: cat.createdAt
-      }))
-    };
+  async createUniversity(data, actor) {
+    return academicService.createUniversity(data, actor);
+  }
+
+  async updateUniversity(id, data, actor) {
+    return academicService.updateUniversity(id, data, actor);
+  }
+
+  async deleteUniversity(id, actor) {
+    return academicService.deleteUniversity(id, actor);
+  }
+
+  async createSchool(data, actor) {
+    return academicService.createSchool(data, actor);
+  }
+
+  async updateSchool(id, data, actor) {
+    return academicService.updateSchool(id, data, actor);
+  }
+
+  async deleteSchool(id, actor) {
+    return academicService.deleteSchool(id, actor);
   }
 
   async createCourse(data, actor) {
-    if (!data.name || data.name.trim().length < 2) {
-      const err = new Error('Course name must be at least 2 characters long.');
-      err.statusCode = 422;
-      throw err;
-    }
-    const slug = slugify(data.slug || data.name);
-    const existing = await prisma.course.findUnique({ where: { slug } });
-    if (existing) {
-      const err = new Error(`A course with slug "${slug}" already exists.`);
-      err.statusCode = 409;
-      throw err;
-    }
-    const course = await prisma.course.create({
-      data: {
-        name: data.name.trim(),
-        slug,
-        description: data.description?.trim() || null,
-        isActive: data.isActive !== undefined ? Boolean(data.isActive) : true
-      }
-    });
-    await auditService.log({
-      actorId: actor.id,
-      action: 'COURSE_CREATED',
-      entityType: 'COURSE',
-      entityId: course.id,
-      metadata: { name: course.name, slug: course.slug }
-    });
-    return course;
+    return academicService.createCourse(data, actor);
   }
 
   async updateCourse(id, data, actor) {
-    const course = await prisma.course.findUnique({ where: { id } });
-    if (!course) {
-      const err = new Error('Course not found.');
-      err.statusCode = 404;
-      throw err;
-    }
-    const updateData = {};
-    if (data.name !== undefined) updateData.name = data.name.trim();
-    if (data.description !== undefined) updateData.description = data.description?.trim() || null;
-    if (data.isActive !== undefined) updateData.isActive = Boolean(data.isActive);
-    if (data.slug) updateData.slug = slugify(data.slug);
+    return academicService.updateCourse(id, data, actor);
+  }
 
-    const updated = await prisma.course.update({
-      where: { id },
-      data: updateData
-    });
-    await auditService.log({
-      actorId: actor.id,
-      action: 'COURSE_UPDATED',
-      entityType: 'COURSE',
-      entityId: id,
-      metadata: updateData
-    });
-    return updated;
+  async deleteCourse(id, actor) {
+    return academicService.deleteCourse(id, actor);
+  }
+
+  async getCourseSemesters(courseId) {
+    return academicService.getCourseSemesters(courseId);
   }
 
   async createSubject(data, actor) {
-    if (!data.courseId) {
-      const err = new Error('Course ID is required to create a subject.');
-      err.statusCode = 422;
-      throw err;
-    }
-    if (!data.name || data.name.trim().length < 2) {
-      const err = new Error('Subject name must be at least 2 characters.');
-      err.statusCode = 422;
-      throw err;
-    }
-    const semester = Number(data.semester);
-    if (!semester || semester < 1 || semester > 12) {
-      const err = new Error('Semester must be an integer between 1 and 12.');
-      err.statusCode = 422;
-      throw err;
-    }
-    const slug = slugify(data.slug || data.name);
-    const subject = await prisma.subject.create({
-      data: {
-        courseId: data.courseId,
-        semester,
-        name: data.name.trim(),
-        slug,
-        description: data.description?.trim() || null,
-        isActive: data.isActive !== undefined ? Boolean(data.isActive) : true
-      }
-    });
-    await auditService.log({
-      actorId: actor.id,
-      action: 'SUBJECT_CREATED',
-      entityType: 'SUBJECT',
-      entityId: subject.id,
-      metadata: { name: subject.name, courseId: data.courseId, semester }
-    });
-    return subject;
+    return academicService.createSubject(data, actor);
   }
 
   async updateSubject(id, data, actor) {
-    const subject = await prisma.subject.findUnique({ where: { id } });
-    if (!subject) {
-      const err = new Error('Subject not found.');
-      err.statusCode = 404;
-      throw err;
-    }
-    const updateData = {};
-    if (data.name !== undefined) updateData.name = data.name.trim();
-    if (data.description !== undefined) updateData.description = data.description?.trim() || null;
-    if (data.semester !== undefined) updateData.semester = Number(data.semester);
-    if (data.isActive !== undefined) updateData.isActive = Boolean(data.isActive);
-    if (data.slug) updateData.slug = slugify(data.slug);
+    return academicService.updateSubject(id, data, actor);
+  }
 
-    const updated = await prisma.subject.update({
-      where: { id },
-      data: updateData
-    });
-    await auditService.log({
-      actorId: actor.id,
-      action: 'SUBJECT_UPDATED',
-      entityType: 'SUBJECT',
-      entityId: id,
-      metadata: updateData
-    });
-    return updated;
+  async deleteSubject(id, actor) {
+    return academicService.deleteSubject(id, actor);
   }
 
   async createCategory(data, actor) {
-    if (!data.name || data.name.trim().length < 2) {
-      const err = new Error('Category name must be at least 2 characters.');
-      err.statusCode = 422;
-      throw err;
-    }
-    const slug = slugify(data.slug || data.name);
-    const existing = await prisma.category.findUnique({ where: { slug } });
-    if (existing) {
-      const err = new Error(`Category with slug "${slug}" already exists.`);
-      err.statusCode = 409;
-      throw err;
-    }
-    const category = await prisma.category.create({
-      data: {
-        name: data.name.trim(),
-        slug,
-        description: data.description?.trim() || null,
-        isActive: data.isActive !== undefined ? Boolean(data.isActive) : true
-      }
-    });
-    await auditService.log({
-      actorId: actor.id,
-      action: 'CATEGORY_CREATED',
-      entityType: 'CATEGORY',
-      entityId: category.id,
-      metadata: { name: category.name }
-    });
-    return category;
+    return academicService.createCategory(data, actor);
   }
 
   async updateCategory(id, data, actor) {
-    const category = await prisma.category.findUnique({ where: { id } });
-    if (!category) {
-      const err = new Error('Category not found.');
-      err.statusCode = 404;
-      throw err;
-    }
-    const updateData = {};
-    if (data.name !== undefined) updateData.name = data.name.trim();
-    if (data.description !== undefined) updateData.description = data.description?.trim() || null;
-    if (data.isActive !== undefined) updateData.isActive = Boolean(data.isActive);
-    if (data.slug) updateData.slug = slugify(data.slug);
+    return academicService.updateCategory(id, data, actor);
+  }
 
-    const updated = await prisma.category.update({
-      where: { id },
-      data: updateData
-    });
-    await auditService.log({
-      actorId: actor.id,
-      action: 'CATEGORY_UPDATED',
-      entityType: 'CATEGORY',
-      entityId: id,
-      metadata: updateData
-    });
-    return updated;
+  async deleteCategory(id, actor) {
+    return academicService.deleteCategory(id, actor);
   }
 
   /**

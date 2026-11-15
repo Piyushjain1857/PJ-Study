@@ -177,6 +177,60 @@ export class AdminController {
     }
   };
 
+  createUniversity = async (req, res, next) => {
+    try {
+      const university = await this.adminSvc.createUniversity(req.body, req.user);
+      return sendSuccess(res, university, 201, 'University created successfully.');
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  updateUniversity = async (req, res, next) => {
+    try {
+      const updated = await this.adminSvc.updateUniversity(req.params.id, req.body, req.user);
+      return sendSuccess(res, updated, 200, 'University updated successfully.');
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  deleteUniversity = async (req, res, next) => {
+    try {
+      const result = await this.adminSvc.deleteUniversity(req.params.id, req.user);
+      return sendSuccess(res, result, 200, result.message);
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  createSchool = async (req, res, next) => {
+    try {
+      const school = await this.adminSvc.createSchool(req.body, req.user);
+      return sendSuccess(res, school, 201, 'School created successfully.');
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  updateSchool = async (req, res, next) => {
+    try {
+      const updated = await this.adminSvc.updateSchool(req.params.id, req.body, req.user);
+      return sendSuccess(res, updated, 200, 'School updated successfully.');
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  deleteSchool = async (req, res, next) => {
+    try {
+      const result = await this.adminSvc.deleteSchool(req.params.id, req.user);
+      return sendSuccess(res, result, 200, result.message);
+    } catch (err) {
+      return next(err);
+    }
+  };
+
   createCourse = async (req, res, next) => {
     try {
       const course = await this.adminSvc.createCourse(req.body, req.user);
@@ -190,6 +244,24 @@ export class AdminController {
     try {
       const updated = await this.adminSvc.updateCourse(req.params.id, req.body, req.user);
       return sendSuccess(res, updated, 200, 'Course updated successfully.');
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  deleteCourse = async (req, res, next) => {
+    try {
+      const result = await this.adminSvc.deleteCourse(req.params.id, req.user);
+      return sendSuccess(res, result, 200, result.message);
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  getCourseSemesters = async (req, res, next) => {
+    try {
+      const data = await this.adminSvc.getCourseSemesters(req.params.id);
+      return sendSuccess(res, data);
     } catch (err) {
       return next(err);
     }
@@ -213,6 +285,15 @@ export class AdminController {
     }
   };
 
+  deleteSubject = async (req, res, next) => {
+    try {
+      const result = await this.adminSvc.deleteSubject(req.params.id, req.user);
+      return sendSuccess(res, result, 200, result.message);
+    } catch (err) {
+      return next(err);
+    }
+  };
+
   createCategory = async (req, res, next) => {
     try {
       const category = await this.adminSvc.createCategory(req.body, req.user);
@@ -226,6 +307,15 @@ export class AdminController {
     try {
       const updated = await this.adminSvc.updateCategory(req.params.id, req.body, req.user);
       return sendSuccess(res, updated, 200, 'Category updated successfully.');
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  deleteCategory = async (req, res, next) => {
+    try {
+      const result = await this.adminSvc.deleteCategory(req.params.id, req.user);
+      return sendSuccess(res, result, 200, result.message);
     } catch (err) {
       return next(err);
     }

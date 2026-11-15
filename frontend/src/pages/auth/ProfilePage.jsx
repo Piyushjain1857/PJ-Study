@@ -317,35 +317,19 @@ export function ProfilePage() {
     }
   }
 
-  // Filter and sort canonical degree courses: strictly B.Tech, BCA, B.Sc., MCA, M.Tech
-  const allowedCourseNames = ['b.tech', 'bca', 'b.sc.', 'mca', 'm.tech'];
+  // Sort canonical degree courses with preferred order
   const preferredCourseOrder = ['b.tech', 'bca', 'b.sc.', 'mca', 'm.tech'];
 
   const displayCourses = useMemo(() => {
     const rawList = Array.isArray(courses) ? courses : [];
-    return rawList
-      .filter((c) => {
-        const lower = (c.name || '').toLowerCase().trim();
-        return allowedCourseNames.some((k) => lower === k || lower.startsWith(k));
-      })
-      .map((c) => {
-        const raw = (c.name || '').toLowerCase().trim();
-        let canonicalName = c.name;
-        if (raw.startsWith('b.tech') || raw.startsWith('btech')) canonicalName = 'B.Tech';
-        else if (raw.startsWith('bca')) canonicalName = 'BCA';
-        else if (raw.startsWith('b.sc') || raw.startsWith('bsc')) canonicalName = 'B.Sc.';
-        else if (raw.startsWith('mca')) canonicalName = 'MCA';
-        else if (raw.startsWith('m.tech') || raw.startsWith('mtech')) canonicalName = 'M.Tech';
-        return { ...c, name: canonicalName };
-      })
-      .sort((a, b) => {
-        const idxA = preferredCourseOrder.indexOf(a.name?.toLowerCase().trim());
-        const idxB = preferredCourseOrder.indexOf(b.name?.toLowerCase().trim());
-        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-        if (idxA !== -1) return -1;
-        if (idxB !== -1) return 1;
-        return (a.name || '').localeCompare(b.name || '');
-      });
+    return [...rawList].sort((a, b) => {
+      const idxA = preferredCourseOrder.indexOf(a.name?.toLowerCase().trim());
+      const idxB = preferredCourseOrder.indexOf(b.name?.toLowerCase().trim());
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return (a.name || '').localeCompare(b.name || '');
+    });
   }, [courses]);
 
   // Available semesters for selected course

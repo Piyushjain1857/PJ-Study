@@ -4,8 +4,10 @@ import prisma from '../../config/database.js';
  * Standard note selection with academic metadata and author info.
  */
 export const NOTE_DETAIL_INCLUDE = {
-  course: { select: { id: true, name: true, slug: true } },
-  subject: { select: { id: true, name: true, slug: true, semester: true } },
+  university: { select: { id: true, name: true, shortName: true } },
+  school: { select: { id: true, name: true } },
+  course: { select: { id: true, name: true, slug: true, semestersCount: true, degreeLevel: true } },
+  subject: { select: { id: true, name: true, slug: true, semester: true, code: true } },
   topic: { select: { id: true, name: true, slug: true } },
   category: { select: { id: true, name: true, slug: true } },
   uploadedBy: { select: { id: true, name: true, avatarUrl: true, role: true } },

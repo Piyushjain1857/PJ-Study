@@ -74,6 +74,22 @@ export class ProfileService {
       dataToUpdate.university = updateData.university ? updateData.university.trim() : null;
     }
 
+    if (updateData.universityId !== undefined) {
+      if (updateData.universityId && updateData.universityId.trim()) {
+        const uni = await prisma.university.findUnique({
+          where: { id: updateData.universityId.trim() }
+        });
+        if (uni) {
+          dataToUpdate.universityId = uni.id;
+          if (!dataToUpdate.university) {
+            dataToUpdate.university = uni.name;
+          }
+        }
+      } else {
+        dataToUpdate.universityId = null;
+      }
+    }
+
     if (updateData.courseId !== undefined) {
       if (updateData.courseId && updateData.courseId.trim()) {
         const course = await prisma.course.findUnique({
@@ -628,23 +644,15 @@ export class ProfileService {
     });
 
     return activeCourses.map((course) => {
-      const semSet = new Set(course.subjects.map((s) => s.semester).filter(Boolean));
-      const semesters = Array.from(semSet).sort((a, b) => a - b);
-      if (semesters.length === 0) {
-        if (/b\.?\s*tech/i.test(course.name)) {
-          semesters.push(1, 2, 3, 4, 5, 6, 7, 8);
-        } else if (/bca|b\.?\s*sc/i.test(course.name)) {
-          semesters.push(1, 2, 3, 4, 5, 6);
-        } else if (/mca|m\.?\s*tech/i.test(course.name)) {
-          semesters.push(1, 2, 3, 4);
-        } else {
-          semesters.push(1, 2, 3, 4, 5, 6, 7, 8);
-        }
-      }
+      const count = course.semestersCount || 8;
+      const semesters = Array.from({ length: count }, (_, i) => i + 1);
       return {
         id: course.id,
         name: course.name,
         slug: course.slug,
+        code: course.code,
+        degreeLevel: course.degreeLevel,
+        universityId: course.universityId,
         description: course.description,
         semesters
       };

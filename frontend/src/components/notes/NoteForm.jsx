@@ -63,35 +63,41 @@ export function NoteForm({
     }
   }, [subjectId, subjects, courseId, semester]);
 
-  // Canonical degree programs: strictly B.Tech, BCA, B.Sc., MCA, M.Tech
-  const allowedCourseNames = ['b.tech', 'bca', 'b.sc.', 'mca', 'm.tech'];
+  // Dynamic course list preserving canonical programs priority without hardcoding
   const preferredCourseOrder = ['b.tech', 'bca', 'b.sc.', 'mca', 'm.tech'];
   const displayCourses = useMemo(() => {
     const rawList = Array.isArray(courses) ? courses : [];
-    return rawList
-      .filter((c) => {
-        const lower = (c.name || '').toLowerCase().trim();
-        return allowedCourseNames.some((k) => lower === k || lower.startsWith(k));
-      })
-      .map((c) => {
-        const raw = (c.name || '').toLowerCase().trim();
-        let canonicalName = c.name;
-        if (raw.startsWith('b.tech') || raw.startsWith('btech')) canonicalName = 'B.Tech';
-        else if (raw.startsWith('bca')) canonicalName = 'BCA';
-        else if (raw.startsWith('b.sc') || raw.startsWith('bsc')) canonicalName = 'B.Sc.';
-        else if (raw.startsWith('mca')) canonicalName = 'MCA';
-        else if (raw.startsWith('m.tech') || raw.startsWith('mtech')) canonicalName = 'M.Tech';
-        return { ...c, name: canonicalName };
-      })
-      .sort((a, b) => {
-        const idxA = preferredCourseOrder.indexOf(a.name?.toLowerCase().trim());
-        const idxB = preferredCourseOrder.indexOf(b.name?.toLowerCase().trim());
-        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-        if (idxA !== -1) return -1;
-        if (idxB !== -1) return 1;
-        return (a.name || '').localeCompare(b.name || '');
-      });
+    return [...rawList].sort((a, b) => {
+      const idxA = preferredCourseOrder.indexOf(a.name?.toLowerCase().trim());
+      const idxB = preferredCourseOrder.indexOf(b.name?.toLowerCase().trim());
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return (a.name || '').localeCompare(b.name || '');
+    });
   }, [courses]);
+
+  // Selected Course details for dynamic semester architecture
+  const selectedCourse = useMemo(() => {
+    return courses.find((c) => c.id === courseId);
+  }, [courses, courseId]);
+
+  // Dynamic valid semesters derived from course semestersCount
+  const validSemesters = useMemo(() => {
+    if (!selectedCourse) {
+      return [1, 2, 3, 4, 5, 6, 7, 8];
+    }
+    const maxSem =
+      selectedCourse.semestersCount ||
+      (/b\.?\s*tech/i.test(selectedCourse.name)
+        ? 8
+        : /bca|b\.?\s*sc/i.test(selectedCourse.name)
+          ? 6
+          : /mca|m\.?\s*tech/i.test(selectedCourse.name)
+            ? 4
+            : 8);
+    return Array.from({ length: maxSem }, (_, i) => i + 1);
+  }, [selectedCourse]);
 
   // In-memory filtered subjects according to selected course and/or semester
   const filteredSubjects = useMemo(() => {
@@ -107,6 +113,14 @@ export function NoteForm({
   const handleCourseChange = (newCourseId) => {
     setCourseId(newCourseId);
     if (errors.subjectId) setErrors((prev) => ({ ...prev, subjectId: '' }));
+
+    const newCourse = courses.find((c) => c.id === newCourseId);
+    if (newCourse && semester) {
+      const maxSem = newCourse.semestersCount || 8;
+      if (parseInt(semester, 10) > maxSem) {
+        setSemester('');
+      }
+    }
 
     // If currently selected subject is not in the new course, reset it
     if (subjectId) {
@@ -270,7 +284,7 @@ export function NoteForm({
             disabled={isSubmitting || isLoadingTaxonomies}
           >
             <option value="">All Semesters (Filter)</option>
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+            {validSemesters.map((s) => (
               <option key={s} value={String(s)}>
                 Semester {s}
               </option>

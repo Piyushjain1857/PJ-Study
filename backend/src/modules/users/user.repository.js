@@ -10,6 +10,7 @@ export const USER_SAFE_SELECT = {
   avatarUrl: true,
   bio: true,
   university: true,
+  universityId: true,
   courseId: true,
   semester: true,
   publicProfileEnabled: true,
@@ -21,11 +22,21 @@ export const USER_SAFE_SELECT = {
   isActive: true,
   createdAt: true,
   updatedAt: true,
+  universityRef: {
+    select: {
+      id: true,
+      name: true,
+      shortName: true
+    }
+  },
   course: {
     select: {
       id: true,
       name: true,
-      slug: true
+      slug: true,
+      code: true,
+      degreeLevel: true,
+      semestersCount: true
     }
   }
 };
