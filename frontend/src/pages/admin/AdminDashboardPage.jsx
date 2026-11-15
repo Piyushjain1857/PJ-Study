@@ -124,7 +124,7 @@ export function AdminDashboardPage() {
   const [suspendError, setSuspendError] = useState('');
 
   // Academic Architecture State (Step 16)
-  const [academicSubTab, setAcademicSubTab] = useState('universities');
+  const [academicSubTab, setAcademicSubTab] = useState('schools');
   const [academics, setAcademics] = useState({
     universities: [],
     schools: [],
@@ -291,9 +291,16 @@ export function AdminDashboardPage() {
     setIsLoadingAnnouncements(true);
     try {
       const data = await adminService.getAnnouncements();
-      setAnnouncementsList(data || []);
+      const list = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.announcements)
+          ? data.announcements
+          : Array.isArray(data?.items)
+            ? data.items
+            : [];
+      setAnnouncementsList(list);
     } catch {
-      // Non-blocking
+      setAnnouncementsList([]);
     } finally {
       setIsLoadingAnnouncements(false);
     }
@@ -525,9 +532,12 @@ export function AdminDashboardPage() {
       fetchUsers(1, { status: 'inactive' });
     } else if (path.startsWith('/admin/academics')) {
       setActiveTab('academics');
-      if (path.includes('/universities')) setAcademicSubTab('universities');
+      if (path.includes('/schools') || path.includes('/universities')) setAcademicSubTab('schools');
       else if (path.includes('/courses')) setAcademicSubTab('courses');
+      else if (path.includes('/semesters')) setAcademicSubTab('semesters');
       else if (path.includes('/subjects')) setAcademicSubTab('subjects');
+      else if (path.includes('/categories')) setAcademicSubTab('categories');
+      else setAcademicSubTab('schools');
     } else if (path === '/admin/notes') {
       setActiveTab('notes');
       setNotesStatusFilter('ALL');
@@ -746,15 +756,16 @@ export function AdminDashboardPage() {
         }
       } else if (type === 'school') {
         if (!academicFormData.name?.trim()) throw new Error('School/Faculty name is required.');
-        if (!academicFormData.universityId) throw new Error('Affiliated university is required.');
+        const uniId = academicFormData.universityId || academics.universities[0]?.id;
+        const payload = { ...academicFormData, universityId: uniId };
         if (mode === 'create') {
-          await adminService.createSchool(academicFormData);
+          await adminService.createSchool(payload);
           setActionNotice({
             type: 'success',
-            message: `School "${academicFormData.name}" created successfully.`
+            message: `School "${academicFormData.name}" created successfully under K.R. Mangalam University.`
           });
         } else {
-          await adminService.updateSchool(entity.id, academicFormData);
+          await adminService.updateSchool(entity.id, payload);
           setActionNotice({
             type: 'success',
             message: `School "${academicFormData.name}" updated successfully.`
@@ -764,10 +775,11 @@ export function AdminDashboardPage() {
         if (!academicFormData.name?.trim()) throw new Error('Degree Course name is required.');
         const count = Number(academicFormData.semestersCount) || 8;
         if (count < 1 || count > 20) throw new Error('Semesters count must be between 1 and 20.');
+        const uniId = academicFormData.universityId || academics.universities[0]?.id || null;
         const payload = {
           ...academicFormData,
           semestersCount: count,
-          universityId: academicFormData.universityId || null,
+          universityId: uniId,
           schoolId: academicFormData.schoolId || null
         };
         if (mode === 'create') {
@@ -1324,6 +1336,14 @@ export function AdminDashboardPage() {
         badge: 'Forensic Audit Ledger',
         title: 'Audit Compliance Trail',
         subtitle: 'Tamper-evident forensic ledger of privileged administrative operations, role modifications, access control events, and publication lifecycle changes.'
+      };
+    }
+    if (activeTab === 'announcements') {
+      return {
+        seo: 'Platform Announcements | PJ Study Super Admin',
+        badge: 'Global Broadcasts',
+        title: 'Platform Announcements',
+        subtitle: 'Broadcast system-wide notices, operational banners, and academic alerts to scholars and faculty.'
       };
     }
     if (activeTab === 'overview') {
@@ -2992,12 +3012,109 @@ export function AdminDashboardPage() {
               </div>
             ) : (
               <>
+                {/* Default Campus Institutional Identity Card */}
+                <div
+                  className="admin-campus-card"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '16px',
+                    padding: '16px 20px',
+                    background: 'linear-gradient(135deg, rgba(27, 77, 54, 0.08) 0%, rgba(27, 77, 54, 0.02) 100%)',
+                    border: '1px solid rgba(27, 77, 54, 0.22)',
+                    borderRadius: '12px',
+                    marginBottom: '16px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div
+                      style={{
+                        width: '44px',
+                        height: '44px',
+                        borderRadius: '10px',
+                        backgroundColor: 'var(--color-primary, #1b4d36)',
+                        color: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '18px',
+                        fontWeight: 700,
+                        boxShadow: '0 2px 8px rgba(27, 77, 54, 0.25)',
+                        flexShrink: 0
+                      }}
+                    >
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 21h18" />
+                        <path d="M5 21V7l7-4 7 4v14" />
+                        <path d="M9 10h1v4H9z" />
+                        <path d="M14 10h1v4h-1z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-text-primary, #111827)' }}>
+                          K.R. Mangalam University
+                        </h3>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            backgroundColor: '#e8f5e9',
+                            color: '#1b4d36',
+                            border: '1px solid rgba(27, 77, 54, 0.25)'
+                          }}
+                        >
+                          Default Institution
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            backgroundColor: 'var(--color-bg-secondary, #f1f5f9)',
+                            color: 'var(--color-text-secondary, #475569)'
+                          }}
+                        >
+                          KRMU
+                        </span>
+                      </div>
+                      <p style={{ margin: '3px 0 0', fontSize: '12px', color: 'var(--color-text-secondary, #64748b)' }}>
+                        Institutional Academic Architecture • Gurugram, India • Curriculums, Schools & Degree Programs
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <a
+                      href="https://www.krmangalam.edu.in"
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '7px 14px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--color-border, #e2e8f0)',
+                        backgroundColor: '#ffffff',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: 'var(--color-primary, #1b4d36)',
+                        textDecoration: 'none',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                      }}
+                    >
+                      Official Campus Portal ↗
+                    </a>
+                  </div>
+                </div>
+
                 {/* Metric KPI Overview */}
                 <div className="admin-academic-overview">
-              <div className="admin-academic-stat-card">
-                <span className="admin-academic-stat-label">Universities</span>
-                <span className="admin-academic-stat-value">{academics.universities.length}</span>
-              </div>
               <div className="admin-academic-stat-card">
                 <span className="admin-academic-stat-label">Schools / Faculties</span>
                 <span className="admin-academic-stat-value">{academics.schools.length}</span>
@@ -3007,7 +3124,13 @@ export function AdminDashboardPage() {
                 <span className="admin-academic-stat-value">{academics.courses.length}</span>
               </div>
               <div className="admin-academic-stat-card">
-                <span className="admin-academic-stat-label">Subjects</span>
+                <span className="admin-academic-stat-label">Dynamic Semesters</span>
+                <span className="admin-academic-stat-value">
+                  {academics.courses.reduce((sum, c) => sum + (c.semestersCount || 8), 0)}
+                </span>
+              </div>
+              <div className="admin-academic-stat-card">
+                <span className="admin-academic-stat-label">Curriculum Subjects</span>
                 <span className="admin-academic-stat-value">{academics.subjects.length}</span>
               </div>
               <div className="admin-academic-stat-card">
@@ -3018,16 +3141,6 @@ export function AdminDashboardPage() {
 
             {/* Sub-navigation Pills */}
             <div className="admin-academic-subnav" role="tablist" aria-label="Academic Subsections">
-              <button
-                type="button"
-                className={`admin-academic-subnav-btn ${
-                  academicSubTab === 'universities' ? 'admin-academic-subnav-btn--active' : ''
-                }`}
-                onClick={() => setAcademicSubTab('universities')}
-              >
-                Universities
-                <span className="admin-academic-subnav-badge">{academics.universities.length}</span>
-              </button>
               <button
                 type="button"
                 className={`admin-academic-subnav-btn ${
@@ -3137,11 +3250,6 @@ export function AdminDashboardPage() {
               )}
 
               <div style={{ marginLeft: 'auto' }}>
-                {academicSubTab === 'universities' && (
-                  <Button variant="primary" size="sm" onClick={() => handleOpenCreateModal('university')}>
-                    + Add University
-                  </Button>
-                )}
                 {academicSubTab === 'schools' && (
                   <Button variant="primary" size="sm" onClick={() => handleOpenCreateModal('school')}>
                     + Add School / Faculty
@@ -3170,114 +3278,7 @@ export function AdminDashboardPage() {
               </div>
             </div>
 
-            {/* SUB-TAB 1: UNIVERSITIES */}
-            {academicSubTab === 'universities' && (
-              <div className="admin-table-container">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>University / Institution</th>
-                      <th>Short / Code</th>
-                      <th>Website</th>
-                      <th>Affiliated Schools & Courses</th>
-                      <th>Status</th>
-                      <th style={{ textAlign: 'right' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {academics.universities
-                      .filter((u) => {
-                        if (academicStatusFilter === 'ACTIVE' && !u.isActive) return false;
-                        if (academicStatusFilter === 'INACTIVE' && u.isActive) return false;
-                        if (academicSearch) {
-                          const q = academicSearch.toLowerCase();
-                          return (
-                            u.name?.toLowerCase().includes(q) ||
-                            u.shortName?.toLowerCase().includes(q) ||
-                            u.code?.toLowerCase().includes(q)
-                          );
-                        }
-                        return true;
-                      })
-                      .map((uni) => (
-                        <tr key={uni.id}>
-                          <td>
-                            <strong>{uni.name}</strong>
-                            {uni.description && (
-                              <p
-                                style={{
-                                  margin: '2px 0 0',
-                                  fontSize: '11px',
-                                  color: 'var(--color-text-secondary)'
-                                }}
-                              >
-                                {uni.description}
-                              </p>
-                            )}
-                          </td>
-                          <td>
-                            <code>{uni.shortName || uni.code || '—'}</code>
-                          </td>
-                          <td>
-                            {uni.website ? (
-                              <a
-                                href={uni.website}
-                                target="_blank"
-                                rel="noreferrer"
-                                style={{ fontSize: '12px', color: 'var(--color-primary)' }}
-                              >
-                                Visit Link ↗
-                              </a>
-                            ) : (
-                              '—'
-                            )}
-                          </td>
-                          <td>
-                            <span style={{ fontSize: '12px' }}>
-                              {uni._count?.schools ?? uni.schools?.length ?? 0} Schools •{' '}
-                              {uni._count?.courses ?? uni.courses?.length ?? 0} Courses
-                            </span>
-                          </td>
-                          <td>
-                            <Badge variant={uni.isActive ? 'success' : 'neutral'} size="sm">
-                              {uni.isActive ? 'Active' : 'Inactive'}
-                            </Badge>
-                          </td>
-                          <td style={{ textAlign: 'right' }}>
-                            <div
-                              style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}
-                            >
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleOpenEditModal('university', uni)}
-                              >
-                                Edit
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleToggleAcademicStatus('university', uni)}
-                              >
-                                {uni.isActive ? 'Deactivate' : 'Activate'}
-                              </Button>
-                              <Button
-                                variant="danger"
-                                size="sm"
-                                onClick={() => handleOpenDeleteModal('university', uni)}
-                              >
-                                Delete
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {/* SUB-TAB 2: SCHOOLS / FACULTIES */}
+            {/* SUB-TAB: SCHOOLS / FACULTIES */}
             {academicSubTab === 'schools' && (
               <div className="admin-table-container">
                 <table className="admin-table">
@@ -3285,7 +3286,7 @@ export function AdminDashboardPage() {
                     <tr>
                       <th>School / Faculty</th>
                       <th>Code / Slug</th>
-                      <th>Affiliated University</th>
+                      <th>Institution</th>
                       <th>Courses</th>
                       <th>Status</th>
                       <th style={{ textAlign: 'right' }}>Actions</th>
@@ -3326,9 +3327,11 @@ export function AdminDashboardPage() {
                             <code>{school.code || school.slug || '—'}</code>
                           </td>
                           <td>
-                            {school.university?.name ||
-                              academics.universities.find((u) => u.id === school.universityId)?.name ||
-                              '—'}
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-primary, #1b4d36)' }}>
+                              {school.university?.name ||
+                                academics.universities.find((u) => u.id === school.universityId)?.name ||
+                                'K.R. Mangalam University'}
+                            </span>
                           </td>
                           <td>
                             <span style={{ fontSize: '12px' }}>
@@ -4490,14 +4493,14 @@ export function AdminDashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {announcementsList.length === 0 ? (
+                      {(Array.isArray(announcementsList) ? announcementsList : []).length === 0 ? (
                         <tr>
                           <td colSpan="5" style={{ textAlign: 'center', padding: '36px' }}>
                             <p className="admin-muted-text">No active platform announcements.</p>
                           </td>
                         </tr>
                       ) : (
-                        announcementsList.map((ann) => (
+                        (Array.isArray(announcementsList) ? announcementsList : []).map((ann) => (
                           <tr key={ann.id}>
                             <td>
                               <strong>{ann.title}</strong>
@@ -5047,6 +5050,7 @@ mysqldump -u root -p pj_study &gt; backup_$(date +%F).sql
               type: 'success',
               message: `Announcement broadcast successfully to ${result?.recipientCount || 0} scholars!`
             });
+            fetchAnnouncements();
           }}
         />
 
@@ -5142,27 +5146,45 @@ mysqldump -u root -p pj_study &gt; backup_$(date +%F).sql
             {academicModal.type === 'school' && (
               <>
                 <div className="input-group">
-                  <label htmlFor="acad-school-uni" className="input-label">
-                    Affiliated University *
-                  </label>
-                  <div className="admin-select-wrapper" style={{ width: '100%' }}>
-                    <select
-                      id="acad-school-uni"
-                      className="admin-select"
-                      style={{ width: '100%' }}
-                      value={academicFormData.universityId || ''}
-                      onChange={(e) =>
-                        setAcademicFormData((prev) => ({ ...prev, universityId: e.target.value }))
-                      }
-                      required
+                  <label className="input-label">Academic Campus / Institution</label>
+                  <div
+                    style={{
+                      padding: '9px 12px',
+                      background: 'var(--color-bg-secondary, #f8fafc)',
+                      border: '1px solid var(--color-border, #e2e8f0)',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: 'var(--color-text-primary, #0f172a)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          backgroundColor: 'var(--color-primary, #1b4d36)'
+                        }}
+                      />
+                      <span>{academics.universities[0]?.name || 'K.R. Mangalam University'}</span>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        color: '#1b4d36',
+                        backgroundColor: '#e8f5e9',
+                        padding: '2px 8px',
+                        borderRadius: '12px'
+                      }}
                     >
-                      <option value="">Select University...</option>
-                      {academics.universities.map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.name} {u.shortName ? `(${u.shortName})` : ''}
-                        </option>
-                      ))}
-                    </select>
+                      Default Campus
+                    </span>
                   </div>
                 </div>
                 <Input
@@ -5210,31 +5232,34 @@ mysqldump -u root -p pj_study &gt; backup_$(date +%F).sql
               <>
                 <div className="admin-form-grid">
                   <div className="input-group">
-                    <label htmlFor="acad-course-uni" className="input-label">
-                      University (Optional)
-                    </label>
-                    <div className="admin-select-wrapper" style={{ width: '100%' }}>
-                      <select
-                        id="acad-course-uni"
-                        className="admin-select"
-                        style={{ width: '100%' }}
-                        value={academicFormData.universityId || ''}
-                        onChange={(e) => {
-                          const uniId = e.target.value;
-                          setAcademicFormData((prev) => ({
-                            ...prev,
-                            universityId: uniId,
-                            schoolId: '' // reset school on uni switch
-                          }));
+                    <label className="input-label">Campus / Institution</label>
+                    <div
+                      style={{
+                        padding: '9px 12px',
+                        background: 'var(--color-bg-secondary, #f8fafc)',
+                        border: '1px solid var(--color-border, #e2e8f0)',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        color: 'var(--color-text-primary, #0f172a)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                      }}
+                    >
+                      <span>{academics.universities[0]?.name || 'K.R. Mangalam University'}</span>
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          color: '#1b4d36',
+                          backgroundColor: '#e8f5e9',
+                          padding: '2px 6px',
+                          borderRadius: '10px'
                         }}
                       >
-                        <option value="">General / All Universities</option>
-                        {academics.universities.map((u) => (
-                          <option key={u.id} value={u.id}>
-                            {u.name}
-                          </option>
-                        ))}
-                      </select>
+                        Default
+                      </span>
                     </div>
                   </div>
 
@@ -5252,18 +5277,12 @@ mysqldump -u root -p pj_study &gt; backup_$(date +%F).sql
                           setAcademicFormData((prev) => ({ ...prev, schoolId: e.target.value }))
                         }
                       >
-                        <option value="">None / General</option>
-                        {academics.schools
-                          .filter(
-                            (s) =>
-                              !academicFormData.universityId ||
-                              s.universityId === academicFormData.universityId
-                          )
-                          .map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.name}
-                            </option>
-                          ))}
+                        <option value="">General / All Schools</option>
+                        {academics.schools.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name} {s.code ? `(${s.code})` : ''}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>

@@ -10,6 +10,37 @@ export class AcademicService {
   }
 
   /**
+   * Ensure default university (K.R. Mangalam University) exists.
+   */
+  async ensureDefaultUniversity() {
+    let krmu = await prisma.university.findFirst({
+      where: {
+        OR: [
+          { code: 'KRMU' },
+          { slug: 'krmu' },
+          { name: { contains: 'Mangalam' } }
+        ]
+      }
+    });
+
+    if (!krmu) {
+      krmu = await prisma.university.create({
+        data: {
+          name: 'K.R. Mangalam University',
+          slug: 'krmu',
+          shortName: 'KRMU',
+          code: 'KRMU',
+          website: 'https://www.krmangalam.edu.in',
+          description: 'K.R. Mangalam University — Premier higher education campus with world-class academic curriculum and research programs in Gurugram, India.',
+          isActive: true
+        }
+      });
+    }
+
+    return krmu;
+  }
+
+  /**
    * --- UNIVERSITIES ---
    */
   async listUniversities(query = {}) {
@@ -205,9 +236,8 @@ export class AcademicService {
 
   async createSchool(data, actor) {
     if (!data.universityId) {
-      const err = new Error('University ID is required.');
-      err.statusCode = 422;
-      throw err;
+      const defaultUni = await this.ensureDefaultUniversity();
+      data.universityId = defaultUni.id;
     }
 
     const university = await this.repo.findUniversityById(data.universityId);
@@ -418,13 +448,22 @@ export class AcademicService {
       }
     }
 
-    // Validate university if provided
+    // Validate or default university
     if (data.universityId) {
       const uni = await prisma.university.findUnique({ where: { id: data.universityId } });
       if (!uni) {
         const err = new Error('Selected university not found.');
         err.statusCode = 404;
         throw err;
+      }
+    } else {
+      if (data.schoolId) {
+        const school = await prisma.school.findUnique({ where: { id: data.schoolId } });
+        if (school?.universityId) data.universityId = school.universityId;
+      }
+      if (!data.universityId) {
+        const defaultUni = await this.ensureDefaultUniversity();
+        data.universityId = defaultUni.id;
       }
     }
 
@@ -850,6 +889,8 @@ export class AcademicService {
    * --- UNIFIED ACADEMIC HIERARCHY OVERVIEW ---
    */
   async getUnifiedAcademicOverview() {
+    await this.ensureDefaultUniversity();
+
     const [universities, schools, courses, subjects, categories] = await Promise.all([
       prisma.university.findMany({
         orderBy: { name: 'asc' },
@@ -887,8 +928,15 @@ export class AcademicService {
       })
     ]);
 
+    // Ensure KRMU is always prioritized at index 0
+    const sortedUniversities = [...universities].sort((a, b) => {
+      if (a.code === 'KRMU' || a.slug === 'krmu') return -1;
+      if (b.code === 'KRMU' || b.slug === 'krmu') return 1;
+      return a.name.localeCompare(b.name);
+    });
+
     return {
-      universities: universities.map((u) => ({
+      universities: sortedUniversities.map((u) => ({
         id: u.id,
         name: u.name,
         slug: u.slug,

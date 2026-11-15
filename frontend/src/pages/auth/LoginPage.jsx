@@ -238,7 +238,7 @@ export function LoginPage() {
                 id="login-email"
                 name="email"
                 type="email"
-                placeholder="scholar@university.edu"
+                placeholder="scholar@krmangalam.edu.in"
                 value={formData.email}
                 onChange={handleChange}
                 required

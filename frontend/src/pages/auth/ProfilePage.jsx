@@ -34,7 +34,7 @@ export function ProfilePage() {
   const [editForm, setEditForm] = useState({
     name: '',
     bio: '',
-    university: '',
+    university: 'K.R. Mangalam University',
     courseId: '',
     semester: ''
   });
@@ -101,7 +101,7 @@ export function ProfilePage() {
           setEditForm({
             name: data.name || '',
             bio: data.bio || '',
-            university: data.university || '',
+            university: data.university || 'K.R. Mangalam University',
             courseId: data.courseId || '',
             semester:
               data.semester !== null && data.semester !== undefined ? String(data.semester) : ''
@@ -114,7 +114,7 @@ export function ProfilePage() {
           setEditForm({
             name: fallbackUser.name || '',
             bio: fallbackUser.bio || '',
-            university: fallbackUser.university || '',
+            university: fallbackUser.university || 'K.R. Mangalam University',
             courseId: fallbackUser.courseId || '',
             semester: fallbackUser.semester ? String(fallbackUser.semester) : ''
           });
@@ -718,7 +718,7 @@ export function ProfilePage() {
               <div className="profile-field-block">
                 <span className="profile-field-label">University / Institution</span>
                 <span className="profile-field-value">
-                  {currentUser?.university || 'Not specified yet'}
+                  {currentUser?.university || 'K.R. Mangalam University'}
                 </span>
               </div>
               <div className="profile-field-block">
@@ -1097,7 +1097,7 @@ export function ProfilePage() {
                     id="edit-university"
                     name="university"
                     type="text"
-                    placeholder="e.g. Stanford University or Delhi University"
+                    placeholder="K.R. Mangalam University"
                     value={editForm.university}
                     onChange={(e) =>
                       setEditForm((prev) => ({ ...prev, university: e.target.value }))

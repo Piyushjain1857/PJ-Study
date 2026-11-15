@@ -84,6 +84,70 @@ async function main() {
     }
   });
 
+  // Seed Default University: K.R. Mangalam University (KRMU)
+  const krmu = await prisma.university.upsert({
+    where: { slug: 'krmu' },
+    update: {
+      name: 'K.R. Mangalam University',
+      shortName: 'KRMU',
+      code: 'KRMU',
+      website: 'https://www.krmangalam.edu.in',
+      description: 'K.R. Mangalam University — Premier higher education campus with world-class academic curriculum and research programs in Gurugram, India.',
+      isActive: true
+    },
+    create: {
+      name: 'K.R. Mangalam University',
+      slug: 'krmu',
+      shortName: 'KRMU',
+      code: 'KRMU',
+      website: 'https://www.krmangalam.edu.in',
+      description: 'K.R. Mangalam University — Premier higher education campus with world-class academic curriculum and research programs in Gurugram, India.',
+      isActive: true
+    }
+  });
+
+  // Seed Constituent Schools of K.R. Mangalam University
+  const schoolsData = [
+    { name: 'School of Engineering & Technology', code: 'SOET', slug: 'soet', description: 'Undergraduate and postgraduate engineering, CSE, AI/ML, and computational technology.' },
+    { name: 'School of Management & Commerce', code: 'SOMC', slug: 'somc', description: 'Business administration, commerce, corporate finance, and executive leadership.' },
+    { name: 'School of Basic & Applied Sciences', code: 'SBAS', slug: 'sbas', description: 'Foundational sciences, applied mathematics, forensic science, and physics.' },
+    { name: 'Zenith School of AI', code: 'ZSAI', slug: 'zenith-ai', description: 'Artificial Intelligence, machine learning applications, and advanced computing.' },
+    { name: 'School of Medical & Allied Sciences', code: 'SMAS', slug: 'smas', description: 'Pharmaceutical sciences, allied health disciplines, and medical technology.' },
+    { name: 'School of Legal Studies', code: 'SOLS', slug: 'sols', description: 'Integrated B.A. LL.B., B.B.A. LL.B., jurisprudence, and corporate law.' },
+    { name: 'School of Architecture & Design', code: 'SOAD', slug: 'soad', description: 'COA-approved architecture, interior architecture, and industrial design.' },
+    { name: 'School of Liberal Arts', code: 'SOLA', slug: 'sola', description: 'Humanities, economics, psychology, literature, and social sciences.' },
+    { name: 'School of Emerging Media & Creator Economy', code: 'SEMCE', slug: 'semce', description: 'Journalism, digital media creation, animation, and audiovisual arts.' },
+    { name: 'School of Agricultural Sciences', code: 'SOAS', slug: 'soas', description: 'Agronomy, sustainable farming, agricultural economics, and biotechnology.' },
+    { name: 'School of Education', code: 'SOE', slug: 'soe', description: 'Pedagogy, educational leadership, and curriculum research.' }
+  ];
+
+  const seededSchools = {};
+  for (const s of schoolsData) {
+    const schoolRecord = await prisma.school.upsert({
+      where: {
+        university_school_slug_unique: {
+          universityId: krmu.id,
+          slug: s.slug
+        }
+      },
+      update: {
+        name: s.name,
+        code: s.code,
+        description: s.description,
+        isActive: true
+      },
+      create: {
+        universityId: krmu.id,
+        name: s.name,
+        slug: s.slug,
+        code: s.code,
+        description: s.description,
+        isActive: true
+      }
+    });
+    seededSchools[s.code] = schoolRecord;
+  }
+
   // Seed Categories
   const categories = [
     {
@@ -228,16 +292,23 @@ async function main() {
   let totalSubjectsSeeded = 0;
 
   for (const prog of academicPrograms) {
+    const schoolCode = prog.name === 'B.Sc.' ? 'SBAS' : 'SOET';
+    const schoolId = seededSchools[schoolCode]?.id || null;
+
     const courseRecord = await prisma.course.upsert({
       where: { slug: prog.slug },
       update: {
         name: prog.name,
-        description: prog.description
+        description: prog.description,
+        universityId: krmu.id,
+        schoolId
       },
       create: {
         name: prog.name,
         slug: prog.slug,
-        description: prog.description
+        description: prog.description,
+        universityId: krmu.id,
+        schoolId
       }
     });
 
@@ -266,8 +337,18 @@ async function main() {
     }
   }
 
+  // Set default university for users if unassigned
+  await prisma.user.updateMany({
+    where: { university: null },
+    data: { university: 'K.R. Mangalam University', universityId: krmu.id }
+  });
+
   // eslint-disable-next-line no-console
   console.log('✓ Seeding complete:');
+  // eslint-disable-next-line no-console
+  console.log(`  Default University: ${krmu.name} (${krmu.code})`);
+  // eslint-disable-next-line no-console
+  console.log(`  Schools:     ${schoolsData.length} seeded (${schoolsData.map((s) => s.code).join(', ')})`);
   // eslint-disable-next-line no-console
   console.log(`  Super Admin: ${superadmin.email} (password: Password123!)`);
   // eslint-disable-next-line no-console

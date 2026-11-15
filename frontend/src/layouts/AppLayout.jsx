@@ -67,10 +67,10 @@ export function AppLayout() {
     if (path.startsWith('/admin/moderators') || path.startsWith('/admin/admins')) return 'Admin Management & Staff';
     if (path.startsWith('/admin/roles')) return 'Roles & Permissions Matrix';
     if (path.startsWith('/admin/suspended-users')) return 'Suspended Accounts';
-    if (path.startsWith('/admin/academics/universities')) return 'Universities & Schools';
+    if (path.startsWith('/admin/academics/schools') || path.startsWith('/admin/academics/universities')) return 'Schools & Faculties';
     if (path.startsWith('/admin/academics/courses')) return 'Courses & Semesters';
     if (path.startsWith('/admin/academics/subjects')) return 'Subjects & Categories';
-    if (path.startsWith('/admin/academics')) return 'Academic Architecture';
+    if (path.startsWith('/admin/academics')) return 'Academic Architecture — KRMU';
     if (path === '/admin/notes') return 'All Notes Directory';
     if (path === '/admin/notes/upload') return 'Upload Study Note';
     if (path.startsWith('/admin/moderation')) return 'Manuscript Approval Queue';
@@ -460,8 +460,8 @@ export function AppLayout() {
       label: 'ACADEMIC MANAGEMENT',
       items: [
         {
-          to: '/admin/academics/universities',
-          label: 'Universities & Schools',
+          to: '/admin/academics/schools',
+          label: 'Schools & Faculties',
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 21h18" />

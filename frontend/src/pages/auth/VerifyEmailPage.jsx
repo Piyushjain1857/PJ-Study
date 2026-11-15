@@ -136,7 +136,7 @@ export function VerifyEmailPage() {
                     id="resend-email"
                     name="resendEmail"
                     type="email"
-                    placeholder="scholar@university.edu"
+                    placeholder="scholar@krmangalam.edu.in"
                     value={resendEmail}
                     onChange={(e) => setResendEmail(e.target.value)}
                     required

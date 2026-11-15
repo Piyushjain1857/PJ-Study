@@ -75,7 +75,7 @@ export function ForgotPasswordPage() {
               id="forgot-email"
               name="email"
               type="email"
-              placeholder="scholar@university.edu"
+              placeholder="scholar@krmangalam.edu.in"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
