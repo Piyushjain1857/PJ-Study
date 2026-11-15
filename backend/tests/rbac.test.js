@@ -504,7 +504,15 @@ test('HTTP API RBAC Endpoint Protection & Invariants', async (t) => {
     async () => {
       // Find or create active course and subject
       const subject = await prisma.subject.findFirst({ where: { isActive: true } });
-      const category = await prisma.category.findFirst({ where: { isActive: true } });
+      const category = await prisma.category.upsert({
+        where: { slug: 'rbac-test-download-cat' },
+        update: { isActive: true },
+        create: {
+          name: 'RBAC Test Download Cat',
+          slug: 'rbac-test-download-cat',
+          isActive: true
+        }
+      });
 
       const res = await fetch(`${baseUrl}/api/v1/notes`, {
         method: 'POST',
@@ -545,7 +553,15 @@ test('HTTP API RBAC Endpoint Protection & Invariants', async (t) => {
     'GET /api/v1/notes/:id/download - Student CAN download approved notes (HTTP 200 or 404 NO_FILE)',
     async () => {
       const subject = await prisma.subject.findFirst({ where: { isActive: true } });
-      const category = await prisma.category.findFirst({ where: { isActive: true } });
+      const category = await prisma.category.upsert({
+        where: { slug: 'rbac-test-download-cat' },
+        update: { isActive: true },
+        create: {
+          name: 'RBAC Test Download Cat',
+          slug: 'rbac-test-download-cat',
+          isActive: true
+        }
+      });
       const testApprovedNote = await prisma.note.create({
         data: {
           title: 'Dedicated Approved Note for RBAC Test',

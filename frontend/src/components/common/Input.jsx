@@ -16,6 +16,7 @@ import './Input.css';
  *   disabled?: boolean,
  *   required?: boolean,
  *   icon?: React.ReactNode,
+ *   endAdornment?: React.ReactNode,
  *   className?: string,
  *   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
  * } & React.InputHTMLAttributes<HTMLInputElement>} props
@@ -32,6 +33,7 @@ export function Input({
   disabled = false,
   required = false,
   icon,
+  endAdornment,
   className = '',
   onChange,
   ...rest
@@ -76,9 +78,14 @@ export function Input({
           aria-invalid={hasError}
           aria-describedby={describedBy}
           onChange={onChange}
-          className={`form-field__input ${icon ? 'form-field__input--has-icon' : ''}`}
+          className={`form-field__input ${icon ? 'form-field__input--has-icon' : ''} ${endAdornment ? 'form-field__input--has-end-adornment' : ''}`}
           {...rest}
         />
+        {endAdornment && (
+          <div className="form-field__end-adornment">
+            {endAdornment}
+          </div>
+        )}
       </div>
 
       {hasError && (

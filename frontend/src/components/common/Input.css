@@ -67,6 +67,19 @@
   padding-left: 2.5rem;
 }
 
+.form-field__input--has-end-adornment {
+  padding-right: 2.5rem;
+}
+
+.form-field__end-adornment {
+  position: absolute;
+  right: var(--space-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
 .form-field__input::placeholder {
   color: var(--color-text-tertiary);
 }
