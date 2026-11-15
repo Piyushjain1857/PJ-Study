@@ -1,5 +1,6 @@
 import React from 'react';
 import Skeleton from '../common/Skeleton.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 /**
  * Primary four metric summary cards for the student dashboard.
@@ -10,12 +11,60 @@ import Skeleton from '../common/Skeleton.jsx';
  *     collections?: number,
  *     downloads?: number,
  *     uniqueNotesDownloaded?: number,
- *     uploads?: number
+ *     uploads?: number,
+ *     recentlyViewed?: number
  *   },
  *   loading?: boolean
  * }} props
  */
 export function DashboardStats({ stats = {}, loading = false }) {
+  const { isModerator } = useAuth();
+
+  const fourthCard = isModerator
+    ? {
+        id: 'my-uploads',
+        label: 'My Uploads',
+        value: stats.uploads ?? 0,
+        subtext: 'Notes shared with students',
+        iconClass: 'dash-stat-icon--purple',
+        icon: (
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            width="20"
+            height="20"
+          >
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="12" y1="18" x2="12" y2="12" />
+            <line x1="9" y1="15" x2="12" y2="12" />
+            <line x1="15" y1="15" x2="12" y2="12" />
+          </svg>
+        )
+      }
+    : {
+        id: 'recently-viewed',
+        label: 'Recently Viewed',
+        value: stats.recentlyViewed ?? 0,
+        subtext: 'Manuscripts explored & read',
+        iconClass: 'dash-stat-icon--emerald',
+        icon: (
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            width="20"
+            height="20"
+          >
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        )
+      };
+
   const cards = [
     {
       id: 'saved-notes',
@@ -76,29 +125,7 @@ export function DashboardStats({ stats = {}, loading = false }) {
         </svg>
       )
     },
-    {
-      id: 'my-uploads',
-      label: 'My Uploads',
-      value: stats.uploads ?? 0,
-      subtext: 'Notes shared with students',
-      iconClass: 'dash-stat-icon--purple',
-      icon: (
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          width="20"
-          height="20"
-        >
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
-          <line x1="12" y1="18" x2="12" y2="12" />
-          <line x1="9" y1="15" x2="12" y2="12" />
-          <line x1="15" y1="15" x2="12" y2="12" />
-        </svg>
-      )
-    }
+    fourthCard
   ];
 
   return (

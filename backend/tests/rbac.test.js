@@ -16,12 +16,13 @@ import prisma from '../src/config/database.js';
 test('RBAC Matrix and Capability Invariants', async (t) => {
   await t.test('Student capabilities should match matrix', () => {
     assert.equal(hasPermission(ROLES.STUDENT, PERMISSIONS.NOTES_READ), true);
-    assert.equal(hasPermission(ROLES.STUDENT, PERMISSIONS.NOTES_CREATE), true);
-    assert.equal(hasPermission(ROLES.STUDENT, PERMISSIONS.NOTES_UPDATE_OWN), true);
-    assert.equal(hasPermission(ROLES.STUDENT, PERMISSIONS.NOTES_DELETE_OWN), true);
-    assert.equal(hasPermission(ROLES.STUDENT, PERMISSIONS.NOTES_SUBMIT_REVIEW), true);
+    assert.equal(hasPermission(ROLES.STUDENT, PERMISSIONS.NOTES_DOWNLOAD), true);
 
-    // Forbidden for Student
+    // Forbidden for Student / Scholar
+    assert.equal(hasPermission(ROLES.STUDENT, PERMISSIONS.NOTES_CREATE), false);
+    assert.equal(hasPermission(ROLES.STUDENT, PERMISSIONS.NOTES_UPDATE_OWN), false);
+    assert.equal(hasPermission(ROLES.STUDENT, PERMISSIONS.NOTES_DELETE_OWN), false);
+    assert.equal(hasPermission(ROLES.STUDENT, PERMISSIONS.NOTES_SUBMIT_REVIEW), false);
     assert.equal(hasPermission(ROLES.STUDENT, PERMISSIONS.NOTES_REVIEW), false);
     assert.equal(hasPermission(ROLES.STUDENT, PERMISSIONS.NOTES_APPROVE), false);
     assert.equal(hasPermission(ROLES.STUDENT, PERMISSIONS.CATEGORIES_MANAGE), false);
@@ -32,6 +33,11 @@ test('RBAC Matrix and Capability Invariants', async (t) => {
 
   await t.test('Moderator capabilities should include notes review but not user management', () => {
     assert.equal(hasPermission(ROLES.MODERATOR, PERMISSIONS.NOTES_READ), true);
+    assert.equal(hasPermission(ROLES.MODERATOR, PERMISSIONS.NOTES_DOWNLOAD), true);
+    assert.equal(hasPermission(ROLES.MODERATOR, PERMISSIONS.NOTES_CREATE), true);
+    assert.equal(hasPermission(ROLES.MODERATOR, PERMISSIONS.NOTES_UPDATE_OWN), true);
+    assert.equal(hasPermission(ROLES.MODERATOR, PERMISSIONS.NOTES_DELETE_OWN), true);
+    assert.equal(hasPermission(ROLES.MODERATOR, PERMISSIONS.NOTES_SUBMIT_REVIEW), true);
     assert.equal(hasPermission(ROLES.MODERATOR, PERMISSIONS.NOTES_REVIEW), true);
     assert.equal(hasPermission(ROLES.MODERATOR, PERMISSIONS.NOTES_APPROVE), true);
     assert.equal(hasPermission(ROLES.MODERATOR, PERMISSIONS.NOTES_REJECT), true);
@@ -451,5 +457,129 @@ test('HTTP API RBAC Endpoint Protection & Invariants', async (t) => {
     assert.equal(adminRes.status, 200);
     const adminJson = await adminRes.json();
     assert.ok(Array.isArray(adminJson.data.data));
+  });
+
+  // =========================================================================
+  // Note RBAC Invariants: Scholar cannot upload, but Scholar CAN download
+  // =========================================================================
+
+  const scholarUser = await prisma.user.upsert({
+    where: { email: 'scholar_strictly_student@test.com' },
+    update: { role: 'STUDENT', isActive: true },
+    create: {
+      name: 'Strict Scholar Student',
+      email: 'scholar_strictly_student@test.com',
+      passwordHash: 'dummy_hash',
+      role: 'STUDENT',
+      isActive: true
+    }
+  });
+  const scholarToken = generateAccessToken(scholarUser);
+
+  await t.test(
+    'POST /api/v1/notes - Student cannot upload notes (HTTP 403 Forbidden)',
+    async () => {
+      const res = await fetch(`${baseUrl}/api/v1/notes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${scholarToken}`
+        },
+        body: JSON.stringify({
+          title: 'Forbidden Student Upload',
+          content: 'Should be rejected by RBAC middleware',
+          status: 'DRAFT'
+        })
+      });
+      assert.equal(res.status, 403);
+      const json = await res.json();
+      assert.equal(json.error.code, 'FORBIDDEN');
+    }
+  );
+
+  let rbacCreatedNoteId;
+
+  await t.test(
+    'POST /api/v1/notes - Moderator CAN upload notes (HTTP 201 Created)',
+    async () => {
+      // Find or create active course and subject
+      const subject = await prisma.subject.findFirst({ where: { isActive: true } });
+      const category = await prisma.category.findFirst({ where: { isActive: true } });
+
+      const res = await fetch(`${baseUrl}/api/v1/notes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${modToken}`
+        },
+        body: JSON.stringify({
+          title: 'Authorized Moderator Manuscript',
+          description: 'Syllabus notes prepared by teaching assistant',
+          content: '# Moderator Study Notes\n\nVerified reference material.',
+          subjectId: subject?.id,
+          categoryId: category?.id,
+          semester: 3,
+          status: 'DRAFT'
+        })
+      });
+      assert.equal(res.status, 201);
+      const json = await res.json();
+      assert.equal(json.success, true);
+      rbacCreatedNoteId = json.data.id;
+    }
+  );
+
+  await t.test(
+    'GET /api/v1/notes/:id/download - Student CANNOT download unapproved draft notes (403)',
+    async () => {
+      const res = await fetch(`${baseUrl}/api/v1/notes/${rbacCreatedNoteId}/download`, {
+        headers: { Authorization: `Bearer ${scholarToken}` }
+      });
+      assert.equal(res.status, 403);
+      const json = await res.json();
+      assert.equal(json.error.code, 'DOWNLOAD_FORBIDDEN');
+    }
+  );
+
+  await t.test(
+    'GET /api/v1/notes/:id/download - Student CAN download approved notes (HTTP 200 or 404 NO_FILE)',
+    async () => {
+      const subject = await prisma.subject.findFirst({ where: { isActive: true } });
+      const category = await prisma.category.findFirst({ where: { isActive: true } });
+      const testApprovedNote = await prisma.note.create({
+        data: {
+          title: 'Dedicated Approved Note for RBAC Test',
+          slug: `dedicated-rbac-approved-${Date.now()}`,
+          content: 'Approved content for student study download test',
+          status: 'APPROVED',
+          subjectId: subject.id,
+          courseId: subject.courseId,
+          categoryId: category.id,
+          semester: 1,
+          uploadedById: moderatorUser.id,
+          publishedAt: new Date()
+        }
+      });
+
+      const res = await fetch(`${baseUrl}/api/v1/notes/${testApprovedNote.id}/download`, {
+        headers: { Authorization: `Bearer ${scholarToken}` }
+      });
+      // Since no physical file storageKey was attached, access passes and reaches file check:
+      assert.equal(res.status, 404);
+      const json = await res.json();
+      assert.equal(json.error.code, 'NO_FILE_ATTACHED');
+
+      // Cleanup
+      await prisma.note.delete({ where: { id: testApprovedNote.id } });
+    }
+  );
+
+  t.after(async () => {
+    if (rbacCreatedNoteId) {
+      await prisma.note.deleteMany({ where: { id: rbacCreatedNoteId } });
+    }
+    await prisma.user.deleteMany({
+      where: { email: { in: ['scholar_strictly_student@test.com', 'secondary_admin@test.com'] } }
+    });
   });
 });

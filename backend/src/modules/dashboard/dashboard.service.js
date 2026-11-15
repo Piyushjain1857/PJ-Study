@@ -22,6 +22,7 @@ export class DashboardService {
       stats,
       recentBookmarks,
       recentUploads,
+      recentViews,
       recentCollections,
       recentDownloads,
       recommendedNotes
@@ -29,6 +30,7 @@ export class DashboardService {
       this.repo.getStudentCounts(userId),
       this.repo.getRecentBookmarks(userId, 5),
       this.repo.getRecentUploads(userId, 5),
+      this.repo.getRecentViews(userId, 5),
       this.repo.getRecentCollections(userId, 4),
       this.repo.getRecentDownloads(userId, 5),
       this.repo.getRecommendedNotes(userId, 4)
@@ -40,10 +42,12 @@ export class DashboardService {
         collections: stats.collectionsCount,
         downloads: stats.downloadsCount,
         uniqueNotesDownloaded: stats.uniqueNotesDownloaded,
-        uploads: stats.uploadsCount
+        uploads: stats.uploadsCount,
+        recentlyViewed: stats.recentlyViewedCount
       },
       recentBookmarks,
       recentUploads,
+      recentViews,
       recentCollections,
       recentDownloads,
       recommendedNotes

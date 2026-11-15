@@ -167,6 +167,12 @@
   border: 1px solid #e9d5ff;
 }
 
+.dash-stat-icon--emerald {
+  background-color: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
 .dash-stat-value {
   font-family: var(--font-heading);
   font-size: 2.25rem;
@@ -635,6 +641,30 @@
   flex-direction: column;
   align-items: center;
   gap: var(--space-3);
+}
+
+.dash-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  margin-bottom: var(--space-1);
+}
+
+.dash-empty-title {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.dash-empty-desc {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  max-width: 440px;
+  line-height: 1.5;
 }
 
 .dash-empty-box p {

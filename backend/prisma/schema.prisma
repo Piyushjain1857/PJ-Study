@@ -88,6 +88,7 @@ model User {
   bookmarks               Bookmark[]
   collections             StudyCollection[]
   downloadHistory         DownloadHistory[]
+  viewHistory             NoteViewHistory[]
   reviews                 Review[]
   helpfulVotes            ReviewHelpfulVote[]
   reportsSubmitted        Report[]                 @relation("ReportedByUser")
@@ -221,6 +222,7 @@ model Note {
   bookmarks     Bookmark[]
   collectionItems StudyCollectionItem[]
   downloadHistory DownloadHistory[]
+  viewHistory     NoteViewHistory[]
   reviews       Review[]
   reports       Report[]
 
@@ -460,6 +462,22 @@ model DownloadHistory {
   @@index([userId, downloadedAt])
   @@index([noteId])
   @@map("download_history")
+}
+
+/// NoteViewHistory tracks genuine note reading events for student learning analytics.
+model NoteViewHistory {
+  id       String   @id @default(uuid())
+  userId   String   @map("user_id")
+  noteId   String   @map("note_id")
+  viewedAt DateTime @default(now()) @map("viewed_at")
+
+  // Relationships
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note     Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([userId, viewedAt])
+  @@index([noteId])
+  @@map("note_view_history")
 }
 
 // =============================================================================

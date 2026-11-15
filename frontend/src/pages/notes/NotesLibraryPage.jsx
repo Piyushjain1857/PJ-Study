@@ -6,12 +6,14 @@ import NoteFilters from '../../components/notes/NoteFilters.jsx';
 import NotesGrid from '../../components/notes/NotesGrid.jsx';
 import NotesEmptyState from '../../components/notes/NotesEmptyState.jsx';
 import Container from '../../components/layout/Container.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import '../../styles/notes.css';
 
 /**
  * Public Notes Library for browsing and discovering peer-reviewed study materials.
  */
 export function NotesLibraryPage() {
+  const { isModerator } = useAuth();
   const [notes, setNotes] = useState([]);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -146,8 +148,9 @@ export function NotesLibraryPage() {
             <NotesEmptyState
               title="No Study Notes Found"
               description="No approved notes match your selected criteria. Try adjusting your search keywords, semester, or category filters."
-              actionLabel="Upload a Note"
-              actionTo="/notes/new"
+              actionLabel={isModerator ? 'Upload a Note' : 'Reset All Filters'}
+              actionTo={isModerator ? '/notes/new' : undefined}
+              onAction={!isModerator ? () => handleResetFilters() : undefined}
             />
           }
         />

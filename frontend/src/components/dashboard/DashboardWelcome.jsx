@@ -57,11 +57,19 @@ export function DashboardWelcome({ user }) {
             Explore Catalog
           </Button>
         </Link>
-        <Link to="/notes/new">
-          <Button variant="primary" size="sm">
-            + Upload Note
-          </Button>
-        </Link>
+        {user?.role === 'MODERATOR' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' ? (
+          <Link to="/notes/new">
+            <Button variant="primary" size="sm">
+              + Upload Note
+            </Button>
+          </Link>
+        ) : (
+          <Link to="/notes/recommended">
+            <Button variant="primary" size="sm">
+              Recommended Notes
+            </Button>
+          </Link>
+        )}
       </div>
     </div>
   );

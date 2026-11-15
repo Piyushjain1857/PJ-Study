@@ -114,6 +114,7 @@ export function StudentDashboardPage() {
           <DashboardRecentNotes
             recentBookmarks={overview?.recentBookmarks}
             recentUploads={overview?.recentUploads}
+            recentViews={overview?.recentViews}
             loading={loadingOverview}
           />
 

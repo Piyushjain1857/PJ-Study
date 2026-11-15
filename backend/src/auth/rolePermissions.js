@@ -16,15 +16,14 @@ export const ROLES = Object.freeze({
 export const ROLE_PERMISSIONS = Object.freeze({
   [ROLES.STUDENT]: Object.freeze([
     PERMISSIONS.NOTES_READ,
-    PERMISSIONS.NOTES_CREATE,
-    PERMISSIONS.NOTES_UPDATE_OWN,
-    PERMISSIONS.NOTES_DELETE_OWN,
-    PERMISSIONS.NOTES_SUBMIT_REVIEW
+    PERMISSIONS.NOTES_DOWNLOAD
   ]),
 
   [ROLES.MODERATOR]: Object.freeze([
-    // Student base capabilities
+    // Base scholar reader & downloader
     PERMISSIONS.NOTES_READ,
+    PERMISSIONS.NOTES_DOWNLOAD,
+    // Note authoring & management
     PERMISSIONS.NOTES_CREATE,
     PERMISSIONS.NOTES_UPDATE_OWN,
     PERMISSIONS.NOTES_DELETE_OWN,
@@ -38,6 +37,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
   [ROLES.ADMIN]: Object.freeze([
     // Moderator base capabilities
     PERMISSIONS.NOTES_READ,
+    PERMISSIONS.NOTES_DOWNLOAD,
     PERMISSIONS.NOTES_CREATE,
     PERMISSIONS.NOTES_UPDATE_OWN,
     PERMISSIONS.NOTES_DELETE_OWN,
@@ -58,6 +58,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
   [ROLES.SUPER_ADMIN]: Object.freeze([
     // All Admin capabilities
     PERMISSIONS.NOTES_READ,
+    PERMISSIONS.NOTES_DOWNLOAD,
     PERMISSIONS.NOTES_CREATE,
     PERMISSIONS.NOTES_UPDATE_OWN,
     PERMISSIONS.NOTES_DELETE_OWN,

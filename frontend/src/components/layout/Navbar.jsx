@@ -46,7 +46,7 @@ export function Navbar() {
     { label: 'Student Dashboard', onClick: () => navigate('/dashboard') },
     { label: 'My Study Library', onClick: () => navigate('/my-notes') },
     { label: 'Profile', onClick: () => navigate('/profile') },
-    ...(isAdmin || isModerator
+    ...(isAdmin
       ? [{ label: 'Admin Portal', onClick: () => navigate('/admin') }]
       : []),
     { divider: true },
@@ -228,7 +228,7 @@ export function Navbar() {
                 >
                   Profile
                 </NavLink>
-                {(isAdmin || isModerator) && (
+                {isAdmin && (
                   <NavLink
                     to="/admin"
                     onClick={closeMobileMenu}

@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Skeleton from '../common/Skeleton.jsx';
+import Button from '../common/Button.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 /**
  * Accessible SVG-based student activity chart.
@@ -37,6 +40,7 @@ export function DashboardActivityChart({
   onRangeChange,
   loading = false
 }) {
+  const { isModerator } = useAuth();
   const [activeMetric, setActiveMetric] = useState('all');
   const [hoveredPoint, setHoveredPoint] = useState(null);
 
@@ -46,23 +50,27 @@ export function DashboardActivityChart({
     downloads: 0,
     uploads: 0,
     collections: 0,
+    views: 0,
     totalEvents: 0
   };
+  const viewsCount = totals.views ?? totals.recentlyViewed ?? 0;
 
   // Determine which metric values to plot
   const getMetricValue = (item) => {
     switch (activeMetric) {
       case 'downloads':
-        return item.downloads;
+        return item.downloads || 0;
       case 'bookmarks':
-        return item.bookmarks;
+        return item.bookmarks || 0;
+      case 'views':
+        return item.views || 0;
       case 'uploads':
-        return item.uploads;
+        return item.uploads || 0;
       case 'collections':
-        return item.collections;
+        return item.collections || 0;
       case 'all':
       default:
-        return item.total;
+        return item.total || 0;
     }
   };
 
@@ -70,6 +78,7 @@ export function DashboardActivityChart({
     all: { stroke: '#285943', fill: '#285943' },
     downloads: { stroke: '#2d68c4', fill: '#2d68c4' },
     bookmarks: { stroke: '#c58a43', fill: '#c58a43' },
+    views: { stroke: '#059669', fill: '#059669' },
     uploads: { stroke: '#7c3aed', fill: '#7c3aed' },
     collections: { stroke: '#0891b2', fill: '#0891b2' }
   };
@@ -178,13 +187,23 @@ export function DashboardActivityChart({
             >
               Saved ({totals.bookmarks})
             </button>
-            <button
-              type="button"
-              className={`dash-pill-btn ${activeMetric === 'uploads' ? 'dash-pill-btn--active' : ''}`}
-              onClick={() => setActiveMetric('uploads')}
-            >
-              Uploads ({totals.uploads})
-            </button>
+            {isModerator ? (
+              <button
+                type="button"
+                className={`dash-pill-btn ${activeMetric === 'uploads' ? 'dash-pill-btn--active' : ''}`}
+                onClick={() => setActiveMetric('uploads')}
+              >
+                Uploads ({totals.uploads})
+              </button>
+            ) : (
+              <button
+                type="button"
+                className={`dash-pill-btn ${activeMetric === 'views' ? 'dash-pill-btn--active' : ''}`}
+                onClick={() => setActiveMetric('views')}
+              >
+                Recently Viewed ({viewsCount})
+              </button>
+            )}
           </div>
 
           {/* Date Range Selector */}
@@ -220,22 +239,28 @@ export function DashboardActivityChart({
         </div>
       ) : timeline.length === 0 || totals.totalEvents === 0 ? (
         <div className="dash-empty-box">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            width="40"
-            height="40"
-          >
-            <path d="M12 20V10M18 20V4M6 20v-4" />
-          </svg>
-          <p>
-            No study activity recorded during this{' '}
-            {activeRange === '7d' ? 'past week' : activeRange === '30d' ? 'past month' : 'quarter'}.
-            As you download study guides, save bookmarks, and organize collections, your progress
-            timeline will appear here.
+          <div className="dash-empty-icon" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              width="40"
+              height="40"
+            >
+              <path d="M12 20V10M18 20V4M6 20v-4" />
+            </svg>
+          </div>
+          <h3 className="dash-empty-title">Your Learning Journey Starts Here</h3>
+          <p className="dash-empty-desc">
+            Explore study notes, download useful resources, and save your favorites to build your
+            personal learning library.
           </p>
+          <Link to="/notes/explore">
+            <Button variant="outline" size="sm">
+              Explore Notes
+            </Button>
+          </Link>
         </div>
       ) : (
         <div className="dash-chart-container">
@@ -353,8 +378,10 @@ export function DashboardActivityChart({
               </div>
               {activeMetric === 'all' && (
                 <div style={{ fontSize: '10px', opacity: 0.8, marginTop: '4px' }}>
-                  {hoveredPoint.item.downloads} downloads • {hoveredPoint.item.bookmarks} saved •{' '}
-                  {hoveredPoint.item.uploads} uploads
+                  {hoveredPoint.item.downloads} downloads • {hoveredPoint.item.bookmarks} saved
+                  {isModerator
+                    ? ` • ${hoveredPoint.item.uploads || 0} uploads`
+                    : ` • ${hoveredPoint.item.views || 0} viewed`}
                 </div>
               )}
             </div>
@@ -370,10 +397,17 @@ export function DashboardActivityChart({
               <span className="dash-chart-legend-dot" style={{ backgroundColor: '#c58a43' }} />
               <span>Saved Notes</span>
             </div>
-            <div className="dash-chart-legend-item">
-              <span className="dash-chart-legend-dot" style={{ backgroundColor: '#7c3aed' }} />
-              <span>Uploads</span>
-            </div>
+            {isModerator ? (
+              <div className="dash-chart-legend-item">
+                <span className="dash-chart-legend-dot" style={{ backgroundColor: '#7c3aed' }} />
+                <span>Uploads</span>
+              </div>
+            ) : (
+              <div className="dash-chart-legend-item">
+                <span className="dash-chart-legend-dot" style={{ backgroundColor: '#059669' }} />
+                <span>Recently Viewed</span>
+              </div>
+            )}
             <div className="dash-chart-legend-item">
               <span className="dash-chart-legend-dot" style={{ backgroundColor: '#0891b2' }} />
               <span>Collections</span>

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../common/Button.jsx';
 import Skeleton from '../common/Skeleton.jsx';
+import noteService from '../../services/noteService.js';
 
 /**
  * Formats file size in bytes to human-readable string.
@@ -107,11 +108,23 @@ export function DashboardDownloadsHistory({ downloads = [], loading = false }) {
                       {formatDateTime(item.downloadedAt)}
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <Link to={`/notes/${note.id}`}>
-                        <Button variant="ghost" size="sm">
-                          View Document
-                        </Button>
-                      </Link>
+                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                        <Link to={`/notes/${note.id}`}>
+                          <Button variant="ghost" size="sm">
+                            View
+                          </Button>
+                        </Link>
+                        {note.fileName && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => noteService.downloadFile(note.id, note.fileName)}
+                            aria-label={`Download ${note.fileName}`}
+                          >
+                            Download
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

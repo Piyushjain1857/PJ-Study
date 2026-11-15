@@ -96,12 +96,12 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
 
     otherStudentUser = await prisma.user.upsert({
       where: { email: 'student2@notetest.edu' },
-      update: { role: 'STUDENT', isActive: true, isEmailVerified: true },
+      update: { role: 'MODERATOR', isActive: true, isEmailVerified: true },
       create: {
-        name: 'Student Two',
+        name: 'Staff Two',
         email: 'student2@notetest.edu',
         passwordHash: 'dummy_hash',
-        role: 'STUDENT',
+        role: 'MODERATOR',
         isActive: true,
         isEmailVerified: true
       }
@@ -227,39 +227,67 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
   let createdDraftId;
   let otherStudentDraftId;
 
-  await t.test('POST /api/v1/notes should create a DRAFT text note with valid fields', async () => {
-    const res = await fetch(`${baseUrl}/api/v1/notes`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${studentToken}`
-      },
-      body: JSON.stringify({
-        title: 'Test Note: Binary Search Analysis',
-        description: 'Comprehensive time complexity proofs',
-        content: '# Binary Search\n\nRuns in O(log n) worst case.',
-        subjectId: testSubject.id,
-        categoryId: testCategory.id,
-        semester: 3,
-        status: 'DRAFT'
-      })
-    });
+  await t.test(
+    'POST /api/v1/notes - Scholar / Student cannot upload notes (HTTP 403 Forbidden)',
+    async () => {
+      const res = await fetch(`${baseUrl}/api/v1/notes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${studentToken}`
+        },
+        body: JSON.stringify({
+          title: 'Forbidden Student Upload',
+          content: 'Scholar should be blocked by RBAC middleware',
+          subjectId: testSubject.id,
+          categoryId: testCategory.id,
+          semester: 3,
+          status: 'DRAFT'
+        })
+      });
 
-    assert.equal(res.status, 201);
-    const json = await res.json();
-    assert.equal(json.success, true);
-    assert.equal(json.data.title, 'Test Note: Binary Search Analysis');
-    assert.equal(json.data.status, 'DRAFT');
-    assert.ok(json.data.slug);
-    createdDraftId = json.data.id;
-  });
+      assert.equal(res.status, 403);
+      const json = await res.json();
+      assert.equal(json.error.code, 'FORBIDDEN');
+    }
+  );
+
+  await t.test(
+    'POST /api/v1/notes - Moderator CAN upload a DRAFT text note with valid fields',
+    async () => {
+      const res = await fetch(`${baseUrl}/api/v1/notes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${moderatorToken}`
+        },
+        body: JSON.stringify({
+          title: 'Test Note: Binary Search Analysis',
+          description: 'Comprehensive time complexity proofs',
+          content: '# Binary Search\n\nRuns in O(log n) worst case.',
+          subjectId: testSubject.id,
+          categoryId: testCategory.id,
+          semester: 3,
+          status: 'DRAFT'
+        })
+      });
+
+      assert.equal(res.status, 201);
+      const json = await res.json();
+      assert.equal(json.success, true);
+      assert.equal(json.data.title, 'Test Note: Binary Search Analysis');
+      assert.equal(json.data.status, 'DRAFT');
+      assert.ok(json.data.slug);
+      createdDraftId = json.data.id;
+    }
+  );
 
   await t.test('POST /api/v1/notes should reject empty title', async () => {
     const res = await fetch(`${baseUrl}/api/v1/notes`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${studentToken}`
+        Authorization: `Bearer ${moderatorToken}`
       },
       body: JSON.stringify({
         title: '   ',
@@ -278,7 +306,7 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${studentToken}`
+        Authorization: `Bearer ${moderatorToken}`
       },
       body: JSON.stringify({
         title: 'Test Note: Empty Payload',
@@ -292,13 +320,13 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
   });
 
   await t.test(
-    'POST /api/v1/notes should prohibit student from publishing directly as APPROVED',
+    'POST /api/v1/notes should prohibit direct publishing as APPROVED',
     async () => {
       const res = await fetch(`${baseUrl}/api/v1/notes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${studentToken}`
+          Authorization: `Bearer ${moderatorToken}`
         },
         body: JSON.stringify({
           title: 'Test Note: Illegal Direct Publish',
@@ -314,10 +342,10 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
     }
   );
 
-  // Create a note for the other student
-  await t.test('Setup: Create second student draft', async () => {
+  // Create a note for the other user
+  await t.test('Setup: Create second draft for ownership tests', async () => {
     const note = await noteService.createNote({
-      title: 'Test Note: Student Two Secret Draft',
+      title: 'Test Note: Secret Isolated Draft',
       content: 'Private research manuscript',
       subjectId: testSubject.id,
       uploadedById: otherStudentUser.id,
@@ -333,7 +361,7 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
 
   await t.test('GET /api/v1/notes/:id - Owner can view their own private draft', async () => {
     const res = await fetch(`${baseUrl}/api/v1/notes/${createdDraftId}`, {
-      headers: { Authorization: `Bearer ${studentToken}` }
+      headers: { Authorization: `Bearer ${moderatorToken}` }
     });
     assert.equal(res.status, 200);
     const json = await res.json();
@@ -341,7 +369,7 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
   });
 
   await t.test(
-    'GET /api/v1/notes/:id - Other students cannot view a private draft (403 forbidden)',
+    'GET /api/v1/notes/:id - Other users cannot view a private draft (403 forbidden)',
     async () => {
       const res = await fetch(`${baseUrl}/api/v1/notes/${otherStudentDraftId}`, {
         headers: { Authorization: `Bearer ${studentToken}` }
@@ -352,12 +380,12 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
     }
   );
 
-  await t.test('PATCH /api/v1/notes/:id - Student can edit their own draft', async () => {
+  await t.test('PATCH /api/v1/notes/:id - Owner can edit their own draft', async () => {
     const res = await fetch(`${baseUrl}/api/v1/notes/${createdDraftId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${studentToken}`
+        Authorization: `Bearer ${moderatorToken}`
       },
       body: JSON.stringify({
         title: 'Test Note: Binary Search Master Class',
@@ -369,7 +397,7 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
     assert.equal(json.data.title, 'Test Note: Binary Search Master Class');
   });
 
-  await t.test('PATCH /api/v1/notes/:id - Student cannot modify another student note', async () => {
+  await t.test('PATCH /api/v1/notes/:id - User cannot modify another user note', async () => {
     const res = await fetch(`${baseUrl}/api/v1/notes/${otherStudentDraftId}`, {
       method: 'PATCH',
       headers: {
@@ -382,11 +410,11 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
     });
     assert.equal(res.status, 403);
     const json = await res.json();
-    assert.equal(json.error.code, 'FORBIDDEN_OWNERSHIP');
+    assert.ok(json.error.code === 'FORBIDDEN' || json.error.code === 'FORBIDDEN_OWNERSHIP');
   });
 
   await t.test(
-    'DELETE /api/v1/notes/:id - Student cannot delete another student note',
+    'DELETE /api/v1/notes/:id - User cannot delete another user note',
     async () => {
       const res = await fetch(`${baseUrl}/api/v1/notes/${otherStudentDraftId}`, {
         method: 'DELETE',
@@ -394,7 +422,7 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
       });
       assert.equal(res.status, 403);
       const json = await res.json();
-      assert.equal(json.error.code, 'FORBIDDEN_OWNERSHIP');
+      assert.ok(json.error.code === 'FORBIDDEN' || json.error.code === 'FORBIDDEN_OWNERSHIP');
     }
   );
 
@@ -407,7 +435,7 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
     async () => {
       const res = await fetch(`${baseUrl}/api/v1/notes/${createdDraftId}/submit`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${studentToken}` }
+        headers: { Authorization: `Bearer ${moderatorToken}` }
       });
       assert.equal(res.status, 200);
       const json = await res.json();
@@ -416,13 +444,13 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
   );
 
   await t.test(
-    'PATCH /api/v1/notes/:id - Student cannot edit note while under review',
+    'PATCH /api/v1/notes/:id - Owner cannot edit note while under review',
     async () => {
       const res = await fetch(`${baseUrl}/api/v1/notes/${createdDraftId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${studentToken}`
+          Authorization: `Bearer ${moderatorToken}`
         },
         body: JSON.stringify({ title: 'Attempted Edit While Pending' })
       });
@@ -433,7 +461,7 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
   );
 
   await t.test(
-    'POST /api/v1/notes/:id/review - Student cannot review/approve their own note',
+    'POST /api/v1/notes/:id/review - Student cannot review/approve notes',
     async () => {
       const res = await fetch(`${baseUrl}/api/v1/notes/${createdDraftId}/review`, {
         method: 'POST',
@@ -451,7 +479,7 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
     'GET /api/v1/notes/moderation/queue - Moderator can view pending queue',
     async () => {
       const res = await fetch(`${baseUrl}/api/v1/notes/moderation/queue`, {
-        headers: { Authorization: `Bearer ${moderatorToken}` }
+        headers: { Authorization: `Bearer ${adminToken}` }
       });
       assert.equal(res.status, 200);
       const json = await res.json();
@@ -459,12 +487,12 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
     }
   );
 
-  await t.test('POST /api/v1/notes/:id/review - Moderator rejects note with reason', async () => {
+  await t.test('POST /api/v1/notes/:id/review - Admin rejects note with reason', async () => {
     const res = await fetch(`${baseUrl}/api/v1/notes/${createdDraftId}/review`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${moderatorToken}`
+        Authorization: `Bearer ${adminToken}`
       },
       body: JSON.stringify({
         status: 'REJECTED',
@@ -478,13 +506,13 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
   });
 
   await t.test(
-    'PATCH /api/v1/notes/:id - Student can update rejected note with feedback fixes',
+    'PATCH /api/v1/notes/:id - Owner can update rejected note with feedback fixes',
     async () => {
       const res = await fetch(`${baseUrl}/api/v1/notes/${createdDraftId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${studentToken}`
+          Authorization: `Bearer ${moderatorToken}`
         },
         body: JSON.stringify({
           content: '# Binary Search with Pseudocode\n\n```python\ndef bs(): pass\n```'
@@ -494,10 +522,10 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
     }
   );
 
-  await t.test('POST /api/v1/notes/:id/submit - Student resubmits rejected note', async () => {
+  await t.test('POST /api/v1/notes/:id/submit - Owner resubmits rejected note', async () => {
     const res = await fetch(`${baseUrl}/api/v1/notes/${createdDraftId}/submit`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${studentToken}` }
+      headers: { Authorization: `Bearer ${moderatorToken}` }
     });
     assert.equal(res.status, 200);
     const json = await res.json();
@@ -506,13 +534,13 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
   });
 
   await t.test(
-    'POST /api/v1/notes/:id/review - Moderator approves note and sets publishedAt',
+    'POST /api/v1/notes/:id/review - Admin approves note and sets publishedAt',
     async () => {
       const res = await fetch(`${baseUrl}/api/v1/notes/${createdDraftId}/review`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${moderatorToken}`
+          Authorization: `Bearer ${adminToken}`
         },
         body: JSON.stringify({ status: 'APPROVED' })
       });
@@ -524,7 +552,7 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
   );
 
   // =========================================================================
-  // 5. Public Library & Filtering
+  // 5. Public Library, Downloads & Filtering
   // =========================================================================
 
   await t.test('GET /api/v1/notes - Public library returns approved note', async () => {
@@ -537,6 +565,21 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
     assert.ok(found);
     assert.equal(found.status, 'APPROVED');
   });
+
+  await t.test(
+    'GET /api/v1/notes/:id/download - Scholar CAN download approved notes',
+    async () => {
+      const res = await fetch(`${baseUrl}/api/v1/notes/${createdDraftId}/download`, {
+        headers: { Authorization: `Bearer ${studentToken}` }
+      });
+      // Since it is approved, download access is authorized (200 if file attached, 404 NO_FILE_ATTACHED if text note)
+      assert.ok(res.status === 200 || res.status === 404);
+      if (res.status === 404) {
+        const json = await res.json();
+        assert.equal(json.error.code, 'NO_FILE_ATTACHED');
+      }
+    }
+  );
 
   await t.test(
     'GET /api/v1/notes - Public library strictly excludes drafts and pending notes',
@@ -556,7 +599,7 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
 
   await t.test('GET /api/v1/users/me/notes - Returns author notes with status filter', async () => {
     const res = await fetch(`${baseUrl}/api/v1/users/me/notes?status=APPROVED`, {
-      headers: { Authorization: `Bearer ${studentToken}` }
+      headers: { Authorization: `Bearer ${moderatorToken}` }
     });
     assert.equal(res.status, 200);
     const json = await res.json();
@@ -571,7 +614,7 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
   await t.test('POST /api/v1/notes/:id/archive - Owner can archive approved note', async () => {
     const res = await fetch(`${baseUrl}/api/v1/notes/${createdDraftId}/archive`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${studentToken}` }
+      headers: { Authorization: `Bearer ${moderatorToken}` }
     });
     assert.equal(res.status, 200);
     const json = await res.json();

@@ -107,37 +107,15 @@ export function NoteCard({
 
       <div className="note-card__footer">
         <div className="note-card__author">
-          {uploadedBy?.id ? (
-            <Link
-              to={`/contributors/${uploadedBy.id}`}
-              className="note-card__author-link"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                textDecoration: 'none',
-                color: 'inherit'
-              }}
-            >
-              <Avatar name={uploadedBy?.name || 'Scholar'} src={uploadedBy?.avatarUrl} size="sm" />
-              <div className="note-card__author-meta">
-                <span className="note-card__author-name" style={{ transition: 'color 0.15s ease' }}>
-                  {uploadedBy?.name || 'Academic Scholar'}
-                </span>
-                <span className="note-card__date">{displayDate}</span>
-              </div>
-            </Link>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Avatar name={uploadedBy?.name || 'Scholar'} src={uploadedBy?.avatarUrl} size="sm" />
-              <div className="note-card__author-meta">
-                <span className="note-card__author-name">
-                  {uploadedBy?.name || 'Academic Scholar'}
-                </span>
-                <span className="note-card__date">{displayDate}</span>
-              </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Avatar name={uploadedBy?.name || 'Scholar'} src={uploadedBy?.avatarUrl} size="sm" />
+            <div className="note-card__author-meta">
+              <span className="note-card__author-name">
+                {uploadedBy?.name || 'Academic Scholar'}
+              </span>
+              <span className="note-card__date">{displayDate}</span>
             </div>
-          )}
+          </div>
         </div>
 
         <div className="note-card__stats">

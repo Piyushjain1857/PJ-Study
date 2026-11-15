@@ -234,52 +234,28 @@ export function NoteDetailsPage() {
           {/* Author and Metadata Bar */}
           <div className="note-details__meta-bar">
             <div className="note-details__author">
-              {note.uploadedById || note.uploadedBy?.id ? (
-                <Link
-                  to={`/contributors/${note.uploadedById || note.uploadedBy?.id}`}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    textDecoration: 'none',
-                    color: 'inherit'
-                  }}
-                  title="View contributor profile"
-                >
-                  <Avatar
-                    name={note.uploadedBy?.name || 'Scholar'}
-                    src={note.uploadedBy?.avatarUrl}
-                    size="md"
-                  />
-                  <div>
-                    <span
-                      className="note-details__author-name"
-                      style={{ textDecoration: 'underline', textUnderlineOffset: '3px' }}
-                    >
-                      {note.uploadedBy?.name || 'Academic Scholar'}
-                    </span>
-                    <span className="note-details__author-date">
-                      {note.status === 'APPROVED' ? 'Published' : 'Uploaded'} on {displayDate}
-                    </span>
-                  </div>
-                </Link>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <Avatar
-                    name={note.uploadedBy?.name || 'Scholar'}
-                    src={note.uploadedBy?.avatarUrl}
-                    size="md"
-                  />
-                  <div>
-                    <span className="note-details__author-name">
-                      {note.uploadedBy?.name || 'Academic Scholar'}
-                    </span>
-                    <span className="note-details__author-date">
-                      {note.status === 'APPROVED' ? 'Published' : 'Uploaded'} on {displayDate}
-                    </span>
-                  </div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  color: 'inherit'
+                }}
+              >
+                <Avatar
+                  name={note.uploadedBy?.name || 'Scholar'}
+                  src={note.uploadedBy?.avatarUrl}
+                  size="md"
+                />
+                <div>
+                  <span className="note-details__author-name">
+                    {note.uploadedBy?.name || 'Academic Scholar'}
+                  </span>
+                  <span className="note-details__author-date">
+                    {note.status === 'APPROVED' ? 'Published' : 'Uploaded'} on {displayDate}
+                  </span>
                 </div>
-              )}
+              </div>
             </div>
 
             <div className="note-details__counters">

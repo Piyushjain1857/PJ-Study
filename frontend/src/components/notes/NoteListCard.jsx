@@ -97,39 +97,23 @@ export function NoteListCard({ note, showStatus = false, onDownload = null }) {
 
         <div className="note-list-card__meta-bar">
           <div className="note-list-card__author">
-            {uploadedBy?.id ? (
-              <Link
-                to={`/contributors/${uploadedBy.id}`}
-                className="note-list-card__author-link"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  textDecoration: 'none',
-                  color: 'inherit'
-                }}
-              >
-                <Avatar
-                  name={uploadedBy?.name || 'Scholar'}
-                  src={uploadedBy?.avatarUrl}
-                  size="xs"
-                />
-                <span className="note-list-card__author-name">
-                  {uploadedBy?.name || 'Academic Scholar'}
-                </span>
-              </Link>
-            ) : (
-              <>
-                <Avatar
-                  name={uploadedBy?.name || 'Scholar'}
-                  src={uploadedBy?.avatarUrl}
-                  size="xs"
-                />
-                <span className="note-list-card__author-name">
-                  {uploadedBy?.name || 'Academic Scholar'}
-                </span>
-              </>
-            )}
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                color: 'inherit'
+              }}
+            >
+              <Avatar
+                name={uploadedBy?.name || 'Scholar'}
+                src={uploadedBy?.avatarUrl}
+                size="xs"
+              />
+              <span className="note-list-card__author-name">
+                {uploadedBy?.name || 'Academic Scholar'}
+              </span>
+            </span>
             <span className="note-list-card__bullet">•</span>
             <span className="note-list-card__date">{displayDate}</span>
           </div>

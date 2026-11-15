@@ -25,7 +25,7 @@ export class DashboardRepository {
    * }>}
    */
   async getStudentCounts(userId) {
-    const [savedNotesCount, collectionsCount, downloadsCount, uniqueNotes, uploadsCount] =
+    const [savedNotesCount, collectionsCount, downloadsCount, uniqueNotes, uploadsCount, uniqueViews] =
       await Promise.all([
         prisma.bookmark.count({ where: { userId } }),
         prisma.studyCollection.count({ where: { userId } }),
@@ -35,7 +35,12 @@ export class DashboardRepository {
           distinct: ['noteId'],
           select: { noteId: true }
         }),
-        prisma.note.count({ where: { uploadedById: userId } })
+        prisma.note.count({ where: { uploadedById: userId } }),
+        prisma.noteViewHistory.findMany({
+          where: { userId },
+          distinct: ['noteId'],
+          select: { noteId: true }
+        })
       ]);
 
     return {
@@ -43,8 +48,56 @@ export class DashboardRepository {
       collectionsCount,
       downloadsCount,
       uniqueNotesDownloaded: uniqueNotes.length,
-      uploadsCount
+      uploadsCount,
+      recentlyViewedCount: uniqueViews.length
     };
+  }
+
+  /**
+   * Retrieves recently viewed notes by the student.
+   *
+   * @param {string} userId
+   * @param {number} limit
+   */
+  async getRecentViews(userId, limit = 5) {
+    const views = await prisma.noteViewHistory.findMany({
+      where: { userId },
+      orderBy: { viewedAt: 'desc' },
+      take: limit * 3,
+      include: {
+        note: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            description: true,
+            status: true,
+            downloadCount: true,
+            viewCount: true,
+            createdAt: true,
+            subject: { select: { name: true, slug: true } },
+            course: { select: { name: true, slug: true } },
+            category: { select: { name: true, slug: true } },
+            uploadedBy: { select: { name: true } }
+          }
+        }
+      }
+    });
+
+    const seenNoteIds = new Set();
+    const unique = [];
+    for (const v of views) {
+      if (v.note && v.note.status === 'APPROVED' && !seenNoteIds.has(v.note.id)) {
+        seenNoteIds.add(v.note.id);
+        unique.push({
+          id: v.id,
+          viewedAt: v.viewedAt,
+          note: v.note
+        });
+        if (unique.length >= limit) break;
+      }
+    }
+    return unique;
   }
 
   /**
@@ -232,7 +285,7 @@ export class DashboardRepository {
    * @param {Date} endDate
    */
   async getActivityTimeline(userId, startDate, endDate) {
-    const [bookmarksRaw, downloadsRaw, uploadsRaw, collectionsRaw] = await Promise.all([
+    const [bookmarksRaw, downloadsRaw, uploadsRaw, collectionsRaw, viewsRaw] = await Promise.all([
       prisma.$queryRaw`
         SELECT DATE_FORMAT(created_at, '%Y-%m-%d') as date, COUNT(*) as count
         FROM bookmarks
@@ -256,6 +309,12 @@ export class DashboardRepository {
         FROM study_collections
         WHERE user_id = ${userId} AND created_at >= ${startDate} AND created_at <= ${endDate}
         GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
+      `,
+      prisma.$queryRaw`
+        SELECT DATE_FORMAT(viewed_at, '%Y-%m-%d') as date, COUNT(*) as count
+        FROM note_view_history
+        WHERE user_id = ${userId} AND viewed_at >= ${startDate} AND viewed_at <= ${endDate}
+        GROUP BY DATE_FORMAT(viewed_at, '%Y-%m-%d')
       `
     ]);
 
@@ -280,6 +339,11 @@ export class DashboardRepository {
       collectionsMap.set(row.date, Number(row.count));
     }
 
+    const viewsMap = new Map();
+    for (const row of viewsRaw) {
+      viewsMap.set(row.date, Number(row.count));
+    }
+
     // Generate chronological daily buckets from startDate to endDate
     const timeline = [];
     let cur = new Date(startDate);
@@ -289,6 +353,7 @@ export class DashboardRepository {
     let totalDownloads = 0;
     let totalUploads = 0;
     let totalCollections = 0;
+    let totalViews = 0;
 
     while (cur <= end) {
       const dateStr = cur.toISOString().split('T')[0];
@@ -296,11 +361,13 @@ export class DashboardRepository {
       const downloads = downloadsMap.get(dateStr) || 0;
       const uploads = uploadsMap.get(dateStr) || 0;
       const collections = collectionsMap.get(dateStr) || 0;
+      const views = viewsMap.get(dateStr) || 0;
 
       totalBookmarks += bookmarks;
       totalDownloads += downloads;
       totalUploads += uploads;
       totalCollections += collections;
+      totalViews += views;
 
       timeline.push({
         date: dateStr,
@@ -308,7 +375,8 @@ export class DashboardRepository {
         downloads,
         uploads,
         collections,
-        total: bookmarks + downloads + uploads + collections
+        views,
+        total: bookmarks + downloads + uploads + collections + views
       });
 
       cur.setUTCDate(cur.getUTCDate() + 1);
@@ -320,7 +388,9 @@ export class DashboardRepository {
         downloads: totalDownloads,
         uploads: totalUploads,
         collections: totalCollections,
-        totalEvents: totalBookmarks + totalDownloads + totalUploads + totalCollections
+        views: totalViews,
+        recentlyViewed: totalViews,
+        totalEvents: totalBookmarks + totalDownloads + totalUploads + totalCollections + totalViews
       },
       timeline
     };

@@ -4,6 +4,7 @@
 export const PERMISSIONS = Object.freeze({
   // Notes & Study Materials
   NOTES_READ: 'notes:read',
+  NOTES_DOWNLOAD: 'notes:download',
   NOTES_CREATE: 'notes:create',
   NOTES_UPDATE_OWN: 'notes:update_own',
   NOTES_DELETE_OWN: 'notes:delete_own',

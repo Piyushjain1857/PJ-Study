@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import RecommendationReason from './RecommendationReason.jsx';
 import Badge from '../common/Badge.jsx';
 import Button from '../common/Button.jsx';
+import noteService from '../../services/noteService.js';
 
 /**
  * Editorial card displaying an explainable note recommendation.
@@ -32,9 +33,20 @@ export function RecommendationCard({ item }) {
     category,
     semester,
     uploadedBy,
+    fileName,
     downloadCount = 0,
     viewCount = 0
   } = note;
+
+  const handleDownload = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (fileName) {
+      await noteService.downloadFile(id, fileName);
+    } else {
+      window.open(`/api/v1/notes/${id}/download`, '_blank');
+    }
+  };
 
   return (
     <div className="rec-card">
@@ -72,12 +84,23 @@ export function RecommendationCard({ item }) {
           </div>
         </div>
 
-        <div className="rec-card-actions">
-          <Link to={`/notes/${id}`} style={{ textDecoration: 'none', width: '100%' }}>
+        <div className="rec-card-actions" style={{ display: 'flex', gap: '8px' }}>
+          <Link to={`/notes/${id}`} style={{ textDecoration: 'none', flex: 1 }}>
             <Button variant="outline" size="sm" style={{ width: '100%' }}>
               View Note
             </Button>
           </Link>
+          {fileName && (
+            <Button
+              variant="primary"
+              size="sm"
+              style={{ flex: 1 }}
+              onClick={handleDownload}
+              aria-label={`Download ${fileName}`}
+            >
+              📥 Download
+            </Button>
+          )}
         </div>
       </div>
     </div>

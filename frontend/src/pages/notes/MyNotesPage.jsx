@@ -6,6 +6,7 @@ import NotesEmptyState from '../../components/notes/NotesEmptyState.jsx';
 import Button from '../../components/common/Button.jsx';
 import Modal from '../../components/common/Modal.jsx';
 import Container from '../../components/layout/Container.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import '../../styles/notes.css';
 
 const STATUS_TABS = [
@@ -21,6 +22,7 @@ const STATUS_TABS = [
  * Scholar personal notes dashboard for tracking submission lifecycle.
  */
 export function MyNotesPage() {
+  const { isModerator } = useAuth();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('');
   const [notes, setNotes] = useState([]);
@@ -210,9 +212,11 @@ export function MyNotesPage() {
             </p>
           </div>
 
-          <Link to="/notes/new">
-            <Button variant="primary">+ Upload Note</Button>
-          </Link>
+          {isModerator && (
+            <Link to="/notes/new">
+              <Button variant="primary">+ Upload Note</Button>
+            </Link>
+          )}
         </div>
 
         {/* Flash banner */}
@@ -280,8 +284,8 @@ export function MyNotesPage() {
                   ? 'You currently have no saved drafts. Start writing a new study note manuscript.'
                   : 'Contribute your class lecture notes or exam study guides to the PJ Study community.'
               }
-              actionLabel="+ Create Study Note"
-              actionTo="/notes/new"
+              actionLabel={isModerator ? '+ Create Study Note' : 'Explore Notes'}
+              actionTo={isModerator ? '/notes/new' : '/notes/explore'}
             />
           }
         />

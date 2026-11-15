@@ -4,21 +4,25 @@ import Button from '../common/Button.jsx';
 import Badge from '../common/Badge.jsx';
 import StatusBadge from '../common/StatusBadge.jsx';
 import Skeleton from '../common/Skeleton.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 /**
- * Switchable panel for student's recently saved and uploaded study notes.
+ * Switchable panel for student's recently saved and viewed study notes.
  *
  * @param {{
  *   recentBookmarks: Array<any>,
- *   recentUploads: Array<any>,
+ *   recentUploads?: Array<any>,
+ *   recentViews?: Array<any>,
  *   loading?: boolean
  * }} props
  */
 export function DashboardRecentNotes({
   recentBookmarks = [],
   recentUploads = [],
+  recentViews = [],
   loading = false
 }) {
+  const { isModerator } = useAuth();
   const [activeTab, setActiveTab] = useState('saved');
 
   const formatDate = (dateStr) => {
@@ -42,18 +46,30 @@ export function DashboardRecentNotes({
           >
             Saved Notes ({recentBookmarks.length})
           </button>
-          <button
-            type="button"
-            className={`dash-tab-btn ${activeTab === 'uploads' ? 'dash-tab-btn--active' : ''}`}
-            onClick={() => setActiveTab('uploads')}
-            role="tab"
-            aria-selected={activeTab === 'uploads'}
-          >
-            My Uploads ({recentUploads.length})
-          </button>
+          {isModerator ? (
+            <button
+              type="button"
+              className={`dash-tab-btn ${activeTab === 'uploads' ? 'dash-tab-btn--active' : ''}`}
+              onClick={() => setActiveTab('uploads')}
+              role="tab"
+              aria-selected={activeTab === 'uploads'}
+            >
+              My Uploads ({recentUploads.length})
+            </button>
+          ) : (
+            <button
+              type="button"
+              className={`dash-tab-btn ${activeTab === 'views' ? 'dash-tab-btn--active' : ''}`}
+              onClick={() => setActiveTab('views')}
+              role="tab"
+              aria-selected={activeTab === 'views'}
+            >
+              Recently Viewed ({recentViews.length})
+            </button>
+          )}
         </div>
 
-        <Link to={activeTab === 'saved' ? '/notes/explore' : '/my-notes'}>
+        <Link to={isModerator && activeTab === 'uploads' ? '/my-notes' : '/notes/explore'}>
           <Button variant="ghost" size="sm">
             View All →
           </Button>
@@ -67,19 +83,22 @@ export function DashboardRecentNotes({
       ) : activeTab === 'saved' ? (
         recentBookmarks.length === 0 ? (
           <div className="dash-empty-box">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              width="36"
-              height="36"
-            >
-              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-            </svg>
-            <p>
-              You haven&apos;t bookmarked any notes yet. Browse the academic catalog to save lecture
-              notes for quick access.
+            <div className="dash-empty-icon" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                width="32"
+                height="32"
+              >
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+              </svg>
+            </div>
+            <h3 className="dash-empty-title">Your Learning Journey Starts Here</h3>
+            <p className="dash-empty-desc">
+              Explore study notes, download useful resources, and save your favorites to build your
+              personal learning library.
             </p>
             <Link to="/notes/explore">
               <Button variant="outline" size="sm">
@@ -105,6 +124,66 @@ export function DashboardRecentNotes({
                       )}
                       <span>•</span>
                       <span>Saved {formatDate(item.bookmarkedAt)}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {note.category?.name && (
+                      <Badge variant="neutral" label={note.category.name} size="sm" />
+                    )}
+                    <span style={{ color: 'var(--color-primary, #285943)', fontWeight: 600 }}>
+                      →
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )
+      ) : activeTab === 'views' ? (
+        recentViews.length === 0 ? (
+          <div className="dash-empty-box">
+            <div className="dash-empty-icon" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                width="32"
+                height="32"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </div>
+            <h3 className="dash-empty-title">Your Learning Journey Starts Here</h3>
+            <p className="dash-empty-desc">
+              Explore study notes, download useful resources, and save your favorites to build your
+              personal learning library.
+            </p>
+            <Link to="/notes/explore">
+              <Button variant="outline" size="sm">
+                Explore Notes
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="dash-resource-list">
+            {recentViews.map((item) => {
+              const note = item.note || {};
+              return (
+                <Link key={item.id} to={`/notes/${note.id}`} className="dash-resource-item">
+                  <div className="dash-resource-info">
+                    <span className="dash-resource-title">{note.title}</span>
+                    <div className="dash-resource-meta">
+                      {note.subject?.name && <span>{note.subject.name}</span>}
+                      {note.course?.name && (
+                        <>
+                          <span>•</span>
+                          <span>{note.course.name}</span>
+                        </>
+                      )}
+                      <span>•</span>
+                      <span>Viewed {formatDate(item.viewedAt)}</span>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

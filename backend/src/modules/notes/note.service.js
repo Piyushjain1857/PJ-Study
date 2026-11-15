@@ -108,6 +108,10 @@ export class NoteService {
         // eslint-disable-next-line no-console
         console.error('Failed to increment note view count:', err.message);
       });
+
+      if (currentUser && currentUser.id) {
+        this.repo.recordViewHistory(currentUser.id, id).catch(() => {});
+      }
     }
 
     const ratingInfo = await this.repo.getAverageRating(id);
@@ -158,6 +162,20 @@ export class NoteService {
       fileSize,
       mimeType
     } = input;
+
+    // 0. Scholar / Student upload restriction invariant
+    if (uploadedById) {
+      const uploader = await prisma.user.findUnique({
+        where: { id: uploadedById },
+        select: { role: true }
+      });
+      if (uploader && uploader.role === ROLES.STUDENT) {
+        const error = new Error('Scholars / Students are not authorized to upload notes.');
+        error.statusCode = 403;
+        error.code = 'UPLOAD_FORBIDDEN';
+        throw error;
+      }
+    }
 
     // 1. Title validation
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
@@ -307,6 +325,14 @@ export class NoteService {
       const error = new Error(`Note with ID "${noteId}" was not found.`);
       error.statusCode = 404;
       error.code = 'NOTE_NOT_FOUND';
+      throw error;
+    }
+
+    // Invariant: Scholars/Students cannot modify notes
+    if (userRole === ROLES.STUDENT) {
+      const error = new Error('Scholars / Students are not authorized to edit or update notes.');
+      error.statusCode = 403;
+      error.code = 'UPDATE_FORBIDDEN';
       throw error;
     }
 
@@ -937,13 +963,6 @@ export class NoteService {
       throw error;
     }
 
-    if (!note.storageKey) {
-      const error = new Error('This study note does not have an attached file.');
-      error.statusCode = 404;
-      error.code = 'NO_FILE_ATTACHED';
-      throw error;
-    }
-
     // Access check: only approved notes are public; non-approved require owner or staff
     if (note.status !== 'APPROVED') {
       const isOwner = currentUser && note.uploadedById === currentUser.id;
@@ -963,14 +982,21 @@ export class NoteService {
       }
     }
 
-    // Increment download count asynchronously
-    if (note.status === 'APPROVED') {
-      this.repo.incrementDownloadCount(noteId).catch(() => {});
+    if (!note.storageKey) {
+      const error = new Error('This study note does not have an attached file.');
+      error.statusCode = 404;
+      error.code = 'NO_FILE_ATTACHED';
+      throw error;
     }
 
-    // Record user download history asynchronously if authenticated
+    // Increment download count
+    if (note.status === 'APPROVED') {
+      await this.repo.incrementDownloadCount(noteId).catch(() => {});
+    }
+
+    // Record user download history if authenticated
     if (currentUser && currentUser.id) {
-      this.repo.recordDownloadHistory(currentUser.id, noteId).catch(() => {});
+      await this.repo.recordDownloadHistory(currentUser.id, noteId).catch(() => {});
     }
 
     const { stream, size } = await this.storage.getFileStream(note.storageKey);

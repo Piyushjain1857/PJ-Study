@@ -13,7 +13,6 @@ import VerifyEmailPage from '../pages/auth/VerifyEmailPage.jsx';
 import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage.jsx';
 import ResetPasswordPage from '../pages/auth/ResetPasswordPage.jsx';
 import ProfilePage from '../pages/auth/ProfilePage.jsx';
-import PublicContributorPage from '../pages/profile/PublicContributorPage.jsx';
 import AdminDashboardPage from '../pages/admin/AdminDashboardPage.jsx';
 import NotificationCenterPage from '../pages/notifications/NotificationCenterPage.jsx';
 import UnauthorizedPage from '../pages/UnauthorizedPage.jsx';
@@ -77,7 +76,7 @@ export const router = createBrowserRouter(
         {
           path: 'notes/new',
           element: (
-            <ProtectedRoute>
+            <ProtectedRoute roles={[ROLES.MODERATOR, ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
               <CreateNotePage />
             </ProtectedRoute>
           )
@@ -89,7 +88,7 @@ export const router = createBrowserRouter(
         {
           path: 'notes/:id/edit',
           element: (
-            <ProtectedRoute>
+            <ProtectedRoute roles={[ROLES.MODERATOR, ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
               <EditNotePage />
             </ProtectedRoute>
           )
@@ -119,10 +118,6 @@ export const router = createBrowserRouter(
           )
         },
         {
-          path: 'contributors/:userId',
-          element: <PublicContributorPage />
-        },
-        {
           path: 'admin',
           element: (
             <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
@@ -132,7 +127,11 @@ export const router = createBrowserRouter(
         },
         {
           path: 'design-system',
-          element: <DesignSystemPage />
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <DesignSystemPage />
+            </ProtectedRoute>
+          )
         }
       ]
     },

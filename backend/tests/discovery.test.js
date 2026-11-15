@@ -402,6 +402,6 @@ test('Advanced Notes Discovery, Search, Filtering & Student Library Suite', asyn
 
   await t.test('13. Unauthorized download of draft/pending note is blocked', async () => {
     const res = await fetch(`${baseUrl}/notes/${draftNote.id}/download`);
-    assert.strictEqual(res.status, 404); // draft note has no storageKey or access forbidden
+    assert.ok(res.status === 403 || res.status === 404, 'Draft download should be blocked with 403 or 404');
   });
 });

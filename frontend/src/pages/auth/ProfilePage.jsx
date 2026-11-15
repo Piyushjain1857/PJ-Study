@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import authService from '../../services/authService.js';
@@ -15,7 +15,7 @@ import './Auth.css';
  * Scholar Personal Profile, Academic Identity, Uploads & Security Hub.
  */
 export function ProfilePage() {
-  const { user, logout, updateUser } = useAuth();
+  const { user, isModerator, logout, updateUser } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
@@ -45,17 +45,6 @@ export function ProfilePage() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState('');
   const [avatarSuccess, setAvatarSuccess] = useState('');
-
-  // Privacy toggles state
-  const [privacySettings, setPrivacySettings] = useState({
-    publicProfileEnabled: true,
-    showAcademicInfo: true,
-    showBio: true,
-    showContributionStats: true
-  });
-  const [isSavingPrivacy, setIsSavingPrivacy] = useState(false);
-  const [privacySuccess, setPrivacySuccess] = useState('');
-  const [privacyError, setPrivacyError] = useState('');
 
   // Uploads management state
   const [uploads, setUploads] = useState([]);
@@ -115,12 +104,6 @@ export function ProfilePage() {
             courseId: data.courseId || '',
             semester:
               data.semester !== null && data.semester !== undefined ? String(data.semester) : ''
-          });
-          setPrivacySettings({
-            publicProfileEnabled: data.publicProfileEnabled ?? true,
-            showAcademicInfo: data.showAcademicInfo ?? true,
-            showBio: data.showBio ?? true,
-            showContributionStats: data.showContributionStats ?? true
           });
         }
       } catch {
@@ -191,10 +174,16 @@ export function ProfilePage() {
   );
 
   useEffect(() => {
-    if (activeTab === 'uploads') {
+    if (activeTab === 'uploads' && isModerator) {
       fetchUploads(1, uploadsStatus, uploadsSearch);
     }
-  }, [activeTab, fetchUploads, uploadsStatus, uploadsSearch]);
+  }, [activeTab, fetchUploads, uploadsStatus, uploadsSearch, isModerator]);
+
+  useEffect(() => {
+    if (!isModerator && activeTab === 'uploads') {
+      setActiveTab('overview');
+    }
+  }, [isModerator, activeTab]);
 
   // Avatar file upload handler
   async function handleAvatarChange(e) {
@@ -328,41 +317,36 @@ export function ProfilePage() {
     }
   }
 
-  // Privacy settings toggle submit handler
-  async function handlePrivacySubmit(e) {
-    e.preventDefault();
-    setPrivacyError('');
-    setPrivacySuccess('');
-    setIsSavingPrivacy(true);
-
-    try {
-      const updated = await profileService.updatePrivacySettings(privacySettings);
-      updateUser(updated);
-      setProfileData((prev) => (prev ? { ...prev, ...updated } : updated));
-      setPrivacySuccess('Profile privacy preferences updated successfully.');
-    } catch (err) {
-      setPrivacyError(
-        err.response?.data?.error?.message || err.message || 'Failed to update privacy settings.'
-      );
-    } finally {
-      setIsSavingPrivacy(false);
-    }
-  }
-
-  // Filter and sort canonical degree courses: B.Tech, BCA, B.Sc., MCA, M.Tech
+  // Filter and sort canonical degree courses: strictly B.Tech, BCA, B.Sc., MCA, M.Tech
   const allowedCourseNames = ['b.tech', 'bca', 'b.sc.', 'mca', 'm.tech'];
   const preferredCourseOrder = ['b.tech', 'bca', 'b.sc.', 'mca', 'm.tech'];
-  const canonicalCourses = courses.filter((c) =>
-    allowedCourseNames.includes(c.name?.toLowerCase().trim())
-  );
-  const displayCourses = (canonicalCourses.length > 0 ? canonicalCourses : courses).sort((a, b) => {
-    const idxA = preferredCourseOrder.indexOf(a.name?.toLowerCase().trim());
-    const idxB = preferredCourseOrder.indexOf(b.name?.toLowerCase().trim());
-    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-    if (idxA !== -1) return -1;
-    if (idxB !== -1) return 1;
-    return a.name.localeCompare(b.name);
-  });
+
+  const displayCourses = useMemo(() => {
+    const rawList = Array.isArray(courses) ? courses : [];
+    return rawList
+      .filter((c) => {
+        const lower = (c.name || '').toLowerCase().trim();
+        return allowedCourseNames.some((k) => lower === k || lower.startsWith(k));
+      })
+      .map((c) => {
+        const raw = (c.name || '').toLowerCase().trim();
+        let canonicalName = c.name;
+        if (raw.startsWith('b.tech') || raw.startsWith('btech')) canonicalName = 'B.Tech';
+        else if (raw.startsWith('bca')) canonicalName = 'BCA';
+        else if (raw.startsWith('b.sc') || raw.startsWith('bsc')) canonicalName = 'B.Sc.';
+        else if (raw.startsWith('mca')) canonicalName = 'MCA';
+        else if (raw.startsWith('m.tech') || raw.startsWith('mtech')) canonicalName = 'M.Tech';
+        return { ...c, name: canonicalName };
+      })
+      .sort((a, b) => {
+        const idxA = preferredCourseOrder.indexOf(a.name?.toLowerCase().trim());
+        const idxB = preferredCourseOrder.indexOf(b.name?.toLowerCase().trim());
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+  }, [courses]);
 
   // Available semesters for selected course
   const selectedCourse = courses.find((c) => c.id === editForm.courseId);
@@ -547,15 +531,6 @@ export function ProfilePage() {
           <div className="profile-details">
             <div className="profile-name-row">
               <h1 className="profile-name">{currentUser?.name}</h1>
-              {currentUser?.id && (
-                <Link
-                  to={`/contributors/${currentUser.id}`}
-                  className="profile-public-link"
-                  title="View your public contributor profile"
-                >
-                  View Public Profile ↗
-                </Link>
-              )}
             </div>
 
             <p className="profile-email">{currentUser?.email}</p>
@@ -624,18 +599,20 @@ export function ProfilePage() {
         >
           Overview & Stats
         </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'uploads'}
-          className={`profile-tab ${activeTab === 'uploads' ? 'profile-tab--active' : ''}`}
-          onClick={() => setActiveTab('uploads')}
-        >
-          My Uploads
-          {stats?.totalUploads !== undefined && (
-            <span className="profile-tab-badge">{stats.totalUploads}</span>
-          )}
-        </button>
+        {isModerator && (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'uploads'}
+            className={`profile-tab ${activeTab === 'uploads' ? 'profile-tab--active' : ''}`}
+            onClick={() => setActiveTab('uploads')}
+          >
+            My Uploads
+            {stats?.totalUploads !== undefined && (
+              <span className="profile-tab-badge">{stats.totalUploads}</span>
+            )}
+          </button>
+        )}
         <button
           type="button"
           role="tab"
@@ -644,15 +621,6 @@ export function ProfilePage() {
           onClick={() => setActiveTab('edit')}
         >
           Edit Profile
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'privacy'}
-          className={`profile-tab ${activeTab === 'privacy' ? 'profile-tab--active' : ''}`}
-          onClick={() => setActiveTab('privacy')}
-        >
-          Privacy Settings
         </button>
         <button
           type="button"
@@ -669,40 +637,69 @@ export function ProfilePage() {
       {activeTab === 'overview' && (
         <div className="profile-tab-content">
           {/* Contribution Statistics Grid */}
-          <div className="profile-stats-grid">
-            <div className="profile-stat-box">
-              <span className="profile-stat-number">{stats?.totalUploads ?? '—'}</span>
-              <span className="profile-stat-label">Total Uploads</span>
+          {isModerator ? (
+            <div className="profile-stats-grid">
+              <div className="profile-stat-box">
+                <span className="profile-stat-number">{stats?.totalUploads ?? '—'}</span>
+                <span className="profile-stat-label">Total Uploads</span>
+              </div>
+              <div className="profile-stat-box">
+                <span className="profile-stat-number" style={{ color: '#059669' }}>
+                  {stats?.approvedNotes ?? '—'}
+                </span>
+                <span className="profile-stat-label">Approved & Published</span>
+              </div>
+              <div className="profile-stat-box">
+                <span className="profile-stat-number" style={{ color: '#d97706' }}>
+                  {stats?.pendingNotes ?? '—'}
+                </span>
+                <span className="profile-stat-label">Pending Review</span>
+              </div>
+              <div className="profile-stat-box">
+                <span className="profile-stat-number" style={{ color: '#dc2626' }}>
+                  {stats?.rejectedNotes ?? '—'}
+                </span>
+                <span className="profile-stat-label">Revisions Needed</span>
+              </div>
+              <div className="profile-stat-box">
+                <span className="profile-stat-number">{stats?.totalDownloads ?? '—'}</span>
+                <span className="profile-stat-label">Community Downloads</span>
+              </div>
+              <div className="profile-stat-box">
+                <span className="profile-stat-number">
+                  {stats?.averageRating ? `★ ${stats.averageRating}` : '—'}
+                </span>
+                <span className="profile-stat-label">Avg Resource Rating</span>
+              </div>
             </div>
-            <div className="profile-stat-box">
-              <span className="profile-stat-number" style={{ color: '#059669' }}>
-                {stats?.approvedNotes ?? '—'}
-              </span>
-              <span className="profile-stat-label">Approved & Published</span>
+          ) : (
+            <div className="profile-stats-grid profile-stats-grid--scholar">
+              <div className="profile-stat-box">
+                <span className="profile-stat-number" style={{ color: '#1b4d3e' }}>
+                  {stats?.totalDownloads ?? stats?.downloadsCount ?? 0}
+                </span>
+                <span className="profile-stat-label">Notes Downloaded</span>
+              </div>
+              <div className="profile-stat-box">
+                <span className="profile-stat-number" style={{ color: '#059669' }}>
+                  {currentUser?.course?.name || 'Enrolled'}
+                </span>
+                <span className="profile-stat-label">Academic Program</span>
+              </div>
+              <div className="profile-stat-box">
+                <span className="profile-stat-number" style={{ color: '#1b4d3e' }}>
+                  {currentUser?.semester ? `Semester ${currentUser.semester}` : 'Active'}
+                </span>
+                <span className="profile-stat-label">Current Standing</span>
+              </div>
+              <div className="profile-stat-box">
+                <span className="profile-stat-number" style={{ color: '#059669' }}>
+                  Verified
+                </span>
+                <span className="profile-stat-label">Scholar Status</span>
+              </div>
             </div>
-            <div className="profile-stat-box">
-              <span className="profile-stat-number" style={{ color: '#d97706' }}>
-                {stats?.pendingNotes ?? '—'}
-              </span>
-              <span className="profile-stat-label">Pending Review</span>
-            </div>
-            <div className="profile-stat-box">
-              <span className="profile-stat-number" style={{ color: '#dc2626' }}>
-                {stats?.rejectedNotes ?? '—'}
-              </span>
-              <span className="profile-stat-label">Revisions Needed</span>
-            </div>
-            <div className="profile-stat-box">
-              <span className="profile-stat-number">{stats?.totalDownloads ?? '—'}</span>
-              <span className="profile-stat-label">Community Downloads</span>
-            </div>
-            <div className="profile-stat-box">
-              <span className="profile-stat-number">
-                {stats?.averageRating ? `★ ${stats.averageRating}` : '—'}
-              </span>
-              <span className="profile-stat-label">Avg Resource Rating</span>
-            </div>
-          </div>
+          )}
 
           {/* Academic Identity Details */}
           <div className="profile-section-card">
@@ -759,8 +756,8 @@ export function ProfilePage() {
         </div>
       )}
 
-      {/* TAB 2: MY UPLOADS */}
-      {activeTab === 'uploads' && (
+      {/* TAB 2: MY UPLOADS (Moderators & Super Admin only) */}
+      {isModerator && activeTab === 'uploads' && (
         <div className="profile-tab-content">
           <div className="profile-uploads-toolbar">
             <div
@@ -813,13 +810,23 @@ export function ProfilePage() {
           ) : uploads.length === 0 ? (
             <div className="profile-empty-uploads">
               <p>No study materials match the selected status filter.</p>
-              <Link
-                to="/notes/new"
-                className="btn btn--primary btn--sm"
-                style={{ marginTop: '8px' }}
-              >
-                + Upload a Study Note
-              </Link>
+              {isModerator ? (
+                <Link
+                  to="/notes/new"
+                  className="btn btn--primary btn--sm"
+                  style={{ marginTop: '8px' }}
+                >
+                  + Upload a Study Note
+                </Link>
+              ) : (
+                <Link
+                  to="/notes/explore"
+                  className="btn btn--outline btn--sm"
+                  style={{ marginTop: '8px' }}
+                >
+                  Explore Study Notes
+                </Link>
+              )}
             </div>
           ) : (
             <div className="profile-uploads-grid">
@@ -1145,7 +1152,7 @@ export function ProfilePage() {
                     <label htmlFor="edit-semester" className="input-label">
                       Current Semester
                     </label>
-                    <div className="profile-select-wrapper">
+                    <div className="profile-select-wrapper profile-select-wrapper--semester">
                       <select
                         id="edit-semester"
                         className="profile-select"
@@ -1221,123 +1228,6 @@ export function ProfilePage() {
                   </Button>
                 </div>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 4: PRIVACY SETTINGS */}
-      {activeTab === 'privacy' && (
-        <div className="profile-tab-content">
-          <div className="profile-section-card">
-            <h2 className="profile-section-title">Profile Privacy Controls</h2>
-            <p className="profile-section-desc">
-              Choose what academic information and metrics are publicly visible to fellow scholars.
-            </p>
-
-            {privacySuccess && (
-              <div className="auth-alert auth-alert--success" style={{ marginBottom: '16px' }}>
-                <span>{privacySuccess}</span>
-              </div>
-            )}
-
-            {privacyError && (
-              <div className="auth-alert auth-alert--danger" style={{ marginBottom: '16px' }}>
-                <span>{privacyError}</span>
-              </div>
-            )}
-
-            <form onSubmit={handlePrivacySubmit} className="profile-privacy-form">
-              <label className="profile-toggle-item">
-                <input
-                  type="checkbox"
-                  checked={privacySettings.publicProfileEnabled}
-                  onChange={(e) =>
-                    setPrivacySettings((prev) => ({
-                      ...prev,
-                      publicProfileEnabled: e.target.checked
-                    }))
-                  }
-                  className="profile-toggle-input"
-                />
-                <div className="profile-toggle-text">
-                  <strong>Enable Public Contributor Profile</strong>
-                  <span>
-                    When enabled, other scholars can visit your contributor profile and see your
-                    approved study notes. When disabled, your profile is completely private.
-                  </span>
-                </div>
-              </label>
-
-              <label className="profile-toggle-item">
-                <input
-                  type="checkbox"
-                  checked={privacySettings.showAcademicInfo}
-                  disabled={!privacySettings.publicProfileEnabled}
-                  onChange={(e) =>
-                    setPrivacySettings((prev) => ({
-                      ...prev,
-                      showAcademicInfo: e.target.checked
-                    }))
-                  }
-                  className="profile-toggle-input"
-                />
-                <div className="profile-toggle-text">
-                  <strong>Show Academic Information</strong>
-                  <span>
-                    Display your university, academic degree, and current semester on your public
-                    profile.
-                  </span>
-                </div>
-              </label>
-
-              <label className="profile-toggle-item">
-                <input
-                  type="checkbox"
-                  checked={privacySettings.showBio}
-                  disabled={!privacySettings.publicProfileEnabled}
-                  onChange={(e) =>
-                    setPrivacySettings((prev) => ({ ...prev, showBio: e.target.checked }))
-                  }
-                  className="profile-toggle-input"
-                />
-                <div className="profile-toggle-text">
-                  <strong>Show Biography</strong>
-                  <span>Display your short personal biography on your public profile.</span>
-                </div>
-              </label>
-
-              <label className="profile-toggle-item">
-                <input
-                  type="checkbox"
-                  checked={privacySettings.showContributionStats}
-                  disabled={!privacySettings.publicProfileEnabled}
-                  onChange={(e) =>
-                    setPrivacySettings((prev) => ({
-                      ...prev,
-                      showContributionStats: e.target.checked
-                    }))
-                  }
-                  className="profile-toggle-input"
-                />
-                <div className="profile-toggle-text">
-                  <strong>Show Contribution Statistics</strong>
-                  <span>
-                    Display your total approved manuscripts, community downloads, and average
-                    resource rating publicly.
-                  </span>
-                </div>
-              </label>
-
-              <Button
-                type="submit"
-                variant="primary"
-                size="md"
-                isLoading={isSavingPrivacy}
-                style={{ marginTop: '16px' }}
-              >
-                Save Privacy Preferences
-              </Button>
             </form>
           </div>
         </div>
