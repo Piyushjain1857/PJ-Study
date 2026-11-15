@@ -403,13 +403,13 @@ test('Smart Notes Recommendation Engine Suite', async (t) => {
 
   t.after(async () => {
     await prisma.bookmark.deleteMany({
-      where: { user: { email: { contains: 'rec-test' } } }
+      where: { user: { email: { contains: 'rec_' } } }
     });
     await prisma.downloadHistory.deleteMany({
-      where: { user: { email: { contains: 'rec-test' } } }
+      where: { user: { email: { contains: 'rec_' } } }
     });
     await prisma.note.deleteMany({
-      where: { uploadedBy: { email: { contains: 'rec-test' } } }
+      where: { uploadedBy: { email: { contains: 'rec_' } } }
     });
     await prisma.subject.deleteMany({
       where: { slug: { in: ['rec-algo', 'rec-os', 'rec-circuits'] } }
@@ -421,7 +421,7 @@ test('Smart Notes Recommendation Engine Suite', async (t) => {
       where: { slug: { in: ['rec-cat-notes', 'rec-cat-exam'] } }
     });
     await prisma.user.deleteMany({
-      where: { email: { contains: 'rec-test' } }
+      where: { email: { contains: 'rec_' } }
     });
     if (server) {
       await new Promise((resolve) => server.close(resolve));

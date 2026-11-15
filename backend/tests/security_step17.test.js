@@ -89,7 +89,9 @@ test('Step 17 Enterprise Security Hardening & RBAC Verification Suite', async (t
   });
 
   // Get active subject and category
-  const testSubject = await prisma.subject.findFirst({ where: { isActive: true } });
+  const testSubject = await prisma.subject.findFirst({
+    where: { isActive: true, slug: { notIn: ['rec-algo', 'rec-os', 'rec-circuits'] } }
+  });
   const testCategory = await prisma.category.findFirst({ where: { isActive: true } });
   const testCourseId = testSubject.courseId;
 

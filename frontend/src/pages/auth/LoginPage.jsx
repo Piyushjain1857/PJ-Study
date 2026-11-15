@@ -26,8 +26,6 @@ export function LoginPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [activeDemo, setActiveDemo] = useState(null);
 
-  const redirectPath = location.state?.from?.pathname || '/dashboard';
-
   function handleChange(e) {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -51,11 +49,20 @@ export function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login({
+      const result = await login({
         email: formData.email,
         password: formData.password
       });
-      navigate(redirectPath, { replace: true });
+      const userRole = result?.user?.role;
+      let targetPath = location.state?.from?.pathname;
+      if (!targetPath || targetPath === '/dashboard') {
+        if (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') {
+          targetPath = '/admin';
+        } else {
+          targetPath = '/dashboard';
+        }
+      }
+      navigate(targetPath, { replace: true });
     } catch (err) {
       setErrorMessage(
         err.response?.data?.error?.message ||

@@ -370,6 +370,54 @@ export class AdminController {
       return next(err);
     }
   };
+
+  /**
+   * Returns system health diagnostics.
+   */
+  getSystemHealth = async (req, res, next) => {
+    try {
+      const health = await this.adminSvc.getSystemHealth();
+      return sendSuccess(res, health);
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  /**
+   * Returns storage statistics.
+   */
+  getStorageStats = async (req, res, next) => {
+    try {
+      const storage = await this.adminSvc.getStorageStats();
+      return sendSuccess(res, storage);
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  /**
+   * Returns backup & recovery readiness status.
+   */
+  getBackupStatus = async (req, res, next) => {
+    try {
+      const backups = await this.adminSvc.getBackupStatus();
+      return sendSuccess(res, backups);
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  /**
+   * Returns live real-time platform activity.
+   */
+  getLiveActivity = async (req, res, next) => {
+    try {
+      const activity = await this.adminSvc.getLiveActivity(req.query.limit);
+      return sendSuccess(res, activity);
+    } catch (err) {
+      return next(err);
+    }
+  };
 }
 
 export const adminController = new AdminController();

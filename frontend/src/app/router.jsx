@@ -176,6 +176,174 @@ export const router = createBrowserRouter(
           )
         },
         {
+          path: 'admin/analytics',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/activity',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/users',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/moderators',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/roles',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/suspended-users',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/academics',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/academics/:sub',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/notes',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/notes/upload',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <CreateNotePage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/moderation',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/reports',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/reviews',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/announcements',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/notifications',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/storage',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/audit-logs',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/settings',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/security',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/health',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/backups',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
           path: 'design-system',
           element: (
             <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>

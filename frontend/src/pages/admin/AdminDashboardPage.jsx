@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import adminService from '../../services/adminService.js';
 import reviewService from '../../services/reviewService.js';
@@ -22,7 +23,55 @@ import '../auth/Auth.css';
 export function AdminDashboardPage() {
   const { user: currentUser, isSuperAdmin } = useAuth();
 
-  const [activeTab, setActiveTab] = useState('users');
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const [activeTab, setActiveTab] = useState('overview');
+
+  // Command Center Analytics State
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [analyticsRange, setAnalyticsRange] = useState('30d');
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
+
+  // Notes Directory & Moderation State
+  const [adminNotes, setAdminNotes] = useState([]);
+  const [notesPagination, setNotesPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
+  const [notesSearch, setNotesSearch] = useState('');
+  const [notesStatusFilter, setNotesStatusFilter] = useState('ALL');
+  const [isLoadingNotes, setIsLoadingNotes] = useState(false);
+  const [rejectModalNote, setRejectModalNote] = useState(null);
+  const [noteRejectionReason, setNoteRejectionReason] = useState('');
+  const [isSubmittingNoteAction, setIsSubmittingNoteAction] = useState(false);
+
+  // Live Activity & Audit Stream State
+  const [liveActivity, setLiveActivity] = useState([]);
+  const [isLoadingActivity, setIsLoadingActivity] = useState(false);
+
+  // Content Reports State
+  const [contentReports, setContentReports] = useState([]);
+  const [isLoadingContentReports, setIsLoadingContentReports] = useState(false);
+
+  // Platform Announcements State
+  const [announcementsList, setAnnouncementsList] = useState([]);
+  const [isLoadingAnnouncements, setIsLoadingAnnouncements] = useState(false);
+
+  // Platform Settings State
+  const [platformSettings, setPlatformSettings] = useState({
+    platformName: 'PJ Study',
+    tagline: 'Your Entire Study World, One Place.',
+    maxUploadSizeMb: '25',
+    allowedFileFormats: 'application/pdf,image/jpeg,image/png',
+    autoModerationEnabled: 'false',
+    allowStudentReviews: 'true'
+  });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [settingsNotice, setSettingsNotice] = useState('');
+
+  // System Diagnostics, Storage & Backup State
+  const [systemHealth, setSystemHealth] = useState(null);
+  const [storageStats, setStorageStats] = useState(null);
+  const [backupStatus, setBackupStatus] = useState(null);
+  const [isLoadingSystem, setIsLoadingSystem] = useState(false);
   const [stats, setStats] = useState(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
 
@@ -94,16 +143,213 @@ export function AdminDashboardPage() {
   const [isSubmittingAcademic, setIsSubmittingAcademic] = useState(false);
   const [academicModalError, setAcademicModalError] = useState('');
 
-  // Load KPI metrics
+  // Load Command Center Overview metrics
   const fetchStats = useCallback(async () => {
     try {
       setIsLoadingStats(true);
-      const data = await adminService.getStats();
+      const data = await adminService.getOverview();
       setStats(data);
     } catch {
-      // Non-blocking metric fetch
+      try {
+        const fallback = await adminService.getStats();
+        setStats(fallback);
+      } catch {
+        // Non-blocking metric fetch
+      }
     } finally {
       setIsLoadingStats(false);
+    }
+  }, []);
+
+  // Fetch Advanced Analytics
+  const fetchAnalytics = useCallback(async (range = '30d') => {
+    setIsLoadingAnalytics(true);
+    try {
+      const data = await adminService.getAnalytics(range);
+      setAnalyticsData(data);
+    } catch (err) {
+      setActionNotice({ type: 'danger', message: err.message || 'Failed to load analytics.' });
+    } finally {
+      setIsLoadingAnalytics(false);
+    }
+  }, []);
+
+  // Fetch Live Activity Feed
+  const fetchLiveActivity = useCallback(async (limit = 20) => {
+    setIsLoadingActivity(true);
+    try {
+      const data = await adminService.getLiveActivity(limit);
+      setLiveActivity(data || []);
+    } catch {
+      // Non-blocking activity fetch
+    } finally {
+      setIsLoadingActivity(false);
+    }
+  }, []);
+
+  // Fetch Notes for Administration & Moderation
+  const fetchNotes = useCallback(async (pageToLoad = 1, overrides = {}) => {
+    setIsLoadingNotes(true);
+    try {
+      const qSearch = overrides.search !== undefined ? overrides.search : notesSearch;
+      const qStatus = overrides.status !== undefined ? overrides.status : notesStatusFilter;
+
+      const response = await adminService.getNotes({
+        page: pageToLoad,
+        limit: 10,
+        search: qSearch.trim() || undefined,
+        status: qStatus || undefined
+      });
+
+      const noteList = response?.data || response?.items || [];
+      setAdminNotes(noteList);
+
+      const pag = response?.pagination || response?.meta || {};
+      setNotesPagination({
+        page: pag.page || pageToLoad,
+        limit: pag.limit || 10,
+        total: pag.total ?? pag.totalItems ?? noteList.length,
+        totalPages: pag.totalPages || 1
+      });
+    } catch (err) {
+      setActionNotice({ type: 'danger', message: err.message || 'Failed to load notes catalog.' });
+    } finally {
+      setIsLoadingNotes(false);
+    }
+  }, [notesSearch, notesStatusFilter]);
+
+  // Handle Approve Note Submission
+  const handleApproveNote = async (noteId) => {
+    try {
+      await adminService.reviewNote(noteId, 'APPROVE');
+      setActionNotice({ type: 'success', message: 'Note approved and published to academic catalog.' });
+      fetchNotes(notesPagination.page);
+      fetchStats();
+    } catch (err) {
+      setActionNotice({ type: 'danger', message: err.message || 'Failed to approve note.' });
+    }
+  };
+
+  // Handle Reject Note Submission
+  const handleRejectNoteSubmit = async (e) => {
+    e.preventDefault();
+    if (!rejectModalNote) return;
+    setIsSubmittingNoteAction(true);
+    try {
+      await adminService.reviewNote(rejectModalNote.id, 'REJECT', noteRejectionReason);
+      setActionNotice({ type: 'success', message: 'Note submission rejected with reason logged.' });
+      setRejectModalNote(null);
+      setNoteRejectionReason('');
+      fetchNotes(notesPagination.page);
+      fetchStats();
+    } catch (err) {
+      setActionNotice({ type: 'danger', message: err.message || 'Failed to reject note.' });
+    } finally {
+      setIsSubmittingNoteAction(false);
+    }
+  };
+
+  // Handle Administrative Delete Note
+  const handleDeleteNote = async (note) => {
+    if (!window.confirm(`Are you sure you want to administratively remove "${note.title}"? This action is logged.`)) return;
+    try {
+      await adminService.deleteNote(note.id, 'Administrative removal by Super Admin');
+      setActionNotice({ type: 'success', message: 'Note permanently removed from catalog.' });
+      fetchNotes(notesPagination.page);
+      fetchStats();
+    } catch (err) {
+      setActionNotice({ type: 'danger', message: err.message || 'Failed to remove note.' });
+    }
+  };
+
+  // Fetch Unified Content Reports
+  const fetchContentReports = useCallback(async (pageToLoad = 1) => {
+    setIsLoadingContentReports(true);
+    try {
+      const response = await adminService.getReports({ page: pageToLoad, limit: 15 });
+      setContentReports(response?.items || response?.data || []);
+    } catch (err) {
+      setActionNotice({ type: 'danger', message: err.message || 'Failed to load content reports.' });
+    } finally {
+      setIsLoadingContentReports(false);
+    }
+  }, []);
+
+  // Resolve Content Report
+  const handleResolveContentReport = async (reportId, action) => {
+    try {
+      await adminService.resolveReport(reportId, action);
+      setActionNotice({ type: 'success', message: `Report ${action.toLowerCase()}d successfully.` });
+      fetchContentReports();
+      fetchStats();
+    } catch (err) {
+      setActionNotice({ type: 'danger', message: err.message || 'Failed to resolve report.' });
+    }
+  };
+
+  // Fetch Announcements
+  const fetchAnnouncements = useCallback(async () => {
+    setIsLoadingAnnouncements(true);
+    try {
+      const data = await adminService.getAnnouncements();
+      setAnnouncementsList(data || []);
+    } catch {
+      // Non-blocking
+    } finally {
+      setIsLoadingAnnouncements(false);
+    }
+  }, []);
+
+  // Fetch Platform Configuration Settings
+  const fetchPlatformSettings = useCallback(async () => {
+    try {
+      const data = await adminService.getSettings();
+      if (data) {
+        setPlatformSettings({
+          platformName: data.platformName?.value || 'PJ Study',
+          tagline: data.tagline?.value || 'Your Entire Study World, One Place.',
+          maxUploadSizeMb: data.maxUploadSizeMb?.value || '25',
+          allowedFileFormats: data.allowedFileFormats?.value || 'application/pdf,image/jpeg,image/png',
+          autoModerationEnabled: data.autoModerationEnabled?.value || 'false',
+          allowStudentReviews: data.allowStudentReviews?.value || 'true'
+        });
+      }
+    } catch {
+      // Non-blocking
+    }
+  }, []);
+
+  // Save Platform Settings
+  const handleSavePlatformSettings = async (e) => {
+    e.preventDefault();
+    setIsSavingSettings(true);
+    setSettingsNotice('');
+    try {
+      await adminService.updateSettings(platformSettings);
+      setSettingsNotice('Platform settings saved and persisted to database.');
+      setActionNotice({ type: 'success', message: 'Platform settings saved successfully.' });
+    } catch (err) {
+      setSettingsNotice(err.message || 'Failed to update platform settings.');
+      setActionNotice({ type: 'danger', message: err.message || 'Failed to update platform settings.' });
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  // Fetch System Diagnostics Data
+  const fetchSystemData = useCallback(async () => {
+    setIsLoadingSystem(true);
+    try {
+      const [health, storage, backups] = await Promise.all([
+        adminService.getSystemHealth().catch(() => null),
+        adminService.getStorageStats().catch(() => null),
+        adminService.getBackupStatus().catch(() => null)
+      ]);
+      if (health) setSystemHealth(health);
+      if (storage) setStorageStats(storage);
+      if (backups) setBackupStatus(backups);
+    } finally {
+      setIsLoadingSystem(false);
     }
   }, []);
 
@@ -224,9 +470,81 @@ export function AdminDashboardPage() {
     fetchUsers(1, { search: '', role: '', status: '' });
   }, []);
 
-  // Tab change handler
+  // Keep activeTab synchronized with current URL pathname
   useEffect(() => {
-    if (activeTab === 'audit') {
+    const path = location.pathname;
+    if (path === '/admin') {
+      setActiveTab('overview');
+    } else if (path === '/admin/analytics') {
+      setActiveTab('analytics');
+    } else if (path === '/admin/activity') {
+      setActiveTab('activity');
+    } else if (path === '/admin/users') {
+      setActiveTab('users');
+      setStatusFilter('');
+    } else if (path === '/admin/moderators') {
+      setActiveTab('staff');
+    } else if (path === '/admin/roles') {
+      setActiveTab('matrix');
+    } else if (path === '/admin/suspended-users') {
+      setActiveTab('users');
+      setStatusFilter('inactive');
+      fetchUsers(1, { status: 'inactive' });
+    } else if (path.startsWith('/admin/academics')) {
+      setActiveTab('academics');
+      if (path.includes('/universities')) setAcademicSubTab('universities');
+      else if (path.includes('/courses')) setAcademicSubTab('courses');
+      else if (path.includes('/subjects')) setAcademicSubTab('subjects');
+    } else if (path === '/admin/notes') {
+      setActiveTab('notes');
+      setNotesStatusFilter('ALL');
+    } else if (path === '/admin/moderation') {
+      setActiveTab('notes');
+      setNotesStatusFilter('PENDING');
+    } else if (path === '/admin/reports') {
+      setActiveTab('reports');
+    } else if (path === '/admin/reviews') {
+      setActiveTab('reviews');
+    } else if (path === '/admin/announcements') {
+      setActiveTab('announcements');
+    } else if (path === '/admin/notifications') {
+      setActiveTab('notifications');
+    } else if (path === '/admin/storage') {
+      setActiveTab('storage');
+    } else if (path === '/admin/audit-logs') {
+      setActiveTab('audit');
+    } else if (path === '/admin/settings') {
+      setActiveTab('settings');
+    } else if (path === '/admin/security') {
+      setActiveTab('security');
+    } else if (path === '/admin/health') {
+      setActiveTab('health');
+    } else if (path === '/admin/backups') {
+      setActiveTab('backups');
+    }
+  }, [location.pathname, fetchUsers]);
+
+  // Tab data loader
+  useEffect(() => {
+    if (activeTab === 'overview') {
+      fetchStats();
+      fetchLiveActivity();
+      fetchAnalytics('30d');
+    } else if (activeTab === 'analytics') {
+      fetchAnalytics(analyticsRange);
+    } else if (activeTab === 'activity') {
+      fetchLiveActivity();
+    } else if (activeTab === 'notes') {
+      fetchNotes(1);
+    } else if (activeTab === 'reports') {
+      fetchContentReports(1);
+    } else if (activeTab === 'announcements') {
+      fetchAnnouncements();
+    } else if (activeTab === 'settings') {
+      fetchPlatformSettings();
+    } else if (activeTab === 'storage' || activeTab === 'health' || activeTab === 'backups' || activeTab === 'security') {
+      fetchSystemData();
+    } else if (activeTab === 'audit') {
       fetchAuditLogs(1);
     } else if (activeTab === 'reviews') {
       fetchReviewReports();
@@ -235,7 +553,22 @@ export function AdminDashboardPage() {
     } else if (activeTab === 'users' || activeTab === 'staff') {
       fetchUsers(1);
     }
-  }, [activeTab]);
+  }, [
+    activeTab,
+    analyticsRange,
+    fetchStats,
+    fetchLiveActivity,
+    fetchAnalytics,
+    fetchNotes,
+    fetchContentReports,
+    fetchAnnouncements,
+    fetchPlatformSettings,
+    fetchSystemData,
+    fetchAuditLogs,
+    fetchReviewReports,
+    fetchAcademics,
+    fetchUsers
+  ]);
 
   // Handle Search Submission
   function handleSearchSubmit(e) {
@@ -1012,150 +1345,124 @@ export function AdminDashboardPage() {
         <nav className="admin-tabs" aria-label="Administrative Views">
           <button
             type="button"
-            className={`admin-tab-btn ${activeTab === 'users' ? 'admin-tab-btn--active' : ''}`}
-            onClick={() => setActiveTab('users')}
+            className={`admin-tab-btn ${activeTab === 'overview' ? 'admin-tab-btn--active' : ''}`}
+            onClick={() => navigate('/admin')}
           >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /></svg>
+            Command Overview
+          </button>
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === 'analytics' ? 'admin-tab-btn--active' : ''}`}
+            onClick={() => navigate('/admin/analytics')}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>
+            Analytics
+          </button>
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === 'activity' ? 'admin-tab-btn--active' : ''}`}
+            onClick={() => navigate('/admin/activity')}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
+            Live Activity
+          </button>
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === 'users' ? 'admin-tab-btn--active' : ''}`}
+            onClick={() => navigate('/admin/users')}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
             User Directory
             {stats && <span className="admin-tab-count">{stats.totalUsers}</span>}
           </button>
           <button
             type="button"
             className={`admin-tab-btn ${activeTab === 'staff' ? 'admin-tab-btn--active' : ''}`}
-            onClick={() => setActiveTab('staff')}
+            onClick={() => navigate('/admin/moderators')}
           >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
             Staff & Moderators
             {stats && (
               <span className="admin-tab-count">
-                {(stats.roles?.MODERATOR || 0) +
-                  (stats.roles?.ADMIN || 0) +
-                  (stats.roles?.SUPER_ADMIN || 0)}
+                {(stats.roles?.MODERATOR || 0) + (stats.roles?.ADMIN || 0) + (stats.roles?.SUPER_ADMIN || 0)}
               </span>
             )}
           </button>
           <button
             type="button"
-            className={`admin-tab-btn ${activeTab === 'audit' ? 'admin-tab-btn--active' : ''}`}
-            onClick={() => setActiveTab('audit')}
+            className={`admin-tab-btn ${activeTab === 'notes' ? 'admin-tab-btn--active' : ''}`}
+            onClick={() => navigate('/admin/notes')}
           >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 14 14" />
-            </svg>
-            Audit Log Trail
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+            Notes & Content
+            {stats?.pendingModeration > 0 && (
+              <span className="admin-tab-count" style={{ backgroundColor: 'rgba(234, 179, 8, 0.25)', color: '#ca8a04' }}>
+                {stats.pendingModeration}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === 'reports' ? 'admin-tab-btn--active' : ''}`}
+            onClick={() => navigate('/admin/reports')}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /></svg>
+            Content Reports
           </button>
           <button
             type="button"
             className={`admin-tab-btn ${activeTab === 'reviews' ? 'admin-tab-btn--active' : ''}`}
-            onClick={() => setActiveTab('reviews')}
+            onClick={() => navigate('/admin/reviews')}
           >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-              <line x1="4" y1="22" x2="4" y2="15" />
-            </svg>
-            Review Moderation
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" /></svg>
+            Reviews
             {reviewReports.length > 0 && (
-              <span
-                className="admin-tab-count"
-                style={{ backgroundColor: 'rgba(234, 179, 8, 0.2)', color: '#ca8a04' }}
-              >
+              <span className="admin-tab-count" style={{ backgroundColor: 'rgba(234, 179, 8, 0.2)', color: '#ca8a04' }}>
                 {reviewReports.length}
               </span>
             )}
           </button>
           <button
             type="button"
-            className={`admin-tab-btn ${activeTab === 'matrix' ? 'admin-tab-btn--active' : ''}`}
-            onClick={() => setActiveTab('matrix')}
+            className={`admin-tab-btn ${activeTab === 'academics' ? 'admin-tab-btn--active' : ''}`}
+            onClick={() => navigate('/admin/academics')}
           >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-              <line x1="3" y1="9" x2="21" y2="9" />
-              <line x1="9" y1="21" x2="9" y2="9" />
-            </svg>
-            Permissions Matrix
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></svg>
+            Academic Taxonomy
+            {academics.courses?.length > 0 && <span className="admin-tab-count">{academics.courses.length}</span>}
           </button>
           <button
             type="button"
-            className={`admin-tab-btn ${activeTab === 'academics' ? 'admin-tab-btn--active' : ''}`}
-            onClick={() => setActiveTab('academics')}
+            className={`admin-tab-btn ${activeTab === 'announcements' ? 'admin-tab-btn--active' : ''}`}
+            onClick={() => navigate('/admin/announcements')}
           >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-              <path d="M6 12v5c3 3 9 3 12 0v-5" />
-            </svg>
-            Academic Architecture
-            {academics.courses?.length > 0 && (
-              <span className="admin-tab-count">{academics.courses.length}</span>
-            )}
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+            Announcements
+          </button>
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === 'settings' ? 'admin-tab-btn--active' : ''}`}
+            onClick={() => navigate('/admin/settings')}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+            Settings
+          </button>
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === 'audit' ? 'admin-tab-btn--active' : ''}`}
+            onClick={() => navigate('/admin/audit-logs')}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 14 14" /></svg>
+            Audit Trail
+          </button>
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === 'health' || activeTab === 'storage' || activeTab === 'backups' || activeTab === 'security' ? 'admin-tab-btn--active' : ''}`}
+            onClick={() => navigate('/admin/health')}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
+            Diagnostics
           </button>
         </nav>
 
@@ -2683,6 +2990,1191 @@ export function AdminDashboardPage() {
           </div>
         )}
 
+        {/* =====================================================================
+            TAB: COMMAND OVERVIEW DASHBOARD
+            ===================================================================== */}
+        {activeTab === 'overview' && (
+          <div className="admin-tab-content">
+            {/* 8 Genuine Metric Cards Grid */}
+            <div className="admin-overview-kpi-grid">
+              <div className="admin-metric-card">
+                <div className="admin-metric-card__top">
+                  <span className="admin-metric-card__label">Total Registered Users</span>
+                  <span className="admin-metric-card__icon admin-metric-card__icon--blue">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
+                  </span>
+                </div>
+                <p className="admin-metric-card__value">{stats?.totalUsers ?? 0}</p>
+                <div className="admin-metric-card__footer">
+                  <span className="admin-metric-card__subtext">Across all academic programs</span>
+                  <span className="admin-metric-card__pill admin-metric-card__pill--blue">All Roles</span>
+                </div>
+              </div>
+
+              <div className="admin-metric-card">
+                <div className="admin-metric-card__top">
+                  <span className="admin-metric-card__label">Active Scholars</span>
+                  <span className="admin-metric-card__icon admin-metric-card__icon--green">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                  </span>
+                </div>
+                <p className="admin-metric-card__value" style={{ color: 'var(--color-success)' }}>
+                  {stats?.activeScholars ?? stats?.roles?.STUDENT ?? 0}
+                </p>
+                <div className="admin-metric-card__footer">
+                  <span className="admin-metric-card__subtext">Enrolled students in good standing</span>
+                  <span className="admin-metric-card__pill admin-metric-card__pill--green">Verified</span>
+                </div>
+              </div>
+
+              <div className="admin-metric-card">
+                <div className="admin-metric-card__top">
+                  <span className="admin-metric-card__label">Active Moderators</span>
+                  <span className="admin-metric-card__icon admin-metric-card__icon--purple">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+                  </span>
+                </div>
+                <p className="admin-metric-card__value">{stats?.activeModerators ?? stats?.roles?.MODERATOR ?? 0}</p>
+                <div className="admin-metric-card__footer">
+                  <span className="admin-metric-card__subtext">Faculty evaluators & reviewers</span>
+                  <span className="admin-metric-card__pill admin-metric-card__pill--purple">Staff</span>
+                </div>
+              </div>
+
+              <div className="admin-metric-card">
+                <div className="admin-metric-card__top">
+                  <span className="admin-metric-card__label">Total Notes Catalog</span>
+                  <span className="admin-metric-card__icon admin-metric-card__icon--blue">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /></svg>
+                  </span>
+                </div>
+                <p className="admin-metric-card__value">{stats?.totalNotes ?? 0}</p>
+                <div className="admin-metric-card__footer">
+                  <span className="admin-metric-card__subtext">Course manuscripts on platform</span>
+                  <span className="admin-metric-card__pill admin-metric-card__pill--blue">Catalog</span>
+                </div>
+              </div>
+
+              <div className="admin-metric-card">
+                <div className="admin-metric-card__top">
+                  <span className="admin-metric-card__label">Pending Approvals</span>
+                  <span className="admin-metric-card__icon admin-metric-card__icon--amber">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 14 14" /></svg>
+                  </span>
+                </div>
+                <p className="admin-metric-card__value" style={{ color: (stats?.pendingModeration || 0) > 0 ? '#d97706' : 'inherit' }}>
+                  {stats?.pendingModeration ?? 0}
+                </p>
+                <div className="admin-metric-card__footer">
+                  <span className="admin-metric-card__subtext">Awaiting moderation review</span>
+                  <span className="admin-metric-card__pill admin-metric-card__pill--amber">Review Queue</span>
+                </div>
+              </div>
+
+              <div className="admin-metric-card">
+                <div className="admin-metric-card__top">
+                  <span className="admin-metric-card__label">Approved Notes</span>
+                  <span className="admin-metric-card__icon admin-metric-card__icon--green">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
+                  </span>
+                </div>
+                <p className="admin-metric-card__value" style={{ color: 'var(--color-success)' }}>
+                  {stats?.approvedNotes ?? 0}
+                </p>
+                <div className="admin-metric-card__footer">
+                  <span className="admin-metric-card__subtext">Published to student library</span>
+                  <span className="admin-metric-card__pill admin-metric-card__pill--green">Live</span>
+                </div>
+              </div>
+
+              <div className="admin-metric-card">
+                <div className="admin-metric-card__top">
+                  <span className="admin-metric-card__label">Total Downloads</span>
+                  <span className="admin-metric-card__icon admin-metric-card__icon--blue">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                  </span>
+                </div>
+                <p className="admin-metric-card__value">{stats?.totalDownloads ?? 0}</p>
+                <div className="admin-metric-card__footer">
+                  <span className="admin-metric-card__subtext">Scholar study sessions served</span>
+                  <span className="admin-metric-card__pill admin-metric-card__pill--blue">Downloads</span>
+                </div>
+              </div>
+
+              <div className="admin-metric-card">
+                <div className="admin-metric-card__top">
+                  <span className="admin-metric-card__label">Open Reports</span>
+                  <span className="admin-metric-card__icon admin-metric-card__icon--red">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                  </span>
+                </div>
+                <p className="admin-metric-card__value" style={{ color: (stats?.reportedContent || 0) > 0 ? 'var(--color-danger)' : 'inherit' }}>
+                  {stats?.reportedContent ?? 0}
+                </p>
+                <div className="admin-metric-card__footer">
+                  <span className="admin-metric-card__subtext">Notes and review flags</span>
+                  <span className="admin-metric-card__pill admin-metric-card__pill--red">Flags</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Pending Moderation Alert Banner */}
+            {(stats?.pendingModeration || 0) > 0 && (
+              <div className="admin-alert-banner" style={{ marginTop: '20px' }}>
+                <div className="admin-alert-banner__content">
+                  <span className="admin-alert-banner__badge">Action Required</span>
+                  <span className="admin-alert-banner__text">
+                    There are <strong>{stats.pendingModeration} manuscripts</strong> awaiting academic review in the moderation queue.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn--sm btn--primary"
+                  onClick={() => navigate('/admin/moderation')}
+                >
+                  Open Approval Queue →
+                </button>
+              </div>
+            )}
+
+            {/* Operational 2-Column Grid */}
+            <div className="admin-operational-grid" style={{ marginTop: '24px' }}>
+              {/* Column 1: Recent Platform Activity & Most Downloaded */}
+              <div className="admin-operational-col">
+                <div className="admin-card">
+                  <div className="admin-card__header">
+                    <div>
+                      <h3 className="admin-card__title">Recent Platform Activity</h3>
+                      <p className="admin-card__subtitle">Latest audit logs and administrative operations</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn--xs btn--outline"
+                      onClick={() => navigate('/admin/activity')}
+                    >
+                      View All
+                    </button>
+                  </div>
+                  <div className="admin-card__body">
+                    {liveActivity.length === 0 ? (
+                      <p className="admin-muted-text">No recent administrative activity recorded.</p>
+                    ) : (
+                      <div className="admin-activity-list">
+                        {liveActivity.slice(0, 5).map((log) => (
+                          <div key={log.id} className="admin-activity-item">
+                            <div className="admin-activity-item__dot" />
+                            <div className="admin-activity-item__info">
+                              <div className="admin-activity-item__header">
+                                <span className="admin-activity-item__action">{log.action?.replace(/_/g, ' ')}</span>
+                                <span className="admin-activity-item__time">{formatRelativeTime(log.createdAt)}</span>
+                              </div>
+                              <span className="admin-activity-item__actor">
+                                By {log.actor?.name || 'System'} ({log.actor?.role || 'SYSTEM'})
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="admin-card" style={{ marginTop: '20px' }}>
+                  <div className="admin-card__header">
+                    <div>
+                      <h3 className="admin-card__title">Most Downloaded Notes</h3>
+                      <p className="admin-card__subtitle">Top manuscripts accessed by university scholars</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn--xs btn--outline"
+                      onClick={() => navigate('/admin/notes')}
+                    >
+                      Browse Catalog
+                    </button>
+                  </div>
+                  <div className="admin-card__body">
+                    {!analyticsData?.topNotes || analyticsData.topNotes.length === 0 ? (
+                      <p className="admin-muted-text">No note download statistics available yet.</p>
+                    ) : (
+                      <div className="admin-top-notes-list">
+                        {analyticsData.topNotes.map((note, idx) => (
+                          <div key={note.id} className="admin-top-note-row">
+                            <span className="admin-top-note-rank">#{idx + 1}</span>
+                            <div className="admin-top-note-info">
+                              <Link to={`/notes/${note.id}`} className="admin-top-note-title">
+                                {note.title}
+                              </Link>
+                              <span className="admin-top-note-sub">
+                                {note.course?.name || 'General Course'} · {note.subject?.name || 'General Subject'}
+                              </span>
+                            </div>
+                            <span className="admin-top-note-downloads">
+                              {note.downloadCount || 0} downloads
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Column 2: Academic Content Distribution & Quick Shortcuts */}
+              <div className="admin-operational-col">
+                <div className="admin-card">
+                  <div className="admin-card__header">
+                    <div>
+                      <h3 className="admin-card__title">Academic Taxonomy Distribution</h3>
+                      <p className="admin-card__subtitle">Published study notes by category</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn--xs btn--outline"
+                      onClick={() => navigate('/admin/academics/subjects')}
+                    >
+                      Manage Subjects
+                    </button>
+                  </div>
+                  <div className="admin-card__body">
+                    {!analyticsData?.categories || analyticsData.categories.length === 0 ? (
+                      <p className="admin-muted-text">No category distribution data recorded.</p>
+                    ) : (
+                      <div className="admin-category-bars">
+                        {analyticsData.categories.map((cat) => (
+                          <div key={cat.id} className="admin-cat-bar-item">
+                            <div className="admin-cat-bar-header">
+                              <span className="admin-cat-bar-name">{cat.name}</span>
+                              <span className="admin-cat-bar-count">{cat.count} manuscripts</span>
+                            </div>
+                            <div className="admin-cat-bar-track">
+                              <div
+                                className="admin-cat-bar-fill"
+                                style={{
+                                  width: `${Math.min(100, Math.round((cat.count / Math.max(1, stats?.totalNotes || 1)) * 100))}%`
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="admin-card" style={{ marginTop: '20px' }}>
+                  <div className="admin-card__header">
+                    <div>
+                      <h3 className="admin-card__title">Command Center Shortcuts</h3>
+                      <p className="admin-card__subtitle">One-click administrative operations</p>
+                    </div>
+                  </div>
+                  <div className="admin-card__body admin-shortcuts-grid">
+                    <button
+                      type="button"
+                      className="admin-shortcut-btn"
+                      onClick={() => setIsAnnouncementOpen(true)}
+                    >
+                      <span className="admin-shortcut-btn__icon">📢</span>
+                      <div className="admin-shortcut-btn__text">
+                        <strong>New Announcement</strong>
+                        <span>Broadcast message to scholars & staff</span>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-shortcut-btn"
+                      onClick={() => navigate('/admin/academics/courses')}
+                    >
+                      <span className="admin-shortcut-btn__icon">📚</span>
+                      <div className="admin-shortcut-btn__text">
+                        <strong>Add Course / Program</strong>
+                        <span>Expand academic curriculum architecture</span>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-shortcut-btn"
+                      onClick={() => navigate('/admin/settings')}
+                    >
+                      <span className="admin-shortcut-btn__icon">⚙️</span>
+                      <div className="admin-shortcut-btn__text">
+                        <strong>Platform Settings</strong>
+                        <span>Configure upload size, review policies</span>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-shortcut-btn"
+                      onClick={() => navigate('/admin/health')}
+                    >
+                      <span className="admin-shortcut-btn__icon">🩺</span>
+                      <div className="admin-shortcut-btn__text">
+                        <strong>System Health Diagnostics</strong>
+                        <span>Check MySQL latency & memory usage</span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB: ADVANCED ANALYTICS
+            ===================================================================== */}
+        {activeTab === 'analytics' && (
+          <div className="admin-tab-content">
+            <div className="admin-toolbar" style={{ justifyContent: 'space-between', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontFamily: 'var(--font-heading)' }}>Platform Operational Analytics</h3>
+                <p style={{ margin: '4px 0 0', color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
+                  Time-series metrics for registrations, notes catalog, and scholar downloads.
+                </p>
+              </div>
+              <div className="d-flex items-center gap-2">
+                {['7d', '30d', '90d'].map((r) => (
+                  <Button
+                    key={r}
+                    variant={analyticsRange === r ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      setAnalyticsRange(r);
+                      fetchAnalytics(r);
+                    }}
+                  >
+                    {r.toUpperCase()}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {isLoadingAnalytics && !analyticsData ? (
+              <Skeleton count={4} height="80px" style={{ marginBottom: '16px' }} />
+            ) : analyticsData ? (
+              <div>
+                {/* Aggregate KPI Banner */}
+                <div className="admin-analytics-banner">
+                  <div className="admin-analytics-kpi">
+                    <span className="admin-analytics-kpi__label">Registrations in Period</span>
+                    <span className="admin-analytics-kpi__value">{analyticsData.totals?.registrations ?? 0}</span>
+                  </div>
+                  <div className="admin-analytics-kpi">
+                    <span className="admin-analytics-kpi__label">Notes Uploaded</span>
+                    <span className="admin-analytics-kpi__value">{analyticsData.totals?.notes ?? 0}</span>
+                  </div>
+                  <div className="admin-analytics-kpi">
+                    <span className="admin-analytics-kpi__label">Total Study Downloads</span>
+                    <span className="admin-analytics-kpi__value">{analyticsData.totals?.downloads ?? 0}</span>
+                  </div>
+                </div>
+
+                {/* Moderation Workload Breakdown */}
+                <div className="admin-card" style={{ marginTop: '20px' }}>
+                  <div className="admin-card__header">
+                    <h3 className="admin-card__title">Manuscript Moderation Workload</h3>
+                  </div>
+                  <div className="admin-card__body admin-analytics-grid">
+                    {Object.entries(analyticsData.moderationWorkload || {}).map(([st, count]) => (
+                      <div key={st} className="admin-metric-card" style={{ margin: 0 }}>
+                        <span className="admin-metric-card__label">{st}</span>
+                        <p className="admin-metric-card__value">{count}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Time-Series Daily Table */}
+                <div className="admin-card" style={{ marginTop: '20px' }}>
+                  <div className="admin-card__header">
+                    <h3 className="admin-card__title">Daily Platform Activity Timeline ({analyticsRange})</h3>
+                  </div>
+                  <div className="admin-card__body" style={{ padding: 0 }}>
+                    <div className="table-responsive">
+                      <table className="admin-table">
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th>New Accounts</th>
+                            <th>Notes Uploaded</th>
+                            <th>Downloads Served</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(analyticsData.timeline || []).slice(-15).reverse().map((row) => (
+                            <tr key={row.date}>
+                              <td><strong>{row.date}</strong></td>
+                              <td>{row.registrations}</td>
+                              <td>{row.notes}</td>
+                              <td>{row.downloads}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB: LIVE ACTIVITY STREAM
+            ===================================================================== */}
+        {activeTab === 'activity' && (
+          <div className="admin-tab-content">
+            <div className="admin-toolbar" style={{ justifyContent: 'space-between', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontFamily: 'var(--font-heading)' }}>Live Administrative Activity Stream</h3>
+                <p style={{ margin: '4px 0 0', color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
+                  Real-time audit events, role changes, notes reviews, and security actions.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchLiveActivity(30)}
+                isLoading={isLoadingActivity}
+              >
+                Refresh Stream
+              </Button>
+            </div>
+
+            <div className="admin-card" style={{ padding: 0 }}>
+              <div className="table-responsive">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Timestamp</th>
+                      <th>Actor</th>
+                      <th>Action</th>
+                      <th>Entity Type</th>
+                      <th>Entity Identifier</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {liveActivity.length === 0 ? (
+                      <tr>
+                        <td colSpan="5" style={{ textAlign: 'center', padding: '32px' }}>
+                          <p className="admin-muted-text">No live activity events recorded.</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      liveActivity.map((log) => (
+                        <tr key={log.id}>
+                          <td>{formatRelativeTime(log.createdAt)}</td>
+                          <td>
+                            <div className="d-flex items-center gap-2">
+                              <Avatar name={log.actor?.name || 'System'} size="xs" />
+                              <div>
+                                <span style={{ fontWeight: 600 }}>{log.actor?.name || 'System'}</span>
+                                <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                  {log.actor?.role}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <Badge variant="primary" size="sm">
+                              {log.action}
+                            </Badge>
+                          </td>
+                          <td>{log.entityType}</td>
+                          <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>
+                            {log.entityId}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB: NOTES CATALOG & MODERATION QUEUE
+            ===================================================================== */}
+        {activeTab === 'notes' && (
+          <div className="admin-tab-content">
+            <div className="admin-toolbar" style={{ flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
+              <div style={{ flex: 1, minWidth: '240px' }}>
+                <Input
+                  placeholder="Search notes by title or description..."
+                  value={notesSearch}
+                  onChange={(e) => setNotesSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') fetchNotes(1, { search: notesSearch });
+                  }}
+                />
+              </div>
+              <div className="d-flex items-center gap-2">
+                <select
+                  className="admin-select"
+                  value={notesStatusFilter}
+                  onChange={(e) => {
+                    setNotesStatusFilter(e.target.value);
+                    fetchNotes(1, { status: e.target.value });
+                  }}
+                >
+                  <option value="ALL">All Statuses</option>
+                  <option value="APPROVED">Approved (Live)</option>
+                  <option value="PENDING">Pending Review</option>
+                  <option value="REJECTED">Rejected</option>
+                  <option value="DRAFT">Draft</option>
+                </select>
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={() => navigate('/notes/new')}
+                >
+                  + Upload Study Note
+                </Button>
+              </div>
+            </div>
+
+            {isLoadingNotes ? (
+              <Skeleton count={5} height="48px" style={{ marginBottom: '10px' }} />
+            ) : (
+              <div className="admin-card" style={{ padding: 0 }}>
+                <div className="table-responsive">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Manuscript Title</th>
+                        <th>Academic Scope</th>
+                        <th>Uploaded By</th>
+                        <th>Status</th>
+                        <th>Downloads</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {adminNotes.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" style={{ textAlign: 'center', padding: '36px' }}>
+                            <p className="admin-muted-text">No notes found matching current filters.</p>
+                          </td>
+                        </tr>
+                      ) : (
+                        adminNotes.map((note) => (
+                          <tr key={note.id}>
+                            <td>
+                              <Link to={`/notes/${note.id}`} style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
+                                {note.title}
+                              </Link>
+                              {note.fileName && (
+                                <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                  📎 {note.fileName} ({Math.round((note.fileSize || 0) / 1024)} KB)
+                                </span>
+                              )}
+                            </td>
+                            <td>
+                              <span>{note.course?.name || 'General Course'}</span>
+                              <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                {note.subject?.name} · Sem {note.semester}
+                              </span>
+                            </td>
+                            <td>
+                              <span>{note.uploadedBy?.name || 'Unknown'}</span>
+                              <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                {note.uploadedBy?.role}
+                              </span>
+                            </td>
+                            <td>
+                              <Badge
+                                variant={
+                                  note.status === 'APPROVED'
+                                    ? 'success'
+                                    : note.status === 'PENDING'
+                                      ? 'warning'
+                                      : note.status === 'REJECTED'
+                                        ? 'danger'
+                                        : 'neutral'
+                                }
+                                size="sm"
+                              >
+                                {note.status}
+                              </Badge>
+                            </td>
+                            <td>{note.downloadCount || 0}</td>
+                            <td>
+                              <div className="d-flex items-center gap-1">
+                                {note.status === 'PENDING' && (
+                                  <>
+                                    <Button
+                                      size="xs"
+                                      variant="primary"
+                                      onClick={() => handleApproveNote(note.id)}
+                                      title="Approve manuscript"
+                                    >
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      size="xs"
+                                      variant="outline"
+                                      onClick={() => {
+                                        setRejectModalNote(note);
+                                        setNoteRejectionReason('');
+                                      }}
+                                      title="Reject manuscript"
+                                    >
+                                      Reject
+                                    </Button>
+                                  </>
+                                )}
+                                <Link
+                                  to={`/notes/${note.id}`}
+                                  className="btn btn--xs btn--outline"
+                                  title="View and download manuscript"
+                                >
+                                  View
+                                </Link>
+                                <Button
+                                  size="xs"
+                                  variant="danger"
+                                  onClick={() => handleDeleteNote(note)}
+                                  title="Administratively remove note"
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB: CONTENT REPORTS & APPEALS
+            ===================================================================== */}
+        {activeTab === 'reports' && (
+          <div className="admin-tab-content">
+            <div className="admin-toolbar" style={{ justifyContent: 'space-between', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontFamily: 'var(--font-heading)' }}>Content Moderation Reports & Appeals</h3>
+                <p style={{ margin: '4px 0 0', color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
+                  Review flags and reported manuscripts submitted by community scholars.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchContentReports(1)}
+              >
+                Refresh Reports
+              </Button>
+            </div>
+
+            {isLoadingContentReports ? (
+              <Skeleton count={4} height="50px" style={{ marginBottom: '10px' }} />
+            ) : (
+              <div className="admin-card" style={{ padding: 0 }}>
+                <div className="table-responsive">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Reported Item</th>
+                        <th>Type</th>
+                        <th>Reporter</th>
+                        <th>Reason / Notes</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {contentReports.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" style={{ textAlign: 'center', padding: '36px' }}>
+                            <p className="admin-muted-text">Zero open content reports pending.</p>
+                          </td>
+                        </tr>
+                      ) : (
+                        contentReports.map((rep) => (
+                          <tr key={rep.id}>
+                            <td>
+                              <strong>{rep.targetTitle || rep.note?.title || 'Reported Content'}</strong>
+                            </td>
+                            <td>
+                              <Badge variant="neutral" size="sm">{rep.entityType || 'CONTENT'}</Badge>
+                            </td>
+                            <td>{rep.reporter?.name || 'Anonymous Scholar'}</td>
+                            <td>{rep.reason}</td>
+                            <td>
+                              <Badge variant={rep.status === 'OPEN' || rep.status === 'PENDING' ? 'warning' : 'success'} size="sm">
+                                {rep.status}
+                              </Badge>
+                            </td>
+                            <td>
+                              <div className="d-flex items-center gap-1">
+                                <Button
+                                  size="xs"
+                                  variant="primary"
+                                  onClick={() => handleResolveContentReport(rep.id, 'RESOLVE')}
+                                >
+                                  Resolve
+                                </Button>
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  onClick={() => handleResolveContentReport(rep.id, 'DISMISS')}
+                                >
+                                  Dismiss
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB: ANNOUNCEMENTS & NOTIFICATIONS
+            ===================================================================== */}
+        {activeTab === 'announcements' && (
+          <div className="admin-tab-content">
+            <div className="admin-toolbar" style={{ justifyContent: 'space-between', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontFamily: 'var(--font-heading)' }}>Platform Announcements</h3>
+                <p style={{ margin: '4px 0 0', color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
+                  Broadcast global banners and urgent academic notices to scholars and staff.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                size="md"
+                onClick={() => setIsAnnouncementOpen(true)}
+              >
+                + Create Announcement
+              </Button>
+            </div>
+
+            {isLoadingAnnouncements ? (
+              <Skeleton count={4} height="50px" style={{ marginBottom: '10px' }} />
+            ) : (
+              <div className="admin-card" style={{ padding: 0 }}>
+                <div className="table-responsive">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Title & Message</th>
+                        <th>Target Audience</th>
+                        <th>Priority</th>
+                        <th>Created</th>
+                        <th>Expires</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {announcementsList.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" style={{ textAlign: 'center', padding: '36px' }}>
+                            <p className="admin-muted-text">No active platform announcements.</p>
+                          </td>
+                        </tr>
+                      ) : (
+                        announcementsList.map((ann) => (
+                          <tr key={ann.id}>
+                            <td>
+                              <strong>{ann.title}</strong>
+                              <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                                {ann.message}
+                              </span>
+                            </td>
+                            <td><Badge variant="primary" size="sm">{ann.targetRole || 'ALL_USERS'}</Badge></td>
+                            <td>
+                              <Badge variant={ann.priority === 'URGENT' ? 'danger' : ann.priority === 'HIGH' ? 'warning' : 'neutral'} size="sm">
+                                {ann.priority || 'NORMAL'}
+                              </Badge>
+                            </td>
+                            <td>{formatRelativeTime(ann.createdAt)}</td>
+                            <td>{ann.expiresAt ? new Date(ann.expiresAt).toLocaleDateString() : 'Permanent'}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB: STORAGE & FILES
+            ===================================================================== */}
+        {activeTab === 'storage' && (
+          <div className="admin-tab-content">
+            <div className="admin-toolbar" style={{ marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontFamily: 'var(--font-heading)' }}>Platform Storage & Document Vault</h3>
+                <p style={{ margin: '4px 0 0', color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
+                  Physical disk capacity, upload directories, and permitted document specifications.
+                </p>
+              </div>
+            </div>
+
+            {isLoadingSystem && !storageStats ? (
+              <Skeleton count={4} height="60px" style={{ marginBottom: '12px' }} />
+            ) : storageStats ? (
+              <div className="admin-operational-grid">
+                <div className="admin-card">
+                  <div className="admin-card__header">
+                    <h3 className="admin-card__title">Storage Capacity Summary</h3>
+                  </div>
+                  <div className="admin-card__body">
+                    <div className="admin-overview-kpi-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                      <div className="admin-metric-card" style={{ margin: 0 }}>
+                        <span className="admin-metric-card__label">Files Stored</span>
+                        <p className="admin-metric-card__value">{storageStats.totalStoredManuscripts}</p>
+                      </div>
+                      <div className="admin-metric-card" style={{ margin: 0 }}>
+                        <span className="admin-metric-card__label">Disk Usage</span>
+                        <p className="admin-metric-card__value">{storageStats.totalStorageMb} MB</p>
+                      </div>
+                    </div>
+                    <div style={{ marginTop: '16px' }}>
+                      <p><strong>Storage Provider:</strong> {storageStats.provider}</p>
+                      <p><strong>Directory Path:</strong> <code style={{ fontSize: '0.8rem' }}>{storageStats.uploadDirectory}</code></p>
+                      <p><strong>Max File Upload Size:</strong> {storageStats.maxUploadSizeMb} MB</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="admin-card">
+                  <div className="admin-card__header">
+                    <h3 className="admin-card__title">Allowed Document Types</h3>
+                  </div>
+                  <div className="admin-card__body">
+                    <div className="d-flex flex-col gap-2">
+                      {(storageStats.allowedMimeTypes || []).map((mime) => (
+                        <div key={mime} className="d-flex items-center justify-between" style={{ padding: '8px 12px', background: 'var(--color-surface-hover)', borderRadius: '6px' }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>{mime}</span>
+                          <Badge variant="success" size="sm">Permitted</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB: PLATFORM CONFIGURATION SETTINGS
+            ===================================================================== */}
+        {activeTab === 'settings' && (
+          <div className="admin-tab-content">
+            <div className="admin-toolbar" style={{ marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontFamily: 'var(--font-heading)' }}>Platform Configuration Settings</h3>
+                <p style={{ margin: '4px 0 0', color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
+                  Super Admin global settings persisted to database and enforced application-wide.
+                </p>
+              </div>
+            </div>
+
+            {settingsNotice && (
+              <div className="auth-alert auth-alert--success" style={{ marginBottom: '16px' }}>
+                <span>{settingsNotice}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSavePlatformSettings} className="admin-card" style={{ maxWidth: '720px' }}>
+              <div className="admin-card__body d-flex flex-col gap-4">
+                <div>
+                  <label className="admin-form-label">Platform Name</label>
+                  <Input
+                    value={platformSettings.platformName}
+                    onChange={(e) => setPlatformSettings({ ...platformSettings, platformName: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="admin-form-label">Tagline Display</label>
+                  <Input
+                    value={platformSettings.tagline}
+                    onChange={(e) => setPlatformSettings({ ...platformSettings, tagline: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="admin-form-grid">
+                  <div>
+                    <label className="admin-form-label">Max Upload Size (MB)</label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="200"
+                      value={platformSettings.maxUploadSizeMb}
+                      onChange={(e) => setPlatformSettings({ ...platformSettings, maxUploadSizeMb: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="admin-form-label">Permitted File Formats</label>
+                    <Input
+                      value={platformSettings.allowedFileFormats}
+                      onChange={(e) => setPlatformSettings({ ...platformSettings, allowedFileFormats: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="d-flex items-center justify-between" style={{ padding: '12px 16px', background: 'var(--color-surface-hover)', borderRadius: '6px' }}>
+                  <div>
+                    <strong>Student Star Ratings & Reviews</strong>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Allow registered scholars to submit reviews on approved notes</p>
+                  </div>
+                  <select
+                    className="admin-select"
+                    value={platformSettings.allowStudentReviews}
+                    onChange={(e) => setPlatformSettings({ ...platformSettings, allowStudentReviews: e.target.value })}
+                  >
+                    <option value="true">Enabled</option>
+                    <option value="false">Disabled</option>
+                  </select>
+                </div>
+
+                <div className="d-flex items-center justify-between" style={{ padding: '12px 16px', background: 'var(--color-surface-hover)', borderRadius: '6px' }}>
+                  <div>
+                    <strong>Auto-Moderation Pipeline</strong>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Automatically publish notes bypassing moderator approval queue</p>
+                  </div>
+                  <select
+                    className="admin-select"
+                    value={platformSettings.autoModerationEnabled}
+                    onChange={(e) => setPlatformSettings({ ...platformSettings, autoModerationEnabled: e.target.value })}
+                  >
+                    <option value="false">Disabled (Enforce Peer Review)</option>
+                    <option value="true">Enabled (Auto-Approve)</option>
+                  </select>
+                </div>
+
+                <div className="d-flex justify-end" style={{ marginTop: '12px' }}>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="md"
+                    isLoading={isSavingSettings}
+                  >
+                    Save Platform Settings
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB: SECURITY CENTER
+            ===================================================================== */}
+        {activeTab === 'security' && (
+          <div className="admin-tab-content">
+            <div className="admin-toolbar" style={{ marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontFamily: 'var(--font-heading)' }}>Platform Security Posture Center</h3>
+                <p style={{ margin: '4px 0 0', color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
+                  Audit logs, privilege separation, suspended accounts, and compliance protection.
+                </p>
+              </div>
+            </div>
+
+            <div className="admin-operational-grid">
+              <div className="admin-card">
+                <div className="admin-card__header">
+                  <h3 className="admin-card__title">Security Configuration Checklist</h3>
+                </div>
+                <div className="admin-card__body d-flex flex-col gap-2">
+                  <div className="d-flex items-center justify-between" style={{ padding: '8px 12px', background: 'var(--color-surface-hover)', borderRadius: '6px' }}>
+                    <span>Role-Based Access Control (RBAC)</span>
+                    <Badge variant="success" size="sm">4-Tier Enforced</Badge>
+                  </div>
+                  <div className="d-flex items-center justify-between" style={{ padding: '8px 12px', background: 'var(--color-surface-hover)', borderRadius: '6px' }}>
+                    <span>Authentication Architecture</span>
+                    <Badge variant="success" size="sm">JWT + HttpOnly Cookie</Badge>
+                  </div>
+                  <div className="d-flex items-center justify-between" style={{ padding: '8px 12px', background: 'var(--color-surface-hover)', borderRadius: '6px' }}>
+                    <span>Password Security Standards</span>
+                    <Badge variant="success" size="sm">Bcrypt (Cost 12)</Badge>
+                  </div>
+                  <div className="d-flex items-center justify-between" style={{ padding: '8px 12px', background: 'var(--color-surface-hover)', borderRadius: '6px' }}>
+                    <span>HTTP Security Headers</span>
+                    <Badge variant="success" size="sm">Helmet + Strict CSP</Badge>
+                  </div>
+                  <div className="d-flex items-center justify-between" style={{ padding: '8px 12px', background: 'var(--color-surface-hover)', borderRadius: '6px' }}>
+                    <span>API Rate Limiting</span>
+                    <Badge variant="success" size="sm">Active</Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="admin-card">
+                <div className="admin-card__header">
+                  <h3 className="admin-card__title">Account Safety & Suspensions</h3>
+                </div>
+                <div className="admin-card__body">
+                  <div className="admin-overview-kpi-grid" style={{ gridTemplateColumns: '1fr' }}>
+                    <div className="admin-metric-card" style={{ margin: 0 }}>
+                      <span className="admin-metric-card__label">Suspended User Accounts</span>
+                      <p className="admin-metric-card__value" style={{ color: (stats?.suspendedUsers || 0) > 0 ? 'var(--color-danger)' : 'inherit' }}>
+                        {stats?.suspendedUsers ?? 0}
+                      </p>
+                      <div className="admin-metric-card__footer">
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={() => {
+                            navigate('/admin/suspended-users');
+                            setStatusFilter('inactive');
+                            fetchUsers(1, { status: 'inactive' });
+                          }}
+                        >
+                          Review Suspended Accounts →
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB: SYSTEM HEALTH & DIAGNOSTICS
+            ===================================================================== */}
+        {activeTab === 'health' && (
+          <div className="admin-tab-content">
+            <div className="admin-toolbar" style={{ justifyContent: 'space-between', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontFamily: 'var(--font-heading)' }}>System Health Diagnostics</h3>
+                <p style={{ margin: '4px 0 0', color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
+                  Live runtime indicators, database latency, process memory, and server status.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchSystemData}
+                isLoading={isLoadingSystem}
+              >
+                Run Health Probe
+              </Button>
+            </div>
+
+            {systemHealth ? (
+              <div className="admin-operational-grid">
+                <div className="admin-card">
+                  <div className="admin-card__header">
+                    <h3 className="admin-card__title">Database Connectivity (MySQL)</h3>
+                  </div>
+                  <div className="admin-card__body">
+                    <p><strong>Status:</strong> <Badge variant="success" size="sm">{systemHealth.database?.status}</Badge></p>
+                    <p><strong>Query Response Latency:</strong> {systemHealth.database?.latencyMs} ms</p>
+                    <p><strong>Engine:</strong> {systemHealth.database?.engine}</p>
+                    <p><strong>Timestamp:</strong> {new Date(systemHealth.timestamp).toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <div className="admin-card">
+                  <div className="admin-card__header">
+                    <h3 className="admin-card__title">Runtime Node.js Server Process</h3>
+                  </div>
+                  <div className="admin-card__body">
+                    <p><strong>Node Version:</strong> {systemHealth.server?.nodeVersion}</p>
+                    <p><strong>Platform OS:</strong> {systemHealth.server?.platform}</p>
+                    <p><strong>Process Uptime:</strong> {Math.floor((systemHealth.server?.uptimeSeconds || 0) / 60)} minutes</p>
+                    <p><strong>Memory RSS:</strong> {systemHealth.server?.memoryRssMb} MB</p>
+                    <p><strong>Heap Used:</strong> {systemHealth.server?.memoryHeapUsedMb} MB / {systemHealth.server?.memoryHeapTotalMb} MB</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <Skeleton count={3} height="60px" />
+            )}
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB: BACKUP & RECOVERY READINESS
+            ===================================================================== */}
+        {activeTab === 'backups' && (
+          <div className="admin-tab-content">
+            <div className="admin-toolbar" style={{ marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontFamily: 'var(--font-heading)' }}>Backup & Disaster Recovery Readiness</h3>
+                <p style={{ margin: '4px 0 0', color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
+                  Operational snapshot validation and database disaster recovery procedures.
+                </p>
+              </div>
+            </div>
+
+            {backupStatus ? (
+              <div className="admin-operational-grid">
+                <div className="admin-card">
+                  <div className="admin-card__header">
+                    <h3 className="admin-card__title">Database Snapshot Readiness</h3>
+                  </div>
+                  <div className="admin-card__body d-flex flex-col gap-2">
+                    <p><strong>Database Engine:</strong> {backupStatus.databaseEngine}</p>
+                    <p><strong>ORM Framework:</strong> {backupStatus.orm}</p>
+                    <p><strong>Snapshot Verification:</strong> <Badge variant="success" size="sm">{backupStatus.status}</Badge></p>
+                    <div style={{ marginTop: '12px' }}>
+                      <strong>Active Managed Records:</strong>
+                      <ul style={{ margin: '6px 0 0', paddingLeft: '20px', color: 'var(--color-text-secondary)' }}>
+                        <li>Users: {backupStatus.tablesSummary?.users}</li>
+                        <li>Notes: {backupStatus.tablesSummary?.notes}</li>
+                        <li>Downloads: {backupStatus.tablesSummary?.downloads}</li>
+                        <li>Audit Logs: {backupStatus.tablesSummary?.auditLogs}</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="admin-card">
+                  <div className="admin-card__header">
+                    <h3 className="admin-card__title">Operational Verification Checklist</h3>
+                  </div>
+                  <div className="admin-card__body d-flex flex-col gap-2">
+                    {(backupStatus.snapshotChecklist || []).map((item) => (
+                      <div key={item.id} className="d-flex items-center justify-between" style={{ padding: '8px 12px', background: 'var(--color-surface-hover)', borderRadius: '6px' }}>
+                        <span>{item.name}</span>
+                        <Badge variant="success" size="sm">{item.status}</Badge>
+                      </div>
+                    ))}
+                    <div style={{ marginTop: '16px', padding: '12px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '6px' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Command Line Snapshot Command:</span>
+                      <pre style={{ fontSize: '0.75rem', background: '#1e293b', color: '#e2e8f0', padding: '8px', borderRadius: '4px', marginTop: '6px', overflowX: 'auto' }}>
+mysqldump -u root -p pj_study &gt; backup_$(date +%F).sql
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <Skeleton count={3} height="60px" />
+            )}
+          </div>
+        )}
+
+
         {/* ROLE CHANGE MODAL */}
         <Modal
           isOpen={Boolean(roleModalUser)}
@@ -3402,7 +4894,42 @@ export function AdminDashboardPage() {
               </div>
             </div>
           )}
+        
+        {/* NOTE REJECTION REASON MODAL */}
+        <Modal
+          isOpen={Boolean(rejectModalNote)}
+          onClose={() => setRejectModalNote(null)}
+          title="Reject Study Manuscript"
+        >
+          {rejectModalNote && (
+            <form onSubmit={handleRejectNoteSubmit} className="admin-modal-content">
+              <p style={{ margin: '0 0 16px', color: 'var(--color-text-secondary)' }}>
+                Please specify the academic reason for rejecting "<strong>{rejectModalNote.title}</strong>".
+                This will be logged in the audit trail and sent to the author.
+              </p>
+              <div style={{ marginBottom: '16px' }}>
+                <label className="admin-form-label">Rejection Reason *</label>
+                <textarea
+                  className="input input--textarea w-full"
+                  rows="4"
+                  required
+                  placeholder="e.g. Manuscript missing syllabus mapping or violates academic citation standards."
+                  value={noteRejectionReason}
+                  onChange={(e) => setNoteRejectionReason(e.target.value)}
+                />
+              </div>
+              <div className="d-flex justify-end gap-2">
+                <Button type="button" variant="outline" size="md" onClick={() => setRejectModalNote(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" variant="danger" size="md" isLoading={isSubmittingNoteAction}>
+                  Confirm Rejection
+                </Button>
+              </div>
+            </form>
+          )}
         </Modal>
+      </Modal>
       </div>
     </div>
   );

@@ -180,6 +180,34 @@ router.patch(
 );
 
 /**
+ * System Health & Storage Operations
+ * GET /api/v1/admin/health
+ * GET /api/v1/admin/storage
+ * GET /api/v1/admin/backups
+ * GET /api/v1/admin/activity
+ */
+router.get(
+  '/health',
+  requirePermission(PERMISSIONS.USERS_READ),
+  adminController.getSystemHealth
+);
+router.get(
+  '/storage',
+  requirePermission(PERMISSIONS.USERS_READ),
+  adminController.getStorageStats
+);
+router.get(
+  '/backups',
+  requirePermission(PERMISSIONS.USERS_READ),
+  adminController.getBackupStatus
+);
+router.get(
+  '/activity',
+  requirePermission(PERMISSIONS.USERS_READ),
+  adminController.getLiveActivity
+);
+
+/**
  * Audit log compliance trail
  * GET /api/v1/admin/audit-logs
  */

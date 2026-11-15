@@ -167,6 +167,89 @@ export const adminService = {
   async deleteCategory(id) {
     const response = await apiClient.delete(`/admin/academics/categories/${id}`);
     return response.data?.data;
+  },
+
+  /**
+   * Complete Command Center Overview & Analytics
+   */
+  async getOverview() {
+    const response = await apiClient.get('/admin/overview');
+    return response.data?.data;
+  },
+
+  async getAnalytics(range = '30d') {
+    const response = await apiClient.get('/admin/analytics', { params: { range } });
+    return response.data?.data;
+  },
+
+  async getModerators(params = {}) {
+    const response = await apiClient.get('/admin/moderators', { params });
+    return response.data?.data;
+  },
+
+  async getNotes(params = {}) {
+    const response = await apiClient.get('/admin/notes', { params });
+    return response.data?.data;
+  },
+
+  async deleteNote(id, reason) {
+    const response = await apiClient.delete(`/admin/notes/${id}`, { data: { reason } });
+    return response.data?.data;
+  },
+
+  async reviewNote(id, decision, rejectionReason = '') {
+    const response = await apiClient.post(`/notes/${id}/review`, { decision, rejectionReason });
+    return response.data?.data;
+  },
+
+  async getReports(params = {}) {
+    const response = await apiClient.get('/admin/reports', { params });
+    return response.data?.data;
+  },
+
+  async resolveReport(id, action, reason = '') {
+    const response = await apiClient.post(`/admin/reports/${id}/resolve`, { action, reason });
+    return response.data?.data;
+  },
+
+  async getSettings() {
+    const response = await apiClient.get('/admin/settings');
+    return response.data?.data;
+  },
+
+  async updateSettings(settingsMap) {
+    const response = await apiClient.patch('/admin/settings', settingsMap);
+    return response.data?.data;
+  },
+
+  async getAnnouncements() {
+    const response = await apiClient.get('/admin/announcements');
+    return response.data?.data;
+  },
+
+  async createAnnouncement(data) {
+    const response = await apiClient.post('/admin/announcements', data);
+    return response.data?.data;
+  },
+
+  async getSystemHealth() {
+    const response = await apiClient.get('/admin/health');
+    return response.data?.data;
+  },
+
+  async getStorageStats() {
+    const response = await apiClient.get('/admin/storage');
+    return response.data?.data;
+  },
+
+  async getBackupStatus() {
+    const response = await apiClient.get('/admin/backups');
+    return response.data?.data;
+  },
+
+  async getLiveActivity(limit = 20) {
+    const response = await apiClient.get('/admin/activity', { params: { limit } });
+    return response.data?.data;
   }
 };
 

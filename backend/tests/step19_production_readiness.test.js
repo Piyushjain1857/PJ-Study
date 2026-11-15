@@ -63,7 +63,9 @@ test('Step 19 SEO, Accessibility & Production Readiness Suite', async (t) => {
   });
 
   // Ensure an active subject and category exist
-  const activeSubject = await prisma.subject.findFirst({ where: { isActive: true } });
+  const activeSubject = await prisma.subject.findFirst({
+    where: { isActive: true, slug: { notIn: ['rec-algo', 'rec-os', 'rec-circuits'] } }
+  });
   const activeCategory = await prisma.category.upsert({
     where: { slug: 'step19-seo-cat' },
     update: { isActive: true },

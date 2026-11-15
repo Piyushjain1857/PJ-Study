@@ -155,14 +155,16 @@ export class NoteController {
    */
   reviewNote = async (req, res, next) => {
     try {
-      const { status, reason } = req.body;
+      const { status, decision, reason, rejectionReason } = req.body;
+      const targetStatus = status || (decision === 'APPROVE' ? 'APPROVED' : decision === 'REJECT' ? 'REJECTED' : decision);
+      const targetReason = reason || rejectionReason;
       const updated = await this.service.reviewNoteSubmission(
         req.params.id,
-        status,
+        targetStatus,
         req.user.id,
-        reason
+        targetReason
       );
-      return sendSuccess(res, updated, 200, `Note status updated to ${status}.`);
+      return sendSuccess(res, updated, 200, `Note status updated to ${targetStatus}.`);
     } catch (err) {
       return next(err);
     }
