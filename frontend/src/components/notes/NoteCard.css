@@ -94,9 +94,10 @@
 
 .note-card__title {
   font-family: var(--font-heading);
-  font-size: 1.35rem;
-  font-weight: 400;
-  line-height: var(--line-height-tight);
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  line-height: var(--line-snug);
+  letter-spacing: -0.015em;
   color: var(--color-text-primary);
   margin: 0 0 var(--space-2) 0;
 }
@@ -283,11 +284,12 @@
 
 .note-list-card__title {
   font-family: var(--font-heading);
-  font-size: 1.25rem;
-  font-weight: 400;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.015em;
   margin: 0;
   color: var(--color-text-primary);
-  line-height: var(--line-height-snug);
+  line-height: var(--line-snug);
 }
 
 .note-list-card__desc {

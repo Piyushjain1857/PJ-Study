@@ -8,7 +8,7 @@ import './AppLayout.css';
 
 /**
  * Premium Educational SaaS Application Shell for PJ Study.
- * Inspired by Notion (clarity), Linear (refined micro-spacing), and Vercel (precision minimalism).
+ * V2 Upgrade: Plus Jakarta Sans headings, refined 256px sidebar, glassmorphic top header, Cmd+K search.
  */
 export function AppLayout() {
   const { user, isAuthenticated, isAdmin, isModerator, logout } = useAuth();
@@ -22,10 +22,10 @@ export function AppLayout() {
     setMobileSidebarOpen(false);
   }, [location.pathname]);
 
-  // Global Command+K / Ctrl+K shortcut to jump to Explore Notes search
+  // Global Command+K / Ctrl+K keyboard shortcut to focus or navigate to Explore Notes
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         navigate('/notes/explore');
       }
@@ -34,7 +34,7 @@ export function AppLayout() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [navigate]);
 
-  // Lock background scroll when mobile sidebar is open
+  // Lock background scroll when mobile sidebar drawer is open
   useEffect(() => {
     if (mobileSidebarOpen) {
       document.body.style.overflow = 'hidden';
@@ -56,7 +56,7 @@ export function AppLayout() {
     navigate('/');
   }
 
-  // Derive human-readable page context based on route
+  // Derive human-readable page context based on active route
   const getPageTitle = (path) => {
     if (path === '/dashboard' || path === '/app') return 'Student Dashboard';
     if (path.startsWith('/notes/explore') || path === '/notes') return 'Explore Notes';
@@ -74,7 +74,7 @@ export function AppLayout() {
   const userMenuItems = [
     { label: 'View Profile', onClick: () => navigate('/profile') },
     { label: 'My Study Library', onClick: () => navigate('/my-notes') },
-    { label: 'Explore Notes', onClick: () => navigate('/notes/explore') },
+    { label: 'Explore Catalog', onClick: () => navigate('/notes/explore') },
     ...(isAdmin || isModerator
       ? [{ label: 'Admin Portal', onClick: () => navigate('/admin') }]
       : []),
@@ -82,7 +82,7 @@ export function AppLayout() {
     { label: 'Sign Out', danger: true, onClick: handleLogout }
   ];
 
-  // Core navigation items per specification
+  // Core navigation items per Section 5 specification
   const primaryNavItems = [
     {
       to: '/dashboard',
@@ -125,7 +125,7 @@ export function AppLayout() {
       to: '/notes/recommended',
       label: 'Recommended',
       requiresAuth: true,
-      badge: 'AI',
+      badge: 'Curated',
       icon: (
         <svg
           viewBox="0 0 24 24"
@@ -179,7 +179,7 @@ export function AppLayout() {
     }
   ];
 
-  // System & Management nav items
+  // Secondary platform navigation items
   const secondaryNavItems = [
     {
       to: '/profile',
@@ -242,7 +242,7 @@ export function AppLayout() {
 
   return (
     <div className={`app-shell ${sidebarCollapsed ? 'app-shell--collapsed' : ''}`}>
-      {/* Mobile Drawer Backdrop */}
+      {/* Mobile Backdrop */}
       {mobileSidebarOpen && (
         <div
           className="app-shell__mobile-backdrop"
@@ -251,14 +251,14 @@ export function AppLayout() {
         />
       )}
 
-      {/* Main Sidebar Navigation */}
+      {/* Main Sidebar (256px Desktop) */}
       <aside
         className={`app-shell__sidebar ${
           mobileSidebarOpen ? 'app-shell__sidebar--mobile-open' : ''
         }`}
         aria-label="Application Navigation"
       >
-        {/* Brand Wordmark & Collapse Toggle */}
+        {/* Brand Header */}
         <div className="app-shell__sidebar-header">
           <Link to="/" className="app-shell__sidebar-brand" title="PJ Study Homepage">
             <span className="app-shell__sidebar-logo" aria-hidden="true">
@@ -284,10 +284,10 @@ export function AppLayout() {
           </button>
         </div>
 
-        {/* Navigation Items */}
+        {/* Sidebar Nav Items */}
         <nav className="app-shell__nav">
           <div className="app-shell__nav-group">
-            {!sidebarCollapsed && <span className="app-shell__nav-label">Study Workspace</span>}
+            {!sidebarCollapsed && <span className="app-shell__nav-label">Workspace</span>}
             {primaryNavItems
               .filter((item) => !item.requiresAuth || isAuthenticated)
               .map((item, idx) => (
@@ -316,7 +316,7 @@ export function AppLayout() {
           </div>
 
           <div className="app-shell__nav-group mt-auto">
-            {!sidebarCollapsed && <span className="app-shell__nav-label">Platform</span>}
+            {!sidebarCollapsed && <span className="app-shell__nav-label">System</span>}
             {secondaryNavItems
               .filter((item) => !item.requiresAuth || isAuthenticated)
               .map((item, idx) => (
@@ -357,7 +357,7 @@ export function AppLayout() {
           </div>
         </nav>
 
-        {/* Sidebar Footer User Info or Guest Action */}
+        {/* Sidebar Footer User Info */}
         <div className="app-shell__sidebar-footer">
           {isAuthenticated ? (
             <div className="app-shell__user-container">
@@ -407,7 +407,7 @@ export function AppLayout() {
         </div>
       </aside>
 
-      {/* Main Content Area */}
+      {/* Main Content Shell */}
       <div className="app-shell__main-wrapper">
         {/* Top Header Bar */}
         <header className="app-shell__top-bar">
@@ -444,7 +444,7 @@ export function AppLayout() {
               type="button"
               onClick={() => navigate('/notes/explore')}
               className="app-shell__search-pill"
-              aria-label="Search study notes"
+              aria-label="Search study notes (Command+K)"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -461,7 +461,7 @@ export function AppLayout() {
               <kbd className="app-shell__search-kbd">⌘K</kbd>
             </button>
 
-            {/* User Account Menu or Guest Action */}
+            {/* User Account Menu */}
             {isAuthenticated ? (
               <Dropdown
                 trigger={
@@ -489,7 +489,7 @@ export function AppLayout() {
           </div>
         </header>
 
-        {/* Responsive Content Container */}
+        {/* Dynamic Content Outlet */}
         <main className="app-shell__content">
           <Outlet />
         </main>

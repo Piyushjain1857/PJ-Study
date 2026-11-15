@@ -413,61 +413,137 @@ export function AdminDashboardPage() {
           <div>
             {/* Toolbar */}
             <div className="admin-toolbar">
-              <form onSubmit={handleSearchSubmit} className="admin-toolbar__filters">
-                <Input
-                  placeholder="Search name or email..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="admin-search-input"
-                />
+              <form onSubmit={handleSearchSubmit} className="admin-toolbar__form">
+                <div className="admin-search-wrapper">
+                  <svg
+                    className="admin-search-icon"
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <input
+                    type="search"
+                    placeholder="Search name or email..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="admin-search-input"
+                    aria-label="Search scholars by name or email"
+                  />
+                  {search && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearch('');
+                        fetchUsers(1);
+                      }}
+                      className="admin-search-clear"
+                      title="Clear search"
+                      aria-label="Clear search query"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
 
                 {activeTab === 'users' && (
+                  <div className="admin-select-wrapper">
+                    <select
+                      className="admin-select"
+                      value={roleFilter}
+                      onChange={(e) => {
+                        setRoleFilter(e.target.value);
+                        fetchUsers(1);
+                      }}
+                      aria-label="Filter by role"
+                    >
+                      <option value="">All Roles</option>
+                      <option value="STUDENT">Students</option>
+                      <option value="MODERATOR">Moderators</option>
+                      <option value="ADMIN">Admins</option>
+                      <option value="SUPER_ADMIN">Super Admins</option>
+                    </select>
+                    <svg
+                      className="admin-select-chevron"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </div>
+                )}
+
+                <div className="admin-select-wrapper">
                   <select
                     className="admin-select"
-                    value={roleFilter}
+                    value={statusFilter}
                     onChange={(e) => {
-                      setRoleFilter(e.target.value);
+                      setStatusFilter(e.target.value);
+                      fetchUsers(1);
+                    }}
+                    aria-label="Filter by status"
+                  >
+                    <option value="">All Statuses</option>
+                    <option value="active">Active Only</option>
+                    <option value="suspended">Suspended Only</option>
+                  </select>
+                  <svg
+                    className="admin-select-chevron"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+
+                <Button type="submit" variant="primary" size="sm">
+                  Search
+                </Button>
+
+                {(search || roleFilter || statusFilter) && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSearch('');
+                      setRoleFilter('');
+                      setStatusFilter('');
                       fetchUsers(1);
                     }}
                   >
-                    <option value="">All Roles</option>
-                    <option value="STUDENT">Students</option>
-                    <option value="MODERATOR">Moderators</option>
-                    <option value="ADMIN">Admins</option>
-                    <option value="SUPER_ADMIN">Super Admins</option>
-                  </select>
+                    Reset
+                  </Button>
                 )}
-
-                <select
-                  className="admin-select"
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value);
-                    fetchUsers(1);
-                  }}
-                >
-                  <option value="">All Statuses</option>
-                  <option value="active">Active Only</option>
-                  <option value="suspended">Suspended Only</option>
-                </select>
-
-                <Button type="submit" variant="secondary" size="sm">
-                  Apply Filter
-                </Button>
               </form>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSearch('');
-                  setRoleFilter('');
-                  setStatusFilter('');
-                  fetchUsers(1);
-                }}
-              >
-                Reset
-              </Button>
+              <div className="admin-toolbar__count">
+                <span>
+                  {pagination.total} {pagination.total === 1 ? 'scholar' : 'scholars'}
+                </span>
+              </div>
             </div>
 
             {/* Table */}
@@ -812,17 +888,42 @@ export function AdminDashboardPage() {
           <div>
             <div className="admin-toolbar" style={{ justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Filter Reports:</span>
-                <select
-                  value={reportFilter}
-                  onChange={(e) => setReportFilter(e.target.value)}
-                  className="reviews-sort-select"
+                <span
+                  style={{
+                    fontSize: 'var(--text-xs)',
+                    fontWeight: 'var(--weight-semibold)',
+                    color: 'var(--color-text-secondary)'
+                  }}
                 >
-                  <option value="OPEN">Open Reports</option>
-                  <option value="ACTIONED">Actioned</option>
-                  <option value="DISMISSED">Dismissed</option>
-                  <option value="">All Reports</option>
-                </select>
+                  Filter Reports:
+                </span>
+                <div className="admin-select-wrapper">
+                  <select
+                    value={reportFilter}
+                    onChange={(e) => setReportFilter(e.target.value)}
+                    className="admin-select"
+                    aria-label="Filter review reports"
+                  >
+                    <option value="OPEN">Open Reports</option>
+                    <option value="ACTIONED">Actioned</option>
+                    <option value="DISMISSED">Dismissed</option>
+                    <option value="">All Reports</option>
+                  </select>
+                  <svg
+                    className="admin-select-chevron"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
               </div>
               <Button
                 variant="outline"

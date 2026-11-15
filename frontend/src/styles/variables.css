@@ -1,144 +1,176 @@
 /**
- * PJ Study Design Tokens
- * Academic Editorial Palette: Deep Library Forest, Warm Sand/Cream Surface, Antique Gold Accent
- * Inspired by Notion (clean whitespace), Linear (refined micro-spacing), Vercel (precision minimalism)
+ * PJ Study Design Tokens - V2 Premium Typography & Layout System
+ * Inspired by Linear (precision micro-spacing), Notion (whitespace clarity), Vercel (clean minimalism)
  */
 
 :root {
-  /* Color Palette - Neutral Surfaces */
-  --color-background: #fbfaf8;
-  --color-surface: #ffffff;
-  --color-surface-hover: #f5f3ee;
-  --color-surface-subtle: #f8f6f1;
-  --color-surface-elevated: #ffffff;
-  --color-surface-dark: #191b18;
-
-  /* Color Palette - Text & Ink */
-  --color-text-primary: #191b18;
-  --color-text-secondary: #5e605a;
-  --color-text-tertiary: #8f908a;
-  --color-text-muted: #b0b1ab;
-  --color-text-inverse: #ffffff;
-
-  /* Color Palette - Brand Primary (Deep Library Emerald) */
-  --color-primary: #1e4a38;
-  --color-primary-hover: #16392b;
-  --color-primary-active: #0f281e;
-  --color-primary-subtle: #edf4f0;
-  --color-primary-light: #d6e7de;
-  --color-primary-border: #b8d4c5;
-
-  /* Color Palette - Antique Gold Accent */
-  --color-accent: #b87a28;
-  --color-accent-hover: #9e671e;
-  --color-accent-subtle: #fdf6ec;
-  --color-accent-light: #f7e7cf;
-  --color-accent-border: #ebd0a8;
-
-  /* Color Palette - Borders & Hairlines */
-  --color-border: #e6e3dc;
-  --color-border-subtle: #eeece6;
-  --color-border-hover: #d2cec3;
-  --color-border-strong: #bbb6a9;
-
-  /* Semantic Feedback Colors */
-  --color-success: #28734a;
-  --color-success-hover: #1f5b3a;
-  --color-success-subtle: #edf7f1;
-  --color-success-border: #bce3cc;
-
-  --color-warning: #b26a15;
-  --color-warning-hover: #92550e;
-  --color-warning-subtle: #fdf5e9;
-  --color-warning-border: #f5dcaf;
-
-  --color-danger: #b93838;
-  --color-danger-hover: #982d2d;
-  --color-danger-subtle: #fdf1f1;
-  --color-danger-border: #f8c3c3;
-
-  --color-verified: #2762b8;
-  --color-verified-subtle: #edf4fd;
-  --color-verified-border: #bad5f9;
-
-  /* Typography Families */
-  --font-heading: 'Instrument Serif', Georgia, Cambria, serif;
-  --font-body:
-    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  /* ===========================================================================
+     1. TYPOGRAPHY SYSTEM (Plus Jakarta Sans + Inter)
+     =========================================================================== */
+  --font-heading:
+    'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-display-serif: 'Instrument Serif', Georgia, Cambria, serif;
+
+  /* Typography Scale */
+  --text-2xs: 0.6875rem; /* 11px */
+  --text-xs: 0.75rem; /* 12px */
+  --text-sm: 0.875rem; /* 14px */
+  --text-base: 1rem; /* 16px */
+  --text-lg: 1.125rem; /* 18px */
+  --text-xl: 1.25rem; /* 20px */
+  --text-2xl: 1.5rem; /* 24px */
+  --text-3xl: 1.875rem; /* 30px */
+  --text-4xl: 2.125rem; /* 34px */
+  --text-display: clamp(2.25rem, 1.8rem + 1.8vw, 3.25rem);
+
+  /* Legacy Font Size Aliases for Component Compatibility */
+  --font-size-2xs: var(--text-2xs);
+  --font-size-xs: var(--text-xs);
+  --font-size-sm: var(--text-sm);
+  --font-size-base: var(--text-base);
+  --font-size-lg: var(--text-lg);
+  --font-size-xl: var(--text-xl);
+  --font-size-2xl: var(--text-2xl);
+  --font-size-3xl: var(--text-3xl);
+  --font-size-4xl: var(--text-4xl);
+  --font-size-display: var(--text-display);
 
   /* Font Weights */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800;
+
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
-  /* Fluid Font Sizes */
-  --font-size-2xs: 0.6875rem; /* 11px */
-  --font-size-xs: 0.75rem; /* 12px */
-  --font-size-sm: 0.875rem; /* 14px */
-  --font-size-base: 1rem; /* 16px */
-  --font-size-lg: 1.125rem; /* 18px */
-  --font-size-xl: 1.25rem; /* 20px */
-  --font-size-2xl: clamp(1.35rem, 1.2rem + 0.8vw, 1.65rem);
-  --font-size-3xl: clamp(1.75rem, 1.4rem + 1.2vw, 2.25rem);
-  --font-size-4xl: clamp(2.25rem, 1.6rem + 2vw, 3rem);
-  --font-size-display: clamp(2.75rem, 2rem + 3vw, 4.25rem);
-
   /* Line Heights */
+  --leading-none: 1;
+  --leading-tight: 1.2;
+  --leading-snug: 1.35;
+  --leading-normal: 1.55;
+  --leading-relaxed: 1.65;
+
   --line-height-none: 1;
-  --line-height-tight: 1.15;
+  --line-height-tight: 1.2;
   --line-height-snug: 1.35;
   --line-height-normal: 1.55;
-  --line-height-relaxed: 1.7;
+  --line-height-relaxed: 1.65;
 
-  /* Refined Spacing Scale (Linear/Notion consistent) */
-  --space-0-5: 0.125rem; /* 2px */
-  --space-1: 0.25rem; /* 4px */
-  --space-1-5: 0.375rem; /* 6px */
-  --space-2: 0.5rem; /* 8px */
-  --space-2-5: 0.625rem; /* 10px */
-  --space-3: 0.75rem; /* 12px */
-  --space-3-5: 0.875rem; /* 14px */
-  --space-4: 1rem; /* 16px */
-  --space-5: 1.25rem; /* 20px */
-  --space-6: 1.5rem; /* 24px */
-  --space-8: 2rem; /* 32px */
-  --space-10: 2.5rem; /* 40px */
-  --space-12: 3rem; /* 48px */
-  --space-16: 4rem; /* 64px */
-  --space-20: 5rem; /* 80px */
-  --space-24: 6rem; /* 96px */
+  /* ===========================================================================
+     2. SPACING SYSTEM (Section 15 Standard Scale)
+     =========================================================================== */
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-3-5: 14px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
 
-  /* Border Radii */
+  /* ===========================================================================
+     3. COLOR SYSTEM (Academic Emerald, Warm Sand, High-Legibility Slate)
+     =========================================================================== */
+  /* Neutral Surfaces */
+  --color-background: #faf9f6;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f5f4ef;
+  --color-surface-subtle: #f7f6f1;
+  --color-surface-elevated: #ffffff;
+  --color-surface-dark: #141715;
+
+  /* Text & Ink Hierarchy (Section 3.4) */
+  --color-text-primary: #151816; /* Strong contrast for headings */
+  --color-text-secondary: #4b524d; /* Soft, highly readable for body & descriptions */
+  --color-text-tertiary: #757c77; /* Timestamps, metadata, labels */
+  --color-text-muted: #9fa6a1; /* Decorative or disabled hints */
+  --color-text-inverse: #ffffff;
+
+  /* Brand Primary (Academic Forest Emerald) */
+  --color-primary: #1b4d36;
+  --color-primary-hover: #143d2a;
+  --color-primary-active: #0e2b1d;
+  --color-primary-subtle: #edf5f0;
+  --color-primary-light: #d6e8de;
+  --color-primary-border: #b9d8c6;
+
+  /* Brand Accent (Warm Academic Amber) */
+  --color-accent: #b47318;
+  --color-accent-hover: #965e10;
+  --color-accent-subtle: #fdf6ec;
+  --color-accent-light: #fbebd0;
+  --color-accent-border: #ebd0a4;
+
+  /* Borders & Hairlines */
+  --color-border: #e6e3da;
+  --color-border-subtle: #eeece4;
+  --color-border-hover: #cfccc2;
+  --color-border-strong: #b5b1a4;
+
+  /* Semantic Feedback */
+  --color-success: #236e45;
+  --color-success-hover: #1b5736;
+  --color-success-subtle: #eef7f2;
+  --color-success-border: #b6dec6;
+
+  --color-warning: #ad6512;
+  --color-warning-hover: #8e500b;
+  --color-warning-subtle: #fdf5ea;
+  --color-warning-border: #f3d7aa;
+
+  --color-danger: #b53434;
+  --color-danger-hover: #942929;
+  --color-danger-subtle: #fdf1f1;
+  --color-danger-border: #f6bebe;
+
+  --color-verified: #255eb3;
+  --color-verified-subtle: #edf4fd;
+  --color-verified-border: #bad4f9;
+
+  /* ===========================================================================
+     4. COMPONENT GEOMETRY & ELEVATION
+     =========================================================================== */
   --radius-xs: 4px;
-  --radius-small: 6px;
   --radius-sm: 6px;
-  --radius-medium: 10px;
+  --radius-small: 6px;
   --radius-md: 10px;
-  --radius-large: 14px;
+  --radius-medium: 10px;
   --radius-lg: 14px;
+  --radius-large: 14px;
   --radius-xl: 18px;
   --radius-full: 9999px;
 
-  /* Layered Shadow System (Restrained, elegant Vercel & Linear grade) */
-  --shadow-xs: 0 1px 2px rgba(25, 27, 24, 0.04);
-  --shadow-sm: 0 1px 3px rgba(25, 27, 24, 0.05), 0 1px 2px rgba(25, 27, 24, 0.03);
-  --shadow-subtle: 0 2px 6px rgba(25, 27, 24, 0.04);
-  --shadow-md: 0 4px 12px -1px rgba(25, 27, 24, 0.06), 0 2px 4px -1px rgba(25, 27, 24, 0.03);
-  --shadow-medium: 0 6px 16px rgba(25, 27, 24, 0.06);
-  --shadow-lg: 0 12px 28px -4px rgba(25, 27, 24, 0.08), 0 4px 8px -2px rgba(25, 27, 24, 0.03);
-  --shadow-dropdown: 0 10px 24px -2px rgba(25, 27, 24, 0.09), 0 3px 6px -1px rgba(25, 27, 24, 0.04);
-  --shadow-modal: 0 20px 48px -8px rgba(25, 27, 24, 0.14), 0 6px 16px -2px rgba(25, 27, 24, 0.06);
+  /* Layered Shadows */
+  --shadow-xs: 0 1px 2px rgba(21, 24, 22, 0.04);
+  --shadow-sm: 0 1px 3px rgba(21, 24, 22, 0.05), 0 1px 2px rgba(21, 24, 22, 0.03);
+  --shadow-subtle: 0 2px 6px rgba(21, 24, 22, 0.04);
+  --shadow-md: 0 4px 12px -1px rgba(21, 24, 22, 0.06), 0 2px 4px -1px rgba(21, 24, 22, 0.03);
+  --shadow-medium: 0 6px 16px rgba(21, 24, 22, 0.06);
+  --shadow-lg: 0 12px 28px -4px rgba(21, 24, 22, 0.08), 0 4px 8px -2px rgba(21, 24, 22, 0.03);
+  --shadow-dropdown: 0 10px 24px -2px rgba(21, 24, 22, 0.09), 0 3px 6px -1px rgba(21, 24, 22, 0.04);
+  --shadow-modal: 0 20px 48px -8px rgba(21, 24, 22, 0.14), 0 6px 16px -2px rgba(21, 24, 22, 0.06);
 
-  /* Layout Constants */
-  --container-width: 1240px;
-  --container-wide: 1360px;
+  /* Layout Dimensions */
+  --container-width: 1280px;
+  --container-wide: 1400px;
   --navbar-height: 4rem; /* 64px */
-  --sidebar-width: 250px;
+  --sidebar-width: 256px;
   --sidebar-collapsed-width: 68px;
 
-  /* Micro-Interaction Transitions */
+  /* Transitions */
   --transition-fast: 140ms cubic-bezier(0.16, 1, 0.3, 1);
   --transition-normal: 220ms cubic-bezier(0.16, 1, 0.3, 1);
   --transition-slow: 320ms cubic-bezier(0.16, 1, 0.3, 1);

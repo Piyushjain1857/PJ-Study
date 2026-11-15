@@ -25,9 +25,20 @@ export function NotesSortControl({ value = 'newest', onChange }) {
           <option value="title_desc">Title (Z → A)</option>
           <option value="oldest">Earliest Published</option>
         </select>
-        <span className="notes-sort-control__arrow" aria-hidden="true">
-          ▾
-        </span>
+        <svg
+          className="notes-sort-control__arrow"
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
       </div>
     </div>
   );

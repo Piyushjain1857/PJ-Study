@@ -1,6 +1,6 @@
 /**
- * Profile Page Styling
- * Notion & Linear-grade account management, security settings & verification status
+ * Profile Page Styling - V2 Precision Styling
+ * Plus Jakarta Sans typography, refined borders, and balanced spacing
  */
 
 .profile-container {
@@ -12,13 +12,13 @@
 .profile-header-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-large);
+  border-radius: var(--radius-lg);
   padding: var(--space-6) var(--space-8);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-6);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-sm);
   margin-bottom: var(--space-6);
 }
 
@@ -36,16 +36,17 @@
 
 .profile-name {
   font-family: var(--font-heading);
-  font-size: var(--font-size-2xl);
-  font-weight: 400;
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.02em;
   color: var(--color-text-primary);
   margin: 0;
-  line-height: var(--line-height-tight);
+  line-height: var(--line-tight);
 }
 
 .profile-email {
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--text-sm);
   margin: 0;
 }
 
@@ -59,25 +60,27 @@
 .profile-section-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-large);
+  border-radius: var(--radius-lg);
   padding: var(--space-6) var(--space-8);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-sm);
   margin-bottom: var(--space-6);
 }
 
 .profile-section-title {
   font-family: var(--font-heading);
-  font-size: var(--font-size-xl);
-  font-weight: 400;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.02em;
   margin: 0 0 var(--space-1) 0;
   color: var(--color-text-primary);
+  line-height: var(--line-snug);
 }
 
 .profile-section-desc {
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--text-sm);
   margin: 0 0 var(--space-6) 0;
-  line-height: var(--line-height-normal);
+  line-height: var(--line-normal);
 }
 
 @media (max-width: 640px) {

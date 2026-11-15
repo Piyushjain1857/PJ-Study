@@ -134,7 +134,20 @@ export function NotesFilterPanel({
           aria-expanded={mobileDrawerOpen}
         >
           <span>Academic Filters {hasActiveFilters ? `(${activeFilters.length})` : ''}</span>
-          <span aria-hidden="true">{mobileDrawerOpen ? '▲' : '▼'}</span>
+          <svg
+            className={`notes-filter-panel__mobile-chevron ${mobileDrawerOpen ? 'notes-filter-panel__mobile-chevron--open' : ''}`}
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
         </button>
 
         {hasActiveFilters && (
@@ -144,7 +157,7 @@ export function NotesFilterPanel({
         )}
       </div>
 
-      {/* Filter Controls Bar */}
+      {/* Filter Controls Grid (4 Columns on Desktop) */}
       <div
         className={`notes-filter-panel__controls ${
           mobileDrawerOpen ? 'notes-filter-panel__controls--open' : ''
@@ -169,9 +182,20 @@ export function NotesFilterPanel({
                 </option>
               ))}
             </select>
-            <span className="notes-filter-group__arrow" aria-hidden="true">
-              ▾
-            </span>
+            <svg
+              className="notes-filter-group__arrow"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
           </div>
         </div>
 
@@ -194,9 +218,20 @@ export function NotesFilterPanel({
                 </option>
               ))}
             </select>
-            <span className="notes-filter-group__arrow" aria-hidden="true">
-              ▾
-            </span>
+            <svg
+              className="notes-filter-group__arrow"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
           </div>
         </div>
 
@@ -219,16 +254,27 @@ export function NotesFilterPanel({
                 </option>
               ))}
             </select>
-            <span className="notes-filter-group__arrow" aria-hidden="true">
-              ▾
-            </span>
+            <svg
+              className="notes-filter-group__arrow"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
           </div>
         </div>
 
         {/* Category Filter */}
         <div className="notes-filter-group">
           <label htmlFor="filter-category-select" className="notes-filter-group__label">
-            Genre / Category
+            Category
           </label>
           <div className="notes-filter-group__select-wrapper">
             <select
@@ -244,23 +290,22 @@ export function NotesFilterPanel({
                 </option>
               ))}
             </select>
-            <span className="notes-filter-group__arrow" aria-hidden="true">
-              ▾
-            </span>
+            <svg
+              className="notes-filter-group__arrow"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
           </div>
         </div>
-
-        {/* Clear action on desktop */}
-        {hasActiveFilters && (
-          <button
-            type="button"
-            className="notes-filter-panel__reset-btn"
-            onClick={onClearAll}
-            title="Reset all active filters"
-          >
-            Clear All
-          </button>
-        )}
       </div>
 
       {/* Active Filter Chips / Pills */}
@@ -276,7 +321,20 @@ export function NotesFilterPanel({
                 onClick={chip.clear}
                 aria-label={`Remove filter: ${chip.label}`}
               >
-                ✕
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             </span>
           ))}

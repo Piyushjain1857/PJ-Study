@@ -38,8 +38,33 @@ export function ProfilePage() {
       return;
     }
 
+    if (passwordData.currentPassword === passwordData.newPassword) {
+      setPasswordError('New password cannot be identical to current password');
+      return;
+    }
+
     if (passwordData.newPassword.length < 8) {
       setPasswordError('New password must be at least 8 characters long');
+      return;
+    }
+
+    if (!/[A-Z]/.test(passwordData.newPassword)) {
+      setPasswordError('New password must contain at least one uppercase letter');
+      return;
+    }
+
+    if (!/[a-z]/.test(passwordData.newPassword)) {
+      setPasswordError('New password must contain at least one lowercase letter');
+      return;
+    }
+
+    if (!/[0-9]/.test(passwordData.newPassword)) {
+      setPasswordError('New password must contain at least one numeric digit');
+      return;
+    }
+
+    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(passwordData.newPassword)) {
+      setPasswordError('New password must contain at least one special character (!@#$%^&*)');
       return;
     }
 
@@ -196,6 +221,18 @@ export function ProfilePage() {
             required
             autoComplete="new-password"
           />
+
+          <p
+            style={{
+              fontSize: 'var(--text-xs)',
+              color: 'var(--color-text-tertiary)',
+              margin: '0',
+              lineHeight: 'var(--line-normal)'
+            }}
+          >
+            Must be at least 8 characters, with 1 uppercase, 1 lowercase, 1 digit, and 1 special
+            symbol (!@#$%^&*). Cannot match current password.
+          </p>
 
           <Button
             type="submit"

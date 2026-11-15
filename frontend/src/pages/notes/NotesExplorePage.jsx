@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import noteService from '../../services/noteService.js';
+import { useAuth } from '../../context/AuthContext.jsx';
+import { PERMISSIONS } from '../../utils/permissions.js';
 import Container from '../../components/layout/Container.jsx';
 import NotesSearchBar from '../../components/notes/NotesSearchBar.jsx';
 import NotesFilterPanel from '../../components/notes/NotesFilterPanel.jsx';
@@ -20,6 +22,10 @@ import '../../styles/notes.css';
  */
 export function NotesExplorePage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { isAuthenticated, hasPermission } = useAuth();
+
+  // User permission check for uploading
+  const canUpload = isAuthenticated && hasPermission(PERMISSIONS.NOTES_CREATE);
 
   // Read URL query state with safe defaults
   const querySearch = searchParams.get('search') || '';
@@ -101,6 +107,11 @@ export function NotesExplorePage() {
         controller.signal
       );
 
+      // Verify this controller is still the active one before setting state
+      if (abortControllerRef.current !== controller) {
+        return;
+      }
+
       const items = data?.notes || data?.items || [];
       const meta = data?.pagination ||
         data?.meta || {
@@ -112,17 +123,32 @@ export function NotesExplorePage() {
 
       setNotes(items);
       setPagination(meta);
+      setError('');
     } catch (err) {
-      if (err.name === 'CanceledError' || err.name === 'AbortError') {
-        return; // Request was aborted by newer search query
+      // Check for all forms of aborted or canceled requests
+      const isCanceled =
+        err?.isCanceled ||
+        err?.name === 'CanceledError' ||
+        err?.name === 'AbortError' ||
+        err?.code === 'ERR_CANCELED' ||
+        err?.message === 'canceled' ||
+        err?.message === 'Request canceled' ||
+        abortControllerRef.current !== controller;
+
+      if (isCanceled) {
+        return; // Silently ignore cancellation from newer query or unmount
       }
+
       setError(
-        err.response?.data?.error?.message ||
-          err.message ||
+        err?.response?.data?.error?.message ||
+          err?.message ||
           'Unable to discover study notes. Please check your connection and retry.'
       );
     } finally {
-      setIsLoading(false);
+      // Only reset loading if this request was not superseded by a newer one
+      if (abortControllerRef.current === controller) {
+        setIsLoading(false);
+      }
     }
   }, [
     queryPage,
@@ -214,44 +240,25 @@ export function NotesExplorePage() {
   return (
     <div className="notes-discovery-page">
       <Container>
-        {/* Page Header */}
-        <header className="notes-discovery-banner">
-          <span className="notes-discovery-banner__eyebrow">Academic Archives</span>
-          <h1 className="notes-discovery-banner__title">Explore Study Notes</h1>
-          <p className="notes-discovery-banner__subtitle">
-            Find the right notes, study smarter, and prepare with confidence. Discover approved
-            course syllabi, lecture notes, lab guides, and curated exam solutions.
+        {/* 1. Compact Page Header */}
+        <header className="notes-discovery-header">
+          <span className="notes-discovery-header__eyebrow">Academic Library</span>
+          <h1 className="notes-discovery-header__title">Explore Notes</h1>
+          <p className="notes-discovery-header__subtitle">
+            Find notes, guides, and study resources for your academic journey.
           </p>
         </header>
 
-        {/* Search Bar */}
-        <section className="notes-discovery-toolbar" aria-label="Search and discovery controls">
+        {/* 2. Prominent Search Bar */}
+        <section className="notes-discovery-search" aria-label="Search study notes">
           <NotesSearchBar
             value={querySearch}
             onChange={(newSearch) => updateParams({ search: newSearch })}
-            totalCount={!isLoading ? (pagination.total ?? pagination.totalItems) : null}
-            isLoading={isLoading}
+            placeholder="Search notes, subjects, topics..."
           />
-
-          {/* Subbar: Sort Dropdown & Grid/List View Mode */}
-          <div className="notes-discovery-subbar">
-            <div className="notes-discovery-subbar__left">
-              <NotesSortControl
-                value={querySort}
-                onChange={(newSort) => updateParams({ sort: newSort })}
-              />
-            </div>
-
-            <div className="notes-discovery-subbar__right">
-              <NotesViewToggle
-                view={queryView}
-                onChange={(newView) => updateParams({ view: newView }, false)}
-              />
-            </div>
-          </div>
         </section>
 
-        {/* Academic Filter Panel */}
+        {/* 3. Compact Academic Filter Panel (4 Columns on Desktop) */}
         <NotesFilterPanel
           courseId={queryCourseId}
           onCourseChange={(cId) => updateParams({ courseId: cId })}
@@ -269,15 +276,46 @@ export function NotesExplorePage() {
           totalResults={pagination.total ?? pagination.totalItems}
         />
 
+        {/* 4. Results Toolbar (Single clean bar below the filters) */}
+        <div className="notes-results-toolbar" role="region" aria-label="Search results controls">
+          <div className="notes-results-toolbar__left" aria-live="polite">
+            {isLoading ? (
+              <span className="notes-results-toolbar__count notes-results-toolbar__count--loading">
+                Searching academic notes...
+              </span>
+            ) : (
+              <span className="notes-results-toolbar__count">
+                <strong className="notes-results-toolbar__count-num">
+                  {pagination.total ?? pagination.totalItems ?? 0}
+                </strong>{' '}
+                {(pagination.total ?? pagination.totalItems ?? 0) === 1
+                  ? 'study note found'
+                  : 'study notes found'}
+              </span>
+            )}
+          </div>
+
+          <div className="notes-results-toolbar__right">
+            <NotesSortControl
+              value={querySort}
+              onChange={(newSort) => updateParams({ sort: newSort })}
+            />
+            <NotesViewToggle
+              view={queryView}
+              onChange={(newView) => updateParams({ view: newView }, false)}
+            />
+          </div>
+        </div>
+
         {/* Download notification alert */}
         {downloadNotice && (
           <div
             className="note-form__alert note-form__alert--success"
             style={{
-              marginBottom: '20px',
-              backgroundColor: '#eef8f2',
-              color: '#1b633b',
-              border: '1px solid #bbf7d0'
+              marginBottom: '16px',
+              backgroundColor: 'var(--color-success-subtle)',
+              color: 'var(--color-success)',
+              border: '1px solid var(--color-success-border)'
             }}
             role="status"
           >
@@ -285,11 +323,11 @@ export function NotesExplorePage() {
           </div>
         )}
 
-        {/* Network or Server Error Banner */}
+        {/* Genuine Network or Server Error Banner (Not shown for canceled requests) */}
         {error && (
           <div
             className="note-form__alert note-form__alert--danger"
-            style={{ marginBottom: '24px' }}
+            style={{ marginBottom: '20px' }}
             role="alert"
           >
             <span>{error}</span>
@@ -304,57 +342,58 @@ export function NotesExplorePage() {
           </div>
         )}
 
-        {/* Notes Results: Grid vs. List */}
-        {queryView === 'grid' ? (
-          <NotesResultsGrid
-            notes={notes}
-            isLoading={isLoading}
-            onDownload={handleDownload}
-            emptyState={
-              hasActiveFiltersOrSearch ? (
-                <NotesEmptyState
-                  title="No matching notes found"
-                  description="Try a different keyword or adjust your semester, course, and category filters."
-                  actionLabel="Clear All Filters"
-                  onAction={handleClearAll}
-                />
-              ) : (
-                <NotesEmptyState
-                  title="No study notes available yet"
-                  description="Approved notes will appear here when they become available. Be the first to upload and share study materials!"
-                  actionLabel="Upload a Note"
-                  actionTo="/notes/new"
-                />
-              )
-            }
-          />
-        ) : (
-          <NotesResultsList
-            notes={notes}
-            isLoading={isLoading}
-            onDownload={handleDownload}
-            emptyState={
-              hasActiveFiltersOrSearch ? (
-                <NotesEmptyState
-                  title="No matching notes found"
-                  description="Try a different keyword or adjust your semester, course, and category filters."
-                  actionLabel="Clear All Filters"
-                  onAction={handleClearAll}
-                />
-              ) : (
-                <NotesEmptyState
-                  title="No study notes available yet"
-                  description="Approved notes will appear here when they become available."
-                  actionLabel="Upload a Note"
-                  actionTo="/notes/new"
-                />
-              )
-            }
-          />
-        )}
+        {/* 5. Notes Results: Grid vs. List or Contextual Empty State */}
+        {!error &&
+          (queryView === 'grid' ? (
+            <NotesResultsGrid
+              notes={notes}
+              isLoading={isLoading}
+              onDownload={handleDownload}
+              emptyState={
+                hasActiveFiltersOrSearch ? (
+                  <NotesEmptyState
+                    title="No matching study notes found"
+                    description="We couldn't find any notes matching your criteria. Try adjusting your keyword or clearing active filters."
+                    actionLabel="Clear All Filters"
+                    onAction={handleClearAll}
+                  />
+                ) : (
+                  <NotesEmptyState
+                    title="No study notes available yet"
+                    description="Approved study resources will appear here when available."
+                    actionLabel={canUpload ? 'Upload a Note' : null}
+                    actionTo={canUpload ? '/notes/new' : null}
+                  />
+                )
+              }
+            />
+          ) : (
+            <NotesResultsList
+              notes={notes}
+              isLoading={isLoading}
+              onDownload={handleDownload}
+              emptyState={
+                hasActiveFiltersOrSearch ? (
+                  <NotesEmptyState
+                    title="No matching study notes found"
+                    description="We couldn't find any notes matching your criteria. Try adjusting your keyword or clearing active filters."
+                    actionLabel="Clear All Filters"
+                    onAction={handleClearAll}
+                  />
+                ) : (
+                  <NotesEmptyState
+                    title="No study notes available yet"
+                    description="Approved study resources will appear here when available."
+                    actionLabel={canUpload ? 'Upload a Note' : null}
+                    actionTo={canUpload ? '/notes/new' : null}
+                  />
+                )
+              }
+            />
+          ))}
 
-        {/* Server-Side Pagination */}
-        {!isLoading && (
+        {/* 6. Server-Side Pagination */}
+        {!isLoading && !error && (pagination.totalPages > 1 || notes.length > 0) && (
           <NotesPagination
             page={pagination.page}
             totalPages={pagination.totalPages}

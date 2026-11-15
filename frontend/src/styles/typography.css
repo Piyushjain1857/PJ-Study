@@ -1,106 +1,167 @@
 /**
- * PJ Study Typography System
- * Editorial serif headers paired with clean contemporary sans-serif body text.
+ * PJ Study Typography System - V2 Production Scale
+ * Plus Jakarta Sans for crisp, modern headings + Inter for high-legibility body
  */
 
 body {
   font-family: var(--font-body);
-  font-size: var(--font-size-base);
+  font-size: var(--text-base);
   color: var(--color-text-primary);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Headings with Instrument Serif */
+/* Headings with Plus Jakarta Sans */
 h1,
 h2,
 h3,
 h4,
+h5,
+h6,
 .font-heading {
   font-family: var(--font-heading);
   color: var(--color-text-primary);
-  font-weight: 400; /* Instrument Serif has natural display weight */
-  letter-spacing: -0.015em;
-  line-height: var(--line-height-tight);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.02em;
+  line-height: var(--leading-tight);
 }
 
-/* Display Heading */
+/* Display / Hero Heading */
 .heading-display {
   font-family: var(--font-heading);
-  font-size: var(--font-size-display);
-  line-height: 1.05;
-  letter-spacing: -0.025em;
-  font-weight: 400;
+  font-size: var(--text-display);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  font-weight: var(--weight-extrabold);
 }
 
-/* Page Heading (h1) */
+/* Page Title (h1) - Section 3.2: 30-34px */
 h1,
-.heading-page {
-  font-size: var(--font-size-4xl);
-  line-height: var(--line-height-tight);
-  margin-bottom: var(--space-3);
-}
-
-/* Section Heading (h2) */
-h2,
-.heading-section {
-  font-size: var(--font-size-3xl);
-  line-height: var(--line-height-tight);
+.heading-page,
+.page-title {
+  font-size: clamp(1.75rem, 2vw + 1rem, 2.125rem); /* 28px - 34px */
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.025em;
+  margin-top: 0;
   margin-bottom: var(--space-2);
 }
 
-/* Subsection Heading (h3) */
+/* Section Heading (h2) - Section 3.2: 20-24px */
+h2,
+.heading-section,
+.section-title {
+  font-size: clamp(1.25rem, 1.2vw + 0.8rem, 1.5rem); /* 20px - 24px */
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-snug);
+  letter-spacing: -0.02em;
+  margin-top: 0;
+  margin-bottom: var(--space-2);
+}
+
+/* Subsection Heading (h3) - 18-20px */
 h3,
 .heading-subsection {
-  font-size: var(--font-size-2xl);
-  line-height: var(--line-height-snug);
-  margin-bottom: var(--space-2);
+  font-size: clamp(1.125rem, 0.8vw + 0.8rem, 1.25rem); /* 18px - 20px */
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+  letter-spacing: -0.015em;
+  margin-top: 0;
+  margin-bottom: var(--space-1-5);
 }
 
-/* Card / Component Heading (h4) */
+/* Card / Component Heading (h4) - Section 3.2: 16-18px */
 h4,
-.heading-card {
-  font-family: var(--font-body);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-snug);
+.heading-card,
+.card-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-lg); /* 18px */
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+  letter-spacing: -0.01em;
+  margin-top: 0;
+  margin-bottom: var(--space-1);
 }
 
-/* Body Typography */
+/* Body Text - Section 3.2: 14-16px, weight 400-500, line-height 1.6 */
 p {
   color: var(--color-text-secondary);
-  line-height: var(--line-height-normal);
+  line-height: var(--leading-relaxed);
   margin-top: 0;
   margin-bottom: var(--space-3);
+  max-width: 72ch; /* Optimal typographic measure for reading comfort */
 }
 
 .body-large {
-  font-size: var(--font-size-lg);
-  line-height: var(--line-height-relaxed);
+  font-size: var(--text-lg);
+  line-height: var(--leading-relaxed);
   color: var(--color-text-secondary);
 }
 
 .body-base {
-  font-size: var(--font-size-base);
-  line-height: var(--line-height-normal);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
   color: var(--color-text-secondary);
 }
 
-.body-small {
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-normal);
+.body-small,
+.supporting-text {
+  font-size: var(--text-sm); /* 14px */
+  line-height: var(--leading-normal);
   color: var(--color-text-secondary);
 }
 
-/* Editorial Serif Accents */
-.text-serif-italic {
+/* Metadata & Badges - Section 3.2: 12-13px, weight 500 */
+.text-metadata,
+.metadata {
+  font-size: var(--text-xs); /* 12px */
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-snug);
+  color: var(--color-text-tertiary);
+}
+
+/* Statistics Values - Section 3.2: 28-36px, weight 700 */
+.stat-value {
   font-family: var(--font-heading);
-  font-style: italic;
+  font-size: clamp(1.75rem, 2.5vw, 2.25rem); /* 28px - 36px */
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
 }
 
-.editorial-kicker {
+/* Kicker / Category Eyebrow */
+.editorial-kicker,
+.eyebrow {
   font-family: var(--font-body);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--color-accent);
+  color: var(--color-primary);
+  display: inline-block;
+  margin-bottom: var(--space-1-5);
+}
+
+/* Text Hierarchy Color Helpers */
+.text-primary {
+  color: var(--color-text-primary) !important;
+}
+
+.text-secondary {
+  color: var(--color-text-secondary) !important;
+}
+
+.text-tertiary,
+.text-muted {
+  color: var(--color-text-tertiary) !important;
+}
+
+.text-accent {
+  color: var(--color-accent) !important;
+}
+
+.text-emerald {
+  color: var(--color-primary) !important;
 }

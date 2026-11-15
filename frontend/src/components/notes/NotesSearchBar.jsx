@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import '../../styles/notes-discovery.css';
 
 /**
- * Prominent debounced search bar with instant query clearance and result indicators.
+ * Prominent debounced search bar with instant query clearance and accessible SVG controls.
  */
 export function NotesSearchBar({
   value = '',
   onChange,
-  placeholder = 'Search notes by keyword, topic, or subject...',
+  placeholder = 'Search notes, subjects, topics...',
   totalCount = null,
   isLoading = false
 }) {
@@ -43,9 +43,22 @@ export function NotesSearchBar({
   return (
     <div className="notes-search-bar">
       <div className="notes-search-bar__input-wrapper">
-        <span className="notes-search-bar__icon" aria-hidden="true">
-          🔍
-        </span>
+        <svg
+          className="notes-search-bar__icon-svg"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+
         <input
           type="search"
           value={localQuery}
@@ -56,6 +69,7 @@ export function NotesSearchBar({
           aria-label="Search notes library"
           maxLength={100}
         />
+
         {localQuery && (
           <button
             type="button"
@@ -64,7 +78,20 @@ export function NotesSearchBar({
             title="Clear search query"
             aria-label="Clear search input"
           >
-            ✕
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
         )}
       </div>

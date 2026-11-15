@@ -131,12 +131,22 @@ apiClient.interceptors.response.use(
  * Extracts and formats errors consistently.
  */
 function formatAxiosError(error) {
+  const isCanceled =
+    axios.isCancel(error) ||
+    error?.name === 'CanceledError' ||
+    error?.name === 'AbortError' ||
+    error?.code === 'ERR_CANCELED' ||
+    error?.message === 'canceled';
+
   const data = error.response?.data;
   return {
-    message:
-      data?.error?.message || data?.message || error.message || 'An unexpected error occurred',
-    code: data?.error?.code || 'UNKNOWN_ERROR',
-    statusCode: error.response?.status || 500,
+    name: isCanceled ? 'CanceledError' : error?.name || 'Error',
+    isCanceled,
+    message: isCanceled
+      ? 'Request canceled'
+      : data?.error?.message || data?.message || error?.message || 'An unexpected error occurred',
+    code: isCanceled ? 'ERR_CANCELED' : data?.error?.code || 'UNKNOWN_ERROR',
+    statusCode: error.response?.status || (isCanceled ? 499 : 500),
     errors: data?.error?.errors || null
   };
 }
