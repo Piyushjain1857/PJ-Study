@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import adminService from '../../services/adminService.js';
+import reviewService from '../../services/reviewService.js';
 import { ROLES, canManageRole, ROLE_PERMISSIONS } from '../../utils/permissions.js';
 import { Avatar } from '../../components/common/Avatar.jsx';
 import { Badge } from '../../components/common/Badge.jsx';
@@ -38,6 +39,11 @@ export function AdminDashboardPage() {
     totalPages: 1
   });
   const [isLoadingAudit, setIsLoadingAudit] = useState(false);
+
+  // Review Moderation State
+  const [reviewReports, setReviewReports] = useState([]);
+  const [isLoadingReports, setIsLoadingReports] = useState(false);
+  const [reportFilter, setReportFilter] = useState('OPEN');
 
   // Feedback notifications
   const [actionNotice, setActionNotice] = useState({ type: '', message: '' });
@@ -128,6 +134,33 @@ export function AdminDashboardPage() {
     }
   }, [activeTab, fetchAuditLogs]);
 
+  // Fetch Review Reports
+  const fetchReviewReports = useCallback(async () => {
+    setIsLoadingReports(true);
+    try {
+      const response = await reviewService.getAdminReviewReports({
+        page: 1,
+        limit: 20,
+        status: reportFilter || undefined
+      });
+      setReviewReports(response.items || []);
+    } catch (err) {
+      setActionNotice({
+        type: 'danger',
+        message: err.message || 'Failed to load review reports.'
+      });
+    } finally {
+      setIsLoadingReports(false);
+    }
+  }, [reportFilter]);
+
+  // Load review reports when switching to reviews tab
+  useEffect(() => {
+    if (activeTab === 'reviews') {
+      fetchReviewReports();
+    }
+  }, [activeTab, fetchReviewReports]);
+
   // Handle Search Submission
   function handleSearchSubmit(e) {
     e.preventDefault();
@@ -202,6 +235,55 @@ export function AdminDashboardPage() {
       setSuspendError(err.message || 'Failed to update account status.');
     } finally {
       setIsSubmittingSuspend(false);
+    }
+  }
+
+  // Handle Review Moderation Actions
+  async function handleHideReviewAction(reviewId) {
+    try {
+      await reviewService.adminHideReview(reviewId, 'Violates academic respect guidelines');
+      setActionNotice({
+        type: 'success',
+        message: 'Review successfully hidden from public catalog.'
+      });
+      fetchReviewReports();
+    } catch (err) {
+      setActionNotice({
+        type: 'danger',
+        message: err.message || 'Failed to hide review.'
+      });
+    }
+  }
+
+  async function handleRestoreReviewAction(reviewId) {
+    try {
+      await reviewService.adminRestoreReview(reviewId);
+      setActionNotice({
+        type: 'success',
+        message: 'Review restored to visible status.'
+      });
+      fetchReviewReports();
+    } catch (err) {
+      setActionNotice({
+        type: 'danger',
+        message: err.message || 'Failed to restore review.'
+      });
+    }
+  }
+
+  async function handleDismissReportAction(reportId) {
+    try {
+      await reviewService.adminDismissReport(reportId);
+      setActionNotice({
+        type: 'success',
+        message: 'Report dismissed.'
+      });
+      fetchReviewReports();
+    } catch (err) {
+      setActionNotice({
+        type: 'danger',
+        message: err.message || 'Failed to dismiss report.'
+      });
     }
   }
 
@@ -309,6 +391,13 @@ export function AdminDashboardPage() {
             onClick={() => setActiveTab('audit')}
           >
             Audit Log Trail
+          </button>
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === 'reviews' ? 'admin-tab-btn--active' : ''}`}
+            onClick={() => setActiveTab('reviews')}
+          >
+            Review Moderation
           </button>
           <button
             type="button"
@@ -715,6 +804,177 @@ export function AdminDashboardPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* TAB: REVIEW MODERATION */}
+        {activeTab === 'reviews' && (
+          <div>
+            <div className="admin-toolbar" style={{ justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Filter Reports:</span>
+                <select
+                  value={reportFilter}
+                  onChange={(e) => setReportFilter(e.target.value)}
+                  className="reviews-sort-select"
+                >
+                  <option value="OPEN">Open Reports</option>
+                  <option value="ACTIONED">Actioned</option>
+                  <option value="DISMISSED">Dismissed</option>
+                  <option value="">All Reports</option>
+                </select>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchReviewReports()}
+                isLoading={isLoadingReports}
+              >
+                ↻ Refresh Queue
+              </Button>
+            </div>
+
+            {isLoadingReports ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <Skeleton height={60} count={4} />
+              </div>
+            ) : reviewReports.length === 0 ? (
+              <EmptyState
+                title="No reported reviews"
+                description={
+                  reportFilter === 'OPEN'
+                    ? 'The review moderation queue is clear. No active reports require attention.'
+                    : 'No reports match the selected filter.'
+                }
+              />
+            ) : (
+              <div className="admin-table-container">
+                <table className="admin-table rev-mod-table">
+                  <thead>
+                    <tr>
+                      <th>Manuscript & Author</th>
+                      <th>Rating & Review</th>
+                      <th>Report Reason</th>
+                      <th>Reporter</th>
+                      <th>Review Status</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reviewReports.map((report) => {
+                      const review = report.review;
+                      return (
+                        <tr key={report.id}>
+                          <td>
+                            <strong>{review?.note?.title || 'Unknown Note'}</strong>
+                            <div
+                              style={{ fontSize: '0.75rem', color: '#74756f', marginTop: '2px' }}
+                            >
+                              By {review?.user?.name || review?.user?.email || 'Scholar'}
+                            </div>
+                          </td>
+                          <td>
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                marginBottom: '4px'
+                              }}
+                            >
+                              <span style={{ color: '#eab308' }}>★</span>
+                              <strong>{review?.rating} / 5</strong>
+                            </div>
+                            <p
+                              style={{
+                                margin: 0,
+                                fontSize: '0.8125rem',
+                                color: '#334155',
+                                maxWidth: '280px'
+                              }}
+                            >
+                              {review?.comment || (
+                                <em style={{ color: '#94a3b8' }}>No written critique</em>
+                              )}
+                            </p>
+                          </td>
+                          <td>
+                            <Badge
+                              variant={report.reason === 'OFFENSIVE' ? 'accent' : 'warning'}
+                              size="sm"
+                            >
+                              {report.reason}
+                            </Badge>
+                            {report.description && (
+                              <p
+                                style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#64748b' }}
+                              >
+                                &ldquo;{report.description}&rdquo;
+                              </p>
+                            )}
+                          </td>
+                          <td>
+                            <span>
+                              {report.reporter?.name || report.reporter?.email || 'Scholar'}
+                            </span>
+                            <div
+                              style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}
+                            >
+                              {new Date(report.createdAt).toLocaleDateString()}
+                            </div>
+                          </td>
+                          <td>
+                            <Badge
+                              variant={review?.status === 'VISIBLE' ? 'success' : 'neutral'}
+                              size="sm"
+                            >
+                              {review?.status || 'VISIBLE'}
+                            </Badge>
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <div
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'flex-end',
+                                gap: '8px',
+                                flexWrap: 'wrap'
+                              }}
+                            >
+                              {review?.status === 'VISIBLE' ? (
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  onClick={() => handleHideReviewAction(review.id)}
+                                >
+                                  Hide Review
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleRestoreReviewAction(review.id)}
+                                >
+                                  Restore
+                                </Button>
+                              )}
+                              {report.status === 'OPEN' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDismissReportAction(report.id)}
+                                >
+                                  Dismiss Report
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 

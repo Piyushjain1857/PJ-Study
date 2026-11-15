@@ -32,6 +32,8 @@ export function NoteCard({
     fileSize,
     viewCount = 0,
     downloadCount = 0,
+    averageRating = 0,
+    totalReviews = 0,
     rejectionReason
   } = note;
 
@@ -113,6 +115,19 @@ export function NoteCard({
         </div>
 
         <div className="note-card__stats">
+          {totalReviews > 0 ? (
+            <span
+              className="note-card__stat"
+              title={`${totalReviews} reviews, average ${Number(averageRating).toFixed(1)}`}
+              style={{ color: '#b45309', fontWeight: 600 }}
+            >
+              ★ {Number(averageRating).toFixed(1)} ({totalReviews})
+            </span>
+          ) : (
+            <span className="note-card__stat" style={{ color: 'var(--color-text-muted)' }}>
+              Not rated yet
+            </span>
+          )}
           <span
             className="note-card__stat"
             title={`${viewCount} views`}

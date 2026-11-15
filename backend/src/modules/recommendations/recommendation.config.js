@@ -18,7 +18,8 @@ export const RECOMMENDATION_WEIGHTS = Object.freeze({
   // Metadata & discovery signals
   SAME_CATEGORY: 10,
   RECENTLY_APPROVED: 5,
-  POPULARITY_MAX: 10
+  POPULARITY_MAX: 10,
+  RATING_QUALITY_MAX: 10
 });
 
 export const RECOMMENDATION_LIMITS = Object.freeze({

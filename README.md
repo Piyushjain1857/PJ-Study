@@ -358,6 +358,7 @@ PJ Study/
 │       ├── notes.test.js                       # Notes lifecycle, file validation, ownership & moderation tests (27 tests)
 │       ├── rbac.test.js                        # RBAC permissions, hierarchy, session revocation & audit tests (24 tests)
 │       ├── recommendation.test.js              # Smart recommendation scoring, cold-start & diversity tests (8 tests)
+│       ├── review.test.js                      # Notes ratings, reviews, helpful votes & moderation tests (22 tests)
 │       └── schema_validation.test.js           # Domain invariants & schema tests (7 tests)
 │
 ├── frontend/
@@ -411,7 +412,7 @@ From the repository root:
 | Command                   | Action                                                                    |
 | :------------------------ | :------------------------------------------------------------------------ |
 | `npm run dev`             | Runs backend and frontend development servers concurrently                |
-| `npm test`                | Runs all backend automated unit, invariant, and API tests (**114 tests**) |
+| `npm test`                | Runs all backend automated unit, invariant, and API tests (**136 tests**) |
 | `npm run check:backend`   | Validates backend configuration and environment variables                 |
 | `npm run lint`            | Runs ESLint on frontend JavaScript and JSX                                |
 | `npm run format:check`    | Verifies Prettier code style across all files                             |

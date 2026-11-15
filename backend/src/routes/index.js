@@ -6,6 +6,7 @@ import noteRoutes from '../modules/notes/note.routes.js';
 import categoryRoutes from '../modules/categories/category.routes.js';
 import dashboardRoutes from '../modules/dashboard/dashboard.routes.js';
 import recommendationRoutes from '../modules/recommendations/recommendation.routes.js';
+import reviewRoutes from '../modules/reviews/review.routes.js';
 import { requireAuth } from '../auth/requireAuth.js';
 import noteController from '../modules/notes/note.controller.js';
 
@@ -97,6 +98,12 @@ router.use('/dashboard', dashboardRoutes);
  * /api/v1/recommendations/...
  */
 router.use('/recommendations', recommendationRoutes);
+
+/**
+ * Notes ratings, reviews, helpful votes & quality feedback.
+ * /api/v1/reviews/...
+ */
+router.use('/reviews', reviewRoutes);
 
 /**
  * User personal resources shortcut (/api/v1/users/me/notes)

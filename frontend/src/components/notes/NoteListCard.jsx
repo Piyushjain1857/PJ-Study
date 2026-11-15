@@ -26,7 +26,9 @@ export function NoteListCard({ note, showStatus = false, onDownload = null }) {
     fileSize,
     mimeType,
     viewCount = 0,
-    downloadCount = 0
+    downloadCount = 0,
+    averageRating = 0,
+    totalReviews = 0
   } = note;
 
   const displayDate = new Date(publishedAt || createdAt).toLocaleDateString('en-US', {
@@ -104,6 +106,28 @@ export function NoteListCard({ note, showStatus = false, onDownload = null }) {
           </div>
 
           <div className="note-list-card__stats">
+            {totalReviews > 0 ? (
+              <>
+                <span
+                  className="note-list-card__stat-item"
+                  title={`${totalReviews} reviews, average ${Number(averageRating).toFixed(1)}`}
+                  style={{ color: '#b45309', fontWeight: 600 }}
+                >
+                  ★ {Number(averageRating).toFixed(1)} ({totalReviews})
+                </span>
+                <span className="note-list-card__bullet">•</span>
+              </>
+            ) : (
+              <>
+                <span
+                  className="note-list-card__stat-item"
+                  style={{ color: 'var(--color-text-muted)' }}
+                >
+                  Not rated yet
+                </span>
+                <span className="note-list-card__bullet">•</span>
+              </>
+            )}
             {formattedSize && (
               <>
                 <span className="note-list-card__stat-item" title="File Size">

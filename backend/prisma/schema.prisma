@@ -37,6 +37,26 @@ enum ReportStatus {
   DISMISSED
 }
 
+enum ReviewStatus {
+  VISIBLE
+  HIDDEN
+  DELETED
+}
+
+enum ReviewReportReason {
+  SPAM
+  HARASSMENT
+  OFFENSIVE
+  MISLEADING
+  OTHER
+}
+
+enum ReviewReportStatus {
+  OPEN
+  DISMISSED
+  ACTIONED
+}
+
 // =============================================================================
 // CORE MODELS
 // =============================================================================
@@ -61,8 +81,11 @@ model User {
   collections             StudyCollection[]
   downloadHistory         DownloadHistory[]
   reviews                 Review[]
+  helpfulVotes            ReviewHelpfulVote[]
   reportsSubmitted        Report[]                 @relation("ReportedByUser")
   reportsReviewed         Report[]                 @relation("ReviewedByUser")
+  reviewReportsSubmitted  ReviewReport[]           @relation("ReviewReporter")
+  reviewReportsReviewed   ReviewReport[]           @relation("ReviewReportModerator")
   auditLogs               AuditLog[]
   refreshSessions         RefreshSession[]
   emailVerificationTokens EmailVerificationToken[]
@@ -219,22 +242,66 @@ model Bookmark {
 
 /// Review represents a numerical rating (1-5) and written critique by a student.
 model Review {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  noteId    String   @map("note_id")
-  rating    Int      @db.TinyInt // 1 to 5 enforced at service & DB layer
-  comment   String?  @db.Text
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id        String       @id @default(uuid())
+  userId    String       @map("user_id")
+  noteId    String       @map("note_id")
+  rating    Int          @db.TinyInt // 1 to 5 enforced at service & DB layer
+  comment   String?      @db.Text
+  status    ReviewStatus @default(VISIBLE)
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
 
   // Relationships
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note         Note                @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  helpfulVotes ReviewHelpfulVote[]
+  reports      ReviewReport[]
 
   @@unique([userId, noteId], name: "user_note_review_unique")
   @@index([noteId])
-  @@index([userId])
+  @@index([noteId, status, createdAt])
+  @@index([userId, createdAt])
   @@map("reviews")
+}
+
+/// ReviewHelpfulVote records student votes marking high-quality feedback as helpful.
+model ReviewHelpfulVote {
+  id        String   @id @default(uuid())
+  reviewId  String   @map("review_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relationships
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, userId], name: "review_user_helpful_unique")
+  @@index([reviewId])
+  @@index([userId])
+  @@map("review_helpful_votes")
+}
+
+/// ReviewReport tracks student flags on inappropriate, abusive, or spam reviews.
+model ReviewReport {
+  id           String             @id @default(uuid())
+  reviewId     String             @map("review_id")
+  reporterId   String             @map("reporter_id")
+  reason       ReviewReportReason
+  description  String?            @db.Text
+  status       ReviewReportStatus @default(OPEN)
+  reviewedById String?            @map("reviewed_by_id")
+  reviewedAt   DateTime?          @map("reviewed_at")
+  createdAt    DateTime           @default(now()) @map("created_at")
+
+  // Relationships
+  review       Review             @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  reporter     User               @relation("ReviewReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reviewedBy   User?              @relation("ReviewReportModerator", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([reviewId])
+  @@index([reporterId])
+  @@index([status])
+  @@map("review_reports")
 }
 
 /// Report tracks student flags against inappropriate, plagiarized, or low-quality notes.

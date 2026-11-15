@@ -10,6 +10,7 @@ import Container from '../../components/layout/Container.jsx';
 import Skeleton from '../../components/common/Skeleton.jsx';
 import NotePreview from '../../components/notes/NotePreview.jsx';
 import SimilarNotesSection from '../../components/recommendations/SimilarNotesSection.jsx';
+import NoteReviewsSection from '../../components/reviews/NoteReviewsSection.jsx';
 import './NoteDetailsPage.css';
 import '../../styles/notes-discovery.css';
 import '../../styles/notes.css';
@@ -370,8 +371,15 @@ export function NoteDetailsPage() {
         {/* Smart Similar Notes Recommendations */}
         {note?.status === 'APPROVED' && <SimilarNotesSection noteId={note.id} />}
 
-        {/* Smart Similar Notes Recommendations */}
-        {note?.status === 'APPROVED' && <SimilarNotesSection noteId={note.id} />}
+        {/* Notes Ratings, Reviews & Quality Feedback */}
+        {note && (
+          <NoteReviewsSection
+            noteId={note.id}
+            noteTitle={note.title}
+            isOwner={isOwner}
+            isApproved={note.status === 'APPROVED'}
+          />
+        )}
 
         {/* Moderation Rejection Modal */}
         {rejectModalOpen && (

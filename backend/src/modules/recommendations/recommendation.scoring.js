@@ -78,6 +78,20 @@ export function calculateRecommendationScore(note, context = {}) {
     }
   }
 
+  // 9. Verified review rating quality signal (conservative, requires multiple reviews)
+  const avgRating = Number(note.averageRating || 0);
+  const totalReviews = Number(note.totalReviews || 0);
+  if (avgRating >= 3.5 && totalReviews >= 2) {
+    const qualityScore = Math.min(
+      RECOMMENDATION_WEIGHTS.RATING_QUALITY_MAX || 10,
+      Math.round(((avgRating - 3.0) / 2.0) * Math.min(totalReviews, 5) * 2)
+    );
+    score += qualityScore;
+    if (avgRating >= 4.0 && reasons.length < 2) {
+      reasons.push(`Highly rated by scholars (★ ${avgRating.toFixed(1)})`);
+    }
+  }
+
   // Primary explanation fallback
   const primaryReason = reasons[0] || RECOMMENDATION_REASONS.DISCOVERY;
 

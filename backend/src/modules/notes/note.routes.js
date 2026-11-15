@@ -4,6 +4,12 @@ import { requireAuth, optionalAuth } from '../../auth/requireAuth.js';
 import { requirePermission } from '../../auth/requirePermission.js';
 import { PERMISSIONS } from '../../auth/permissions.js';
 import { noteUpload, handleUploadErrors } from './note.upload.js';
+import reviewController from '../reviews/review.controller.js';
+import {
+  validateSubmitReview,
+  validateUpdateReview,
+  validateReviewQuery
+} from '../reviews/review.validation.js';
 
 const router = Router();
 
@@ -95,6 +101,17 @@ router.post(
 
 router.post('/:id/bookmark', requireAuth, noteController.bookmarkNote);
 router.delete('/:id/bookmark', requireAuth, noteController.removeBookmark);
-router.post('/:id/reviews', requireAuth, noteController.reviewNoteRating);
+
+// Notes Ratings, Reviews & Quality Feedback
+router.get('/:id/reviews', optionalAuth, validateReviewQuery, reviewController.getReviews);
+router.get('/:id/rating-summary', reviewController.getRatingSummary);
+router.post('/:id/reviews', requireAuth, validateSubmitReview, reviewController.submitReview);
+router.patch(
+  '/:id/reviews/:reviewId',
+  requireAuth,
+  validateUpdateReview,
+  reviewController.updateReview
+);
+router.delete('/:id/reviews/:reviewId', requireAuth, reviewController.deleteReview);
 
 export default router;
