@@ -523,8 +523,21 @@ export function ProfilePage() {
             <p className="profile-email">{currentUser?.email}</p>
 
             <div className="profile-badges">
-              <Badge variant={currentUser?.role === 'ADMIN' ? 'accent' : 'primary'} size="sm">
-                {currentUser?.role}
+              <Badge
+                variant={
+                  currentUser?.role === 'SUPER_ADMIN'
+                    ? 'accent'
+                    : currentUser?.role === 'ADMIN' || currentUser?.role === 'MODERATOR'
+                      ? 'primary'
+                      : 'secondary'
+                }
+                size="sm"
+              >
+                {currentUser?.role === 'SUPER_ADMIN'
+                  ? 'Super Admin'
+                  : currentUser?.role === 'ADMIN' || currentUser?.role === 'MODERATOR'
+                    ? 'Academic Admin'
+                    : 'Scholar'}
               </Badge>
               {currentUser?.isEmailVerified ? (
                 <Badge variant="success" size="sm">

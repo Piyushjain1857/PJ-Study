@@ -63,6 +63,7 @@ const withLazy = (Component) => (props) => (
 
 // Route-Level Code Splitting for heavy views (drastically reduces initial JS bundle)
 const AdminDashboardPage = withLazy(lazy(() => import('../pages/admin/AdminDashboardPage.jsx')));
+const AdminWorkspacePage = withLazy(lazy(() => import('../pages/admin/AdminWorkspacePage.jsx')));
 const DesignSystemPage = withLazy(lazy(() => import('../pages/DesignSystemPage.jsx')));
 const ProfilePage = withLazy(lazy(() => import('../pages/auth/ProfilePage.jsx')));
 const NotificationCenterPage = withLazy(
@@ -168,9 +169,65 @@ export const router = createBrowserRouter(
           )
         },
         {
+          path: 'admin-workspace',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.MODERATOR]}>
+              <AdminWorkspacePage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin-workspace/analytics',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.MODERATOR]}>
+              <AdminWorkspacePage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin-workspace/assigned',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.MODERATOR]}>
+              <AdminWorkspacePage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin-workspace/notes',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.MODERATOR]}>
+              <AdminWorkspacePage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin-workspace/moderation',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.MODERATOR]}>
+              <AdminWorkspacePage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin-workspace/reports',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.MODERATOR]}>
+              <AdminWorkspacePage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin-workspace/history',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.MODERATOR]}>
+              <AdminWorkspacePage />
+            </ProtectedRoute>
+          )
+        },
+        {
           path: 'admin',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )
@@ -178,7 +235,7 @@ export const router = createBrowserRouter(
         {
           path: 'admin/analytics',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )
@@ -186,7 +243,7 @@ export const router = createBrowserRouter(
         {
           path: 'admin/activity',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )
@@ -194,7 +251,7 @@ export const router = createBrowserRouter(
         {
           path: 'admin/users',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )
@@ -202,7 +259,15 @@ export const router = createBrowserRouter(
         {
           path: 'admin/moderators',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/admins',
+          element: (
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )
@@ -210,7 +275,7 @@ export const router = createBrowserRouter(
         {
           path: 'admin/roles',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )
@@ -218,7 +283,7 @@ export const router = createBrowserRouter(
         {
           path: 'admin/suspended-users',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )
@@ -226,7 +291,7 @@ export const router = createBrowserRouter(
         {
           path: 'admin/academics',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )
@@ -234,7 +299,7 @@ export const router = createBrowserRouter(
         {
           path: 'admin/academics/:sub',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )
@@ -242,7 +307,7 @@ export const router = createBrowserRouter(
         {
           path: 'admin/notes',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )
@@ -250,7 +315,7 @@ export const router = createBrowserRouter(
         {
           path: 'admin/notes/upload',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <CreateNotePage />
             </ProtectedRoute>
           )
@@ -258,7 +323,7 @@ export const router = createBrowserRouter(
         {
           path: 'admin/moderation',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )
@@ -266,7 +331,7 @@ export const router = createBrowserRouter(
         {
           path: 'admin/reports',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )
@@ -274,7 +339,7 @@ export const router = createBrowserRouter(
         {
           path: 'admin/reviews',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )
@@ -282,7 +347,7 @@ export const router = createBrowserRouter(
         {
           path: 'admin/announcements',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )
@@ -290,7 +355,7 @@ export const router = createBrowserRouter(
         {
           path: 'admin/notifications',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )
@@ -298,7 +363,7 @@ export const router = createBrowserRouter(
         {
           path: 'admin/storage',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )
@@ -306,7 +371,7 @@ export const router = createBrowserRouter(
         {
           path: 'admin/audit-logs',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )
@@ -314,7 +379,7 @@ export const router = createBrowserRouter(
         {
           path: 'admin/settings',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )
@@ -322,7 +387,7 @@ export const router = createBrowserRouter(
         {
           path: 'admin/security',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )
@@ -330,7 +395,7 @@ export const router = createBrowserRouter(
         {
           path: 'admin/health',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )
@@ -338,7 +403,7 @@ export const router = createBrowserRouter(
         {
           path: 'admin/backups',
           element: (
-            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
               <AdminDashboardPage />
             </ProtectedRoute>
           )

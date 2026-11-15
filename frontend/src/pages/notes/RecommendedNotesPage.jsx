@@ -131,7 +131,7 @@ export function RecommendedNotesPage() {
       {/* 4. Recently Added */}
       <RecommendationSection
         title="Recently Added & Approved"
-        subtitle="Fresh academic contributions verified by campus moderators"
+        subtitle="Fresh academic contributions verified by campus administrators"
         items={recentNotes}
         loading={loading}
         emptyMessage="No recently approved notes."

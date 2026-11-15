@@ -993,6 +993,7 @@ export function AdminDashboardPage() {
           </span>
         );
       case ROLES.ADMIN:
+      case ROLES.MODERATOR:
         return (
           <span className="admin-role-badge admin-role-badge--admin">
             <svg
@@ -1009,26 +1010,6 @@ export function AdminDashboardPage() {
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
             Admin
-          </span>
-        );
-      case ROLES.MODERATOR:
-        return (
-          <span className="admin-role-badge admin-role-badge--moderator">
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
-            Moderator
           </span>
         );
       default:
@@ -1099,7 +1080,7 @@ export function AdminDashboardPage() {
             </span>
             <h1 className="admin-header__title">Role-Based Access Control</h1>
             <p className="admin-header__subtitle">
-              Manage university scholar accounts, faculty moderators, access permissions, and
+              Manage university scholar accounts, academic admins, access permissions, and
               governance audit trails.
             </p>
           </div>
@@ -1333,8 +1314,8 @@ export function AdminDashboardPage() {
               <div className="admin-metric-card__footer">
                 <span className="admin-metric-card__subtext">Faculty evaluators & staff</span>
                 <span className="admin-metric-card__pill admin-metric-card__pill--purple">
-                  {stats.roles?.MODERATOR || 0} Mod ·{' '}
-                  {(stats.roles?.ADMIN || 0) + (stats.roles?.SUPER_ADMIN || 0)} Adm
+                  {(stats.roles?.ADMIN || 0) + (stats.roles?.MODERATOR || 0)} Admins ·{' '}
+                  {stats.roles?.SUPER_ADMIN || 0} Super
                 </span>
               </div>
             </div>
@@ -1382,7 +1363,7 @@ export function AdminDashboardPage() {
             onClick={() => navigate('/admin/moderators')}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
-            Staff & Moderators
+            Staff & Admins
             {stats && (
               <span className="admin-tab-count">
                 {(stats.roles?.MODERATOR || 0) + (stats.roles?.ADMIN || 0) + (stats.roles?.SUPER_ADMIN || 0)}
@@ -1521,8 +1502,7 @@ export function AdminDashboardPage() {
                       aria-label="Filter by role"
                     >
                       <option value="">All Roles</option>
-                      <option value="STUDENT">Students</option>
-                      <option value="MODERATOR">Moderators</option>
+                      <option value="STUDENT">Scholars</option>
                       <option value="ADMIN">Admins</option>
                       <option value="SUPER_ADMIN">Super Admins</option>
                     </select>
@@ -1968,8 +1948,7 @@ export function AdminDashboardPage() {
               <thead>
                 <tr>
                   <th>Platform Capability</th>
-                  <th style={{ textAlign: 'center' }}>Student</th>
-                  <th style={{ textAlign: 'center' }}>Moderator</th>
+                  <th style={{ textAlign: 'center' }}>Scholar</th>
                   <th style={{ textAlign: 'center' }}>Admin</th>
                   <th style={{ textAlign: 'center' }}>Super Admin</th>
                 </tr>
@@ -1985,13 +1964,12 @@ export function AdminDashboardPage() {
                   { label: 'Manage categories & subjects', perm: 'categories:manage' },
                   { label: 'Inspect user accounts', perm: 'users:read' },
                   { label: 'Suspend or reactivate accounts', perm: 'users:suspend' },
-                  { label: 'Change user roles (Student ↔ Moderator)', perm: 'users:change_role' },
-                  { label: 'Manage administrators & moderators', perm: 'admins:manage' },
+                  { label: 'Change user roles', perm: 'users:change_role' },
+                  { label: 'Manage administrators & staff', perm: 'admins:manage' },
                   { label: 'Configure system settings', perm: 'settings:manage' },
                   { label: 'View audit logs', perm: 'audit_logs:read' }
                 ].map((row, idx) => {
                   const hasStudent = ROLE_PERMISSIONS[ROLES.STUDENT].includes(row.perm);
-                  const hasMod = ROLE_PERMISSIONS[ROLES.MODERATOR].includes(row.perm);
                   const hasAdmin = ROLE_PERMISSIONS[ROLES.ADMIN].includes(row.perm);
                   const hasSuper = ROLE_PERMISSIONS[ROLES.SUPER_ADMIN].includes(row.perm);
 
@@ -2000,13 +1978,6 @@ export function AdminDashboardPage() {
                       <td style={{ fontWeight: 500 }}>{row.label}</td>
                       <td style={{ textAlign: 'center' }}>
                         {hasStudent ? (
-                          <span className="matrix-check">✓ Granted</span>
-                        ) : (
-                          <span className="matrix-cross">—</span>
-                        )}
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        {hasMod ? (
                           <span className="matrix-check">✓ Granted</span>
                         ) : (
                           <span className="matrix-cross">—</span>
@@ -3029,12 +3000,12 @@ export function AdminDashboardPage() {
 
               <div className="admin-metric-card">
                 <div className="admin-metric-card__top">
-                  <span className="admin-metric-card__label">Active Moderators</span>
+                  <span className="admin-metric-card__label">Active Admins</span>
                   <span className="admin-metric-card__icon admin-metric-card__icon--purple">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
                   </span>
                 </div>
-                <p className="admin-metric-card__value">{stats?.activeModerators ?? stats?.roles?.MODERATOR ?? 0}</p>
+                <p className="admin-metric-card__value">{stats?.activeAdmins ?? ((stats?.roles?.ADMIN || 0) + (stats?.roles?.MODERATOR || 0))}</p>
                 <div className="admin-metric-card__footer">
                   <span className="admin-metric-card__subtext">Faculty evaluators & reviewers</span>
                   <span className="admin-metric-card__pill admin-metric-card__pill--purple">Staff</span>
@@ -3955,7 +3926,7 @@ export function AdminDashboardPage() {
                 <div className="d-flex items-center justify-between" style={{ padding: '12px 16px', background: 'var(--color-surface-hover)', borderRadius: '6px' }}>
                   <div>
                     <strong>Auto-Moderation Pipeline</strong>
-                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Automatically publish notes bypassing moderator approval queue</p>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Automatically publish notes bypassing admin approval queue</p>
                   </div>
                   <select
                     className="admin-select"
@@ -4223,13 +4194,10 @@ mysqldump -u root -p pj_study &gt; backup_$(date +%F).sql
                   value={targetRole}
                   onChange={(e) => setTargetRole(e.target.value)}
                 >
-                  <option value={ROLES.STUDENT}>Student (Regular Scholar)</option>
-                  <option value={ROLES.MODERATOR}>Moderator (Note Evaluator)</option>
+                  <option value={ROLES.STUDENT}>Scholar (Student)</option>
+                  <option value={ROLES.ADMIN}>Admin (Content Evaluator & Manager)</option>
                   {isSuperAdmin && (
-                    <>
-                      <option value={ROLES.ADMIN}>Administrator (Curriculum & Users)</option>
-                      <option value={ROLES.SUPER_ADMIN}>Super Administrator (Full System)</option>
-                    </>
+                    <option value={ROLES.SUPER_ADMIN}>Super Admin (Platform Owner)</option>
                   )}
                 </select>
               </div>

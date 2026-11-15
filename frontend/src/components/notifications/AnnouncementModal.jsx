@@ -127,8 +127,8 @@ export function AnnouncementModal({ isOpen, onClose, onSuccess }) {
               style={{ width: '100%' }}
             >
               <option value="ALL">All Scholars & Staff</option>
-              <option value="STUDENT">Students Only</option>
-              <option value="MODERATOR">Moderators & Staff</option>
+              <option value="STUDENT">Scholars Only</option>
+              <option value="ADMIN">Admins & Staff</option>
             </select>
           </div>
 

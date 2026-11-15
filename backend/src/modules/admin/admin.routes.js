@@ -30,9 +30,11 @@ router.get('/overview', requirePermission(PERMISSIONS.USERS_READ), adminControll
 router.get('/analytics', requirePermission(PERMISSIONS.USERS_READ), adminController.getAnalytics);
 
 /**
- * Staff and Moderator Management
- * GET /api/v1/admin/moderators
+ * Staff and Admin Management (former Moderator Management)
+ * GET /api/v1/admin/admins
+ * GET /api/v1/admin/moderators (legacy route alias)
  */
+router.get('/admins', requirePermission(PERMISSIONS.USERS_READ), adminController.getModerators);
 router.get('/moderators', requirePermission(PERMISSIONS.USERS_READ), adminController.getModerators);
 
 /**

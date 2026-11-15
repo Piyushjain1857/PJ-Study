@@ -11,7 +11,7 @@ import './Navbar.css';
  * Refined for clean editorial elegance on marketing & guest pages.
  */
 export function Navbar() {
-  const { user, isAuthenticated, isAdmin, isModerator, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -42,13 +42,21 @@ export function Navbar() {
     navigate('/');
   }
 
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const isPlatformAdmin = user?.role === 'ADMIN' || user?.role === 'MODERATOR';
+
   const userMenuItems = [
-    { label: 'Student Dashboard', onClick: () => navigate('/dashboard') },
-    { label: 'My Study Library', onClick: () => navigate('/my-notes') },
+    {
+      label: isSuperAdmin ? 'Command Center' : isPlatformAdmin ? 'Admin Workspace' : 'Student Dashboard',
+      onClick: () => navigate(isSuperAdmin ? '/admin' : isPlatformAdmin ? '/admin-workspace' : '/dashboard')
+    },
+    ...(!isSuperAdmin ? [{ label: 'My Study Library', onClick: () => navigate('/my-notes') }] : []),
     { label: 'Profile', onClick: () => navigate('/profile') },
-    ...(isAdmin
-      ? [{ label: 'Admin Portal', onClick: () => navigate('/admin') }]
-      : []),
+    ...(isSuperAdmin
+      ? [{ label: 'Super Admin Center', onClick: () => navigate('/admin') }]
+      : isPlatformAdmin
+        ? [{ label: 'Admin Workspace', onClick: () => navigate('/admin-workspace') }]
+        : []),
     { divider: true },
     { label: 'Sign Out', danger: true, onClick: handleLogout }
   ];
@@ -95,16 +103,16 @@ export function Navbar() {
         <div className="navbar-actions">
           {isAuthenticated ? (
             <div className="d-flex items-center gap-3">
-              {isModerator && (
+              {(isPlatformAdmin || isSuperAdmin) && (
                 <Link to="/notes/new">
                   <Button variant="outline" size="sm">
                     + Upload Note
                   </Button>
                 </Link>
               )}
-              <Link to="/dashboard">
+              <Link to={isSuperAdmin ? '/admin' : isPlatformAdmin ? '/admin-workspace' : '/dashboard'}>
                 <Button variant="primary" size="sm">
-                  Dashboard
+                  {isSuperAdmin ? 'Command Center' : isPlatformAdmin ? 'Admin Workspace' : 'Dashboard'}
                 </Button>
               </Link>
               <Dropdown
@@ -195,24 +203,26 @@ export function Navbar() {
               <>
                 <div className="navbar-mobile-divider" />
                 <NavLink
-                  to="/dashboard"
+                  to={isSuperAdmin ? '/admin' : isPlatformAdmin ? '/admin-workspace' : '/dashboard'}
                   onClick={closeMobileMenu}
                   className={({ isActive }) =>
                     `navbar-mobile-nav__link ${isActive ? 'navbar-mobile-nav__link--active' : ''}`
                   }
                 >
-                  Dashboard
+                  {isSuperAdmin ? 'Command Center' : isPlatformAdmin ? 'Admin Workspace' : 'Dashboard'}
                 </NavLink>
-                <NavLink
-                  to="/my-notes"
-                  onClick={closeMobileMenu}
-                  className={({ isActive }) =>
-                    `navbar-mobile-nav__link ${isActive ? 'navbar-mobile-nav__link--active' : ''}`
-                  }
-                >
-                  My Study Library
-                </NavLink>
-                {isModerator && (
+                {!isSuperAdmin && (
+                  <NavLink
+                    to="/my-notes"
+                    onClick={closeMobileMenu}
+                    className={({ isActive }) =>
+                      `navbar-mobile-nav__link ${isActive ? 'navbar-mobile-nav__link--active' : ''}`
+                    }
+                  >
+                    My Study Library
+                  </NavLink>
+                )}
+                {(isPlatformAdmin || isSuperAdmin) && (
                   <NavLink
                     to="/notes/new"
                     onClick={closeMobileMenu}
@@ -232,7 +242,7 @@ export function Navbar() {
                 >
                   Profile
                 </NavLink>
-                {isAdmin && (
+                {isSuperAdmin && (
                   <NavLink
                     to="/admin"
                     onClick={closeMobileMenu}
@@ -240,7 +250,18 @@ export function Navbar() {
                       `navbar-mobile-nav__link ${isActive ? 'navbar-mobile-nav__link--active' : ''}`
                     }
                   >
-                    Admin Portal
+                    Command Center
+                  </NavLink>
+                )}
+                {isPlatformAdmin && !isSuperAdmin && (
+                  <NavLink
+                    to="/admin-workspace"
+                    onClick={closeMobileMenu}
+                    className={({ isActive }) =>
+                      `navbar-mobile-nav__link ${isActive ? 'navbar-mobile-nav__link--active' : ''}`
+                    }
+                  >
+                    Admin Workspace
                   </NavLink>
                 )}
               </>

@@ -128,7 +128,7 @@ export function NoteReviewsSection({
   const handleReportSubmit = async (payload) => {
     if (!reportingReview) return;
     await reviewService.reportReview(reportingReview.id, payload);
-    setNotice('Review report submitted for moderator review.');
+    setNotice('Review report submitted for administrative review.');
     setReportingReview(null);
   };
 

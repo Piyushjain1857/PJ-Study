@@ -12,7 +12,7 @@ import './AppLayout.css';
  * V2 Upgrade: Plus Jakarta Sans headings, refined 256px sidebar, glassmorphic top header, Cmd+K search.
  */
 export function AppLayout() {
-  const { user, isAuthenticated, isAdmin, isModerator, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const location = useLocation();
@@ -59,11 +59,12 @@ export function AppLayout() {
 
   // Derive human-readable page context based on active route
   const getPageTitle = (path) => {
+    if (path.startsWith('/admin-workspace')) return 'Admin Workspace';
     if (path === '/admin') return 'Overview Dashboard';
     if (path.startsWith('/admin/analytics')) return 'Advanced Analytics';
     if (path.startsWith('/admin/activity')) return 'Live Platform Activity';
     if (path.startsWith('/admin/users')) return 'User & Access Control';
-    if (path.startsWith('/admin/moderators')) return 'Staff & Moderator Directory';
+    if (path.startsWith('/admin/moderators') || path.startsWith('/admin/admins')) return 'Admin Management & Staff';
     if (path.startsWith('/admin/roles')) return 'Roles & Permissions Matrix';
     if (path.startsWith('/admin/suspended-users')) return 'Suspended Accounts';
     if (path.startsWith('/admin/academics/universities')) return 'Universities & Schools';
@@ -84,7 +85,7 @@ export function AppLayout() {
     if (path.startsWith('/admin/health')) return 'System Health Diagnostics';
     if (path.startsWith('/admin/backups')) return 'Backup & Recovery Readiness';
     if (path === '/dashboard' || path === '/app') {
-      return isAdmin ? 'Admin Command Center' : isModerator ? 'Moderator Workspace' : 'Scholar Dashboard';
+      return user?.role === 'SUPER_ADMIN' ? 'Command Center' : (user?.role === 'ADMIN' || user?.role === 'MODERATOR') ? 'Admin Workspace' : 'Scholar Dashboard';
     }
     if (path.startsWith('/notes/explore') || path === '/notes') return 'Explore Notes';
     if (path.startsWith('/notes/recommended')) return 'Recommended For You';
@@ -99,7 +100,10 @@ export function AppLayout() {
   };
 
   // User dropdown menu items
-  const userMenuItems = isAdmin
+  const isSuperAdminRole = user?.role === 'SUPER_ADMIN';
+  const isAdminRole = user?.role === 'ADMIN' || user?.role === 'MODERATOR';
+
+  const userMenuItems = isSuperAdminRole
     ? [
         { label: 'Admin Command Center', onClick: () => navigate('/admin') },
         { label: 'Platform Settings', onClick: () => navigate('/admin/settings') },
@@ -108,21 +112,22 @@ export function AppLayout() {
         { divider: true },
         { label: 'Sign Out', danger: true, onClick: handleLogout }
       ]
-    : isModerator
+    : isAdminRole
       ? [
-          { label: 'Moderator Dashboard', onClick: () => navigate('/dashboard') },
+          { label: 'Admin Dashboard', onClick: () => navigate('/admin-workspace') },
           { label: 'Upload Note', onClick: () => navigate('/notes/new') },
           { label: 'My Notes', onClick: () => navigate('/my-notes') },
+          { label: 'Moderation Queue', onClick: () => navigate('/admin-workspace/moderation') },
           { label: 'Notifications', onClick: () => navigate('/notifications') },
           { label: 'Profile', onClick: () => navigate('/profile') },
           { divider: true },
           { label: 'Sign Out', danger: true, onClick: handleLogout }
         ]
       : [
-          { label: 'View Profile', onClick: () => navigate('/profile') },
+          { label: 'Scholar Dashboard', onClick: () => navigate('/dashboard') },
+          { label: 'My Library', onClick: () => navigate('/my-notes') },
           { label: 'Notifications', onClick: () => navigate('/notifications') },
-          { label: 'My Study Library', onClick: () => navigate('/my-notes') },
-          { label: 'Explore Catalog', onClick: () => navigate('/notes/explore') },
+          { label: 'Profile', onClick: () => navigate('/profile') },
           { divider: true },
           { label: 'Sign Out', danger: true, onClick: handleLogout }
         ];
@@ -207,15 +212,15 @@ export function AppLayout() {
   ];
 
   // =============================================================================
-  // WORKSPACE 2: MODERATOR WORKSPACE
+  // WORKSPACE 2: ADMIN WORKSPACE (FORMER MODERATOR)
   // =============================================================================
-  const moderatorNavGroups = [
+  const adminNavGroups = [
     {
-      label: 'Moderator Workspace',
+      label: 'OVERVIEW',
       items: [
         {
-          to: '/dashboard',
-          label: 'Moderator Dashboard',
+          to: '/admin-workspace',
+          label: 'Admin Dashboard',
           exact: true,
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -226,6 +231,22 @@ export function AppLayout() {
             </svg>
           )
         },
+        {
+          to: '/admin-workspace/analytics',
+          label: 'Content Analytics',
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10" />
+              <line x1="12" y1="20" x2="12" y2="4" />
+              <line x1="6" y1="20" x2="6" y2="14" />
+            </svg>
+          )
+        }
+      ]
+    },
+    {
+      label: 'CONTENT MANAGEMENT',
+      items: [
         {
           to: '/notes/new',
           label: 'Upload Note',
@@ -252,19 +273,64 @@ export function AppLayout() {
           )
         },
         {
-          to: '/notes/explore',
-          label: 'Content Management',
+          to: '/admin-workspace/assigned',
+          label: 'Assigned Notes',
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+            </svg>
+          )
+        },
+        {
+          to: '/admin-workspace/notes',
+          label: 'All Authorized Notes',
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
             </svg>
           )
         }
       ]
     },
     {
-      label: 'System',
+      label: 'MODERATION',
+      items: [
+        {
+          to: '/admin-workspace/moderation',
+          label: 'Approval Queue',
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 11l3 3L22 4" />
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+            </svg>
+          )
+        },
+        {
+          to: '/admin-workspace/reports',
+          label: 'Content Reports',
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+              <line x1="4" y1="22" x2="4" y2="15" />
+            </svg>
+          )
+        },
+        {
+          to: '/admin-workspace/history',
+          label: 'Moderation History',
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          )
+        }
+      ]
+    },
+    {
+      label: 'ACCOUNT',
       items: [
         {
           to: '/notifications',
@@ -283,6 +349,18 @@ export function AppLayout() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
+            </svg>
+          )
+        },
+        {
+          to: '#signout',
+          label: 'Sign Out',
+          isSignOut: true,
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
             </svg>
           )
         }
@@ -349,7 +427,7 @@ export function AppLayout() {
         },
         {
           to: '/admin/moderators',
-          label: 'Moderator Management',
+          label: 'Admin Management',
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
@@ -585,10 +663,10 @@ export function AppLayout() {
   ];
 
   // Active navigation groups based on current RBAC identity
-  const activeNavGroups = isAdmin
+  const activeNavGroups = isSuperAdminRole
     ? superAdminNavGroups
-    : isModerator
-      ? moderatorNavGroups
+    : isAdminRole
+      ? adminNavGroups
       : scholarNavGroups;
 
   return (
@@ -625,10 +703,10 @@ export function AppLayout() {
                 <span className="app-shell__sidebar-title">PJ Study</span>
                 <span
                   className={`app-shell__sidebar-subtitle ${
-                    isAdmin ? 'app-shell__sidebar-subtitle--admin' : ''
+                    isSuperAdminRole ? 'app-shell__sidebar-subtitle--admin' : ''
                   }`}
                 >
-                  {isAdmin ? 'Command Center' : isModerator ? 'Moderator Hub' : 'Academic Library'}
+                  {isSuperAdminRole ? 'Command Center' : isAdminRole ? 'Admin Workspace' : 'Academic Library'}
                 </span>
               </span>
             )}
@@ -660,7 +738,7 @@ export function AppLayout() {
         </div>
 
         {/* Sidebar Nav Items */}
-        <nav className={`app-shell__nav ${isAdmin ? 'app-shell__nav--admin' : ''}`}>
+        <nav className={`app-shell__nav ${isSuperAdminRole ? 'app-shell__nav--admin' : ''}`}>
           {activeNavGroups.map((group, gIdx) => (
             <div key={gIdx} className="app-shell__nav-group">
               {!sidebarCollapsed && (
@@ -694,7 +772,7 @@ export function AppLayout() {
           ))}
 
           {/* Quick Sign Out Action for Super Admin inside Nav */}
-          {isAdmin && (
+          {isSuperAdminRole && (
             <div className="app-shell__nav-group mt-2 mb-3">
               <button
                 type="button"
@@ -730,8 +808,8 @@ export function AppLayout() {
                   <span className="app-shell__user-role">
                     {user?.role === 'SUPER_ADMIN'
                       ? 'Super Admin'
-                      : user?.role === 'MODERATOR'
-                        ? 'Academic Moderator'
+                      : isAdminRole
+                        ? 'Academic Admin'
                         : 'Verified Scholar'}
                   </span>
                 </div>

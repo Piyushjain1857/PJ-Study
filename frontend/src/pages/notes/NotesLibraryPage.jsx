@@ -112,7 +112,7 @@ export function NotesLibraryPage() {
           <h1 className="notes-page__title">Curated Notes Library</h1>
           <p className="notes-page__subtitle">
             Explore approved lecture notes, exam preparation guides, formula sheets, and lab manuals
-            verified by academic moderators.
+            verified by academic administrators.
           </p>
         </header>
 

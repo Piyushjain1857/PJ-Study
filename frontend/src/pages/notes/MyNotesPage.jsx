@@ -126,7 +126,7 @@ export function MyNotesPage() {
               fontWeight: 500
             }}
           >
-            ⏳ Under review by moderators
+            ⏳ Under review by administrators
           </span>
         )}
 

@@ -25,20 +25,41 @@ async function main() {
     }
   });
 
-  // Seed Moderator
+  // Seed Admin (formerly Academic Moderator)
   const moderator = await prisma.user.upsert({
     where: { email: 'moderator@portal.com' },
     update: {
       passwordHash,
-      role: 'MODERATOR',
+      role: 'ADMIN',
+      name: 'Academic Admin',
       isEmailVerified: true,
       isActive: true
     },
     create: {
-      name: 'Academic Moderator',
+      name: 'Academic Admin',
       email: 'moderator@portal.com',
       passwordHash,
-      role: 'MODERATOR',
+      role: 'ADMIN',
+      isEmailVerified: true,
+      isActive: true
+    }
+  });
+
+  // Also seed admin@portal.com for direct Admin login
+  await prisma.user.upsert({
+    where: { email: 'admin@portal.com' },
+    update: {
+      passwordHash,
+      role: 'ADMIN',
+      name: 'Platform Admin',
+      isEmailVerified: true,
+      isActive: true
+    },
+    create: {
+      name: 'Platform Admin',
+      email: 'admin@portal.com',
+      passwordHash,
+      role: 'ADMIN',
       isEmailVerified: true,
       isActive: true
     }

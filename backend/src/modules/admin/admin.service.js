@@ -41,8 +41,13 @@ export class AdminService {
     }
 
     // Filter by role
-    if (query.role && Object.values(ROLES).includes(query.role.toUpperCase())) {
-      where.role = query.role.toUpperCase();
+    if (query.role) {
+      const targetRole = query.role.toUpperCase();
+      if (targetRole === 'ADMIN') {
+        where.role = { in: ['ADMIN', 'MODERATOR'] };
+      } else if (Object.values(ROLES).includes(targetRole)) {
+        where.role = targetRole;
+      }
     }
 
     // Filter by account active status
@@ -345,23 +350,16 @@ export class AdminService {
     const rolesList = [
       {
         id: ROLES.STUDENT,
-        name: 'Student',
+        name: 'Scholar',
         description:
-          'Standard academic scholar who can browse, read, create, and manage their personal study notes.',
+          'Standard academic scholar who can browse, search, and download approved study materials.',
         permissions: ROLE_PERMISSIONS[ROLES.STUDENT]
-      },
-      {
-        id: ROLES.MODERATOR,
-        name: 'Moderator',
-        description:
-          'Academic reviewer with authority to evaluate, approve, or reject student note submissions.',
-        permissions: ROLE_PERMISSIONS[ROLES.MODERATOR]
       },
       {
         id: ROLES.ADMIN,
         name: 'Administrator',
         description:
-          'Manages curriculum taxonomy, user accounts, and student/moderator role assignments.',
+          'Academic administrator with authority to upload manuscripts, manage assigned content, and evaluate moderation queues.',
         permissions: ROLE_PERMISSIONS[ROLES.ADMIN]
       },
       {
@@ -398,14 +396,16 @@ export class AdminService {
         prisma.user.count({ where: { role: ROLES.SUPER_ADMIN } })
       ]);
 
+    const consolidatedAdminsCount = moderatorsCount + adminsCount;
+
     return {
       totalUsers,
       activeUsers,
       suspendedUsers: totalUsers - activeUsers,
       roles: {
         [ROLES.STUDENT]: studentsCount,
-        [ROLES.MODERATOR]: moderatorsCount,
-        [ROLES.ADMIN]: adminsCount,
+        [ROLES.MODERATOR]: consolidatedAdminsCount,
+        [ROLES.ADMIN]: consolidatedAdminsCount,
         [ROLES.SUPER_ADMIN]: superAdminsCount
       }
     };
@@ -423,7 +423,8 @@ export class AdminService {
       adminsCount,
       superAdminsCount,
       activeScholars,
-      activeModerators,
+      activeModeratorsCount,
+      activeAdminsCount,
       totalNotes,
       approvedNotes,
       pendingNotes,
@@ -442,6 +443,7 @@ export class AdminService {
       prisma.user.count({ where: { role: ROLES.SUPER_ADMIN } }),
       prisma.user.count({ where: { role: ROLES.STUDENT, isActive: true } }),
       prisma.user.count({ where: { role: ROLES.MODERATOR, isActive: true } }),
+      prisma.user.count({ where: { role: ROLES.ADMIN, isActive: true } }),
       prisma.note.count(),
       prisma.note.count({ where: { status: 'APPROVED' } }),
       prisma.note.count({ where: { status: 'PENDING' } }),
@@ -455,13 +457,16 @@ export class AdminService {
 
     const pendingTotal = pendingNotes + pendingReviewNotes;
     const reportedTotal = openNoteReports + openReviewReports;
+    const activeAdminsTotal = activeModeratorsCount + activeAdminsCount;
+    const consolidatedAdminsCount = moderatorsCount + adminsCount;
 
     return {
       totalUsers,
       activeUsers,
       suspendedUsers: totalUsers - activeUsers,
       activeScholars,
-      activeModerators,
+      activeModerators: activeAdminsTotal,
+      activeAdmins: activeAdminsTotal,
       totalNotes,
       approvedNotes,
       pendingModeration: pendingTotal,
@@ -473,8 +478,8 @@ export class AdminService {
       openReviewReports,
       roles: {
         [ROLES.STUDENT]: studentsCount,
-        [ROLES.MODERATOR]: moderatorsCount,
-        [ROLES.ADMIN]: adminsCount,
+        [ROLES.MODERATOR]: consolidatedAdminsCount,
+        [ROLES.ADMIN]: consolidatedAdminsCount,
         [ROLES.SUPER_ADMIN]: superAdminsCount
       }
     };

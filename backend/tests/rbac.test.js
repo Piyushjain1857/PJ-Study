@@ -49,15 +49,24 @@ test('RBAC Matrix and Capability Invariants', async (t) => {
     assert.equal(hasPermission(ROLES.MODERATOR, PERMISSIONS.SETTINGS_MANAGE), false);
   });
 
-  await t.test('Admin capabilities should include user management and audit logs', () => {
-    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.CATEGORIES_MANAGE), true);
-    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.USERS_READ), true);
-    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.USERS_UPDATE), true);
-    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.USERS_SUSPEND), true);
-    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.USERS_CHANGE_ROLE), true);
-    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.AUDIT_LOGS_READ), true);
+  await t.test('Admin capabilities should include note authoring and moderation, but not platform admin', () => {
+    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.NOTES_READ), true);
+    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.NOTES_DOWNLOAD), true);
+    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.NOTES_CREATE), true);
+    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.NOTES_UPDATE_OWN), true);
+    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.NOTES_DELETE_OWN), true);
+    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.NOTES_SUBMIT_REVIEW), true);
+    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.NOTES_REVIEW), true);
+    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.NOTES_APPROVE), true);
+    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.NOTES_REJECT), true);
 
     // Forbidden for Admin (Super Admin exclusive)
+    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.USERS_READ), false);
+    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.USERS_UPDATE), false);
+    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.USERS_SUSPEND), false);
+    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.USERS_CHANGE_ROLE), false);
+    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.CATEGORIES_MANAGE), false);
+    assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.AUDIT_LOGS_READ), false);
     assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.MODERATORS_MANAGE), false);
     assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.ADMINS_MANAGE), false);
     assert.equal(hasPermission(ROLES.ADMIN, PERMISSIONS.SETTINGS_MANAGE), false);
@@ -77,48 +86,17 @@ test('RBAC Matrix and Capability Invariants', async (t) => {
   await t.test(
     'canRoleManageTarget should enforce strict hierarchical role management rules',
     () => {
-      // Admin CANNOT promote to Super Admin
-      const adminToSuper = canRoleManageTarget(ROLES.ADMIN, ROLES.STUDENT, ROLES.SUPER_ADMIN);
-      assert.equal(adminToSuper.allowed, false);
-
-      // Admin CANNOT assign Admin role
-      const adminToAdmin = canRoleManageTarget(ROLES.ADMIN, ROLES.STUDENT, ROLES.ADMIN);
-      assert.equal(adminToAdmin.allowed, false);
-
-      // Admin CANNOT modify an existing Admin or Super Admin
-      const adminModAdmin = canRoleManageTarget(ROLES.ADMIN, ROLES.ADMIN, ROLES.STUDENT);
-      assert.equal(adminModAdmin.allowed, false);
-
-      const adminModSuper = canRoleManageTarget(ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.STUDENT);
-      assert.equal(adminModSuper.allowed, false);
-
-      // Admin CAN promote Student to Moderator
-      const adminStudentToMod = canRoleManageTarget(ROLES.ADMIN, ROLES.STUDENT, ROLES.MODERATOR);
-      assert.equal(adminStudentToMod.allowed, true);
-
-      // Admin CAN demote Moderator to Student
-      const adminModToStudent = canRoleManageTarget(ROLES.ADMIN, ROLES.MODERATOR, ROLES.STUDENT);
-      assert.equal(adminModToStudent.allowed, true);
+      // Admin CANNOT assign any roles
+      assert.equal(canRoleManageTarget(ROLES.ADMIN, ROLES.STUDENT, ROLES.SUPER_ADMIN).allowed, false);
+      assert.equal(canRoleManageTarget(ROLES.ADMIN, ROLES.STUDENT, ROLES.ADMIN).allowed, false);
+      assert.equal(canRoleManageTarget(ROLES.ADMIN, ROLES.ADMIN, ROLES.STUDENT).allowed, false);
 
       // Super Admin CAN assign any role
-      assert.equal(
-        canRoleManageTarget(ROLES.SUPER_ADMIN, ROLES.STUDENT, ROLES.ADMIN).allowed,
-        true
-      );
-      assert.equal(
-        canRoleManageTarget(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SUPER_ADMIN).allowed,
-        true
-      );
+      assert.equal(canRoleManageTarget(ROLES.SUPER_ADMIN, ROLES.STUDENT, ROLES.ADMIN).allowed, true);
+      assert.equal(canRoleManageTarget(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SUPER_ADMIN).allowed, true);
 
-      // Student or Moderator CANNOT manage any roles
-      assert.equal(
-        canRoleManageTarget(ROLES.STUDENT, ROLES.STUDENT, ROLES.MODERATOR).allowed,
-        false
-      );
-      assert.equal(
-        canRoleManageTarget(ROLES.MODERATOR, ROLES.STUDENT, ROLES.MODERATOR).allowed,
-        false
-      );
+      // Student CANNOT manage any roles
+      assert.equal(canRoleManageTarget(ROLES.STUDENT, ROLES.STUDENT, ROLES.ADMIN).allowed, false);
     }
   );
 });
@@ -313,10 +291,20 @@ test('HTTP API RBAC Endpoint Protection & Invariants', async (t) => {
   );
 
   await t.test(
-    'GET /api/v1/admin/users with Admin token should return 200 with user list',
+    'GET /api/v1/admin/users with Admin token should return 403 FORBIDDEN (Admin cannot manage users)',
     async () => {
       const res = await fetch(`${baseUrl}/api/v1/admin/users`, {
         headers: { Authorization: `Bearer ${adminToken}` }
+      });
+      assert.equal(res.status, 403);
+    }
+  );
+
+  await t.test(
+    'GET /api/v1/admin/users with Super Admin token should return 200 with user list',
+    async () => {
+      const res = await fetch(`${baseUrl}/api/v1/admin/users`, {
+        headers: { Authorization: `Bearer ${superToken}` }
       });
       assert.equal(res.status, 200);
       const json = await res.json();
@@ -339,24 +327,7 @@ test('HTTP API RBAC Endpoint Protection & Invariants', async (t) => {
   );
 
   await t.test(
-    'PATCH /api/v1/admin/users/:id/role - user cannot change their own role',
-    async () => {
-      const res = await fetch(`${baseUrl}/api/v1/admin/users/${adminUser.id}/role`, {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${adminToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ role: 'SUPER_ADMIN' })
-      });
-      assert.equal(res.status, 400);
-      const json = await res.json();
-      assert.equal(json.error.code, 'CANNOT_MODIFY_OWN_ROLE');
-    }
-  );
-
-  await t.test(
-    'PATCH /api/v1/admin/users/:id/role - Admin cannot grant Super Admin role',
+    'PATCH /api/v1/admin/users/:id/role - Admin cannot assign roles (HTTP 403)',
     async () => {
       const res = await fetch(`${baseUrl}/api/v1/admin/users/${studentUser.id}/role`, {
         method: 'PATCH',
@@ -364,41 +335,9 @@ test('HTTP API RBAC Endpoint Protection & Invariants', async (t) => {
           Authorization: `Bearer ${adminToken}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ role: 'SUPER_ADMIN' })
+        body: JSON.stringify({ role: 'ADMIN' })
       });
       assert.equal(res.status, 403);
-      const json = await res.json();
-      assert.equal(json.error.code, 'FORBIDDEN_ROLE_MANAGEMENT');
-    }
-  );
-
-  await t.test(
-    'PATCH /api/v1/admin/users/:id/role - Admin cannot modify another Admin',
-    async () => {
-      // Create secondary admin
-      const secondaryAdmin = await prisma.user.upsert({
-        where: { email: 'secondary_admin@test.com' },
-        update: { role: 'ADMIN' },
-        create: {
-          name: 'Secondary Admin',
-          email: 'secondary_admin@test.com',
-          passwordHash: 'dummy',
-          role: 'ADMIN',
-          isActive: true
-        }
-      });
-
-      const res = await fetch(`${baseUrl}/api/v1/admin/users/${secondaryAdmin.id}/role`, {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${adminToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ role: 'STUDENT' })
-      });
-      assert.equal(res.status, 403);
-      const json = await res.json();
-      assert.equal(json.error.code, 'FORBIDDEN_ROLE_MANAGEMENT');
     }
   );
 
@@ -415,7 +354,7 @@ test('HTTP API RBAC Endpoint Protection & Invariants', async (t) => {
   });
 
   await t.test(
-    'Super Admin changing Student to Moderator should succeed and write audit log',
+    'Super Admin changing Student to Admin should succeed and write audit log',
     async () => {
       const res = await fetch(`${baseUrl}/api/v1/admin/users/${studentUser.id}/role`, {
         method: 'PATCH',
@@ -423,12 +362,12 @@ test('HTTP API RBAC Endpoint Protection & Invariants', async (t) => {
           Authorization: `Bearer ${superToken}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ role: 'MODERATOR', reason: 'Assigned as biology note reviewer' })
+        body: JSON.stringify({ role: 'ADMIN', reason: 'Assigned as biology note reviewer' })
       });
       assert.equal(res.status, 200);
       const json = await res.json();
       assert.equal(json.success, true);
-      assert.equal(json.data.role, 'MODERATOR');
+      assert.equal(json.data.role, 'ADMIN');
 
       // Verify audit log entry was created
       const auditRecord = await prisma.auditLog.findFirst({
@@ -450,13 +389,19 @@ test('HTTP API RBAC Endpoint Protection & Invariants', async (t) => {
     });
     assert.equal(studentRes.status, 403);
 
-    // Admin allowed
+    // Admin rejected (Super Admin exclusive)
     const adminRes = await fetch(`${baseUrl}/api/v1/admin/audit-logs`, {
       headers: { Authorization: `Bearer ${adminToken}` }
     });
-    assert.equal(adminRes.status, 200);
-    const adminJson = await adminRes.json();
-    assert.ok(Array.isArray(adminJson.data.data));
+    assert.equal(adminRes.status, 403);
+
+    // Super Admin allowed
+    const superRes = await fetch(`${baseUrl}/api/v1/admin/audit-logs`, {
+      headers: { Authorization: `Bearer ${superToken}` }
+    });
+    assert.equal(superRes.status, 200);
+    const superJson = await superRes.json();
+    assert.ok(Array.isArray(superJson.data.data));
   });
 
   // =========================================================================

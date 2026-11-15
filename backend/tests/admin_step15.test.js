@@ -25,8 +25,8 @@ test.before(async () => {
 
   // Fetch or create users
   studentUser = await prisma.user.findFirst({ where: { role: ROLES.STUDENT } });
-  moderatorUser = await prisma.user.findFirst({ where: { role: ROLES.MODERATOR } });
   adminUser = await prisma.user.findFirst({ where: { role: ROLES.ADMIN } });
+  moderatorUser = (await prisma.user.findFirst({ where: { role: { in: [ROLES.ADMIN, ROLES.MODERATOR] } } })) || adminUser;
   superAdminUser = await prisma.user.findFirst({ where: { role: ROLES.SUPER_ADMIN } });
 
   studentToken = generateAccessToken({

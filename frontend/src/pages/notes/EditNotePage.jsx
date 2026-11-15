@@ -122,7 +122,7 @@ export function EditNotePage() {
             style={{ marginBottom: '24px', padding: '16px 20px' }}
           >
             <span className="note-card__feedback-label" style={{ fontSize: '0.875rem' }}>
-              Moderator Revision Notes:
+              Administrator Revision Notes:
             </span>
             <p
               className="note-card__feedback-text"

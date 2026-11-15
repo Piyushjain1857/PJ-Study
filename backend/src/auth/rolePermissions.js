@@ -12,6 +12,7 @@ export const ROLES = Object.freeze({
 
 /**
  * Centralized Role-to-Permissions Mapping.
+ * Final 3-tier Architecture: SCHOLAR (STUDENT), ADMIN (former Moderator), SUPER_ADMIN
  */
 export const ROLE_PERMISSIONS = Object.freeze({
   [ROLES.STUDENT]: Object.freeze([
@@ -19,7 +20,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.NOTES_DOWNLOAD
   ]),
 
-  [ROLES.MODERATOR]: Object.freeze([
+  [ROLES.ADMIN]: Object.freeze([
     // Base scholar reader & downloader
     PERMISSIONS.NOTES_READ,
     PERMISSIONS.NOTES_DOWNLOAD,
@@ -34,8 +35,8 @@ export const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.NOTES_REJECT
   ]),
 
-  [ROLES.ADMIN]: Object.freeze([
-    // Moderator base capabilities
+  // Legacy compatibility: MODERATOR maps to identical permissions as ADMIN
+  [ROLES.MODERATOR]: Object.freeze([
     PERMISSIONS.NOTES_READ,
     PERMISSIONS.NOTES_DOWNLOAD,
     PERMISSIONS.NOTES_CREATE,
@@ -44,19 +45,11 @@ export const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.NOTES_SUBMIT_REVIEW,
     PERMISSIONS.NOTES_REVIEW,
     PERMISSIONS.NOTES_APPROVE,
-    PERMISSIONS.NOTES_REJECT,
-    PERMISSIONS.NOTES_MANAGE_ALL,
-    // Academic Administration
-    PERMISSIONS.CATEGORIES_MANAGE,
-    PERMISSIONS.USERS_READ,
-    PERMISSIONS.USERS_UPDATE,
-    PERMISSIONS.USERS_SUSPEND,
-    PERMISSIONS.USERS_CHANGE_ROLE, // Limited in service: student <-> moderator only
-    PERMISSIONS.AUDIT_LOGS_READ
+    PERMISSIONS.NOTES_REJECT
   ]),
 
   [ROLES.SUPER_ADMIN]: Object.freeze([
-    // All Admin capabilities
+    // Full platform administrative control
     PERMISSIONS.NOTES_READ,
     PERMISSIONS.NOTES_DOWNLOAD,
     PERMISSIONS.NOTES_CREATE,
@@ -73,7 +66,6 @@ export const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.USERS_SUSPEND,
     PERMISSIONS.USERS_CHANGE_ROLE,
     PERMISSIONS.AUDIT_LOGS_READ,
-    // Exclusive Super Admin capabilities
     PERMISSIONS.MODERATORS_MANAGE,
     PERMISSIONS.ADMINS_MANAGE,
     PERMISSIONS.SETTINGS_MANAGE
@@ -119,51 +111,10 @@ export function canRoleManageTarget(callerRole, currentTargetRole, requestedNewR
     return { allowed: true };
   }
 
-  if (callerRole === ROLES.ADMIN) {
-    // Admin cannot assign Super Admin role
-    if (requestedNewRole === ROLES.SUPER_ADMIN) {
-      return {
-        allowed: false,
-        reason:
-          'Administrators cannot grant the Super Admin role. Only Super Admins can assign this role.'
-      };
-    }
-
-    // Admin cannot promote a user to Admin (managing admins requires SUPER_ADMIN)
-    if (requestedNewRole === ROLES.ADMIN) {
-      return {
-        allowed: false,
-        reason:
-          'Administrators cannot assign the Admin role. Only Super Admins can manage administrators.'
-      };
-    }
-
-    // Admin cannot modify an existing Admin or Super Admin
-    if (currentTargetRole === ROLES.SUPER_ADMIN || currentTargetRole === ROLES.ADMIN) {
-      return {
-        allowed: false,
-        reason:
-          'Administrators do not have permission to modify another Administrator or Super Administrator.'
-      };
-    }
-
-    // Admin can transition users between STUDENT and MODERATOR
-    if (
-      (currentTargetRole === ROLES.STUDENT || currentTargetRole === ROLES.MODERATOR) &&
-      (requestedNewRole === ROLES.STUDENT || requestedNewRole === ROLES.MODERATOR)
-    ) {
-      return { allowed: true };
-    }
-
-    return {
-      allowed: false,
-      reason: 'Administrators can only modify roles between Student and Moderator.'
-    };
-  }
-
-  // Moderators and Students have no role management authority
+  // In the 3-tier architecture, only Super Admin can assign roles.
+  // Admins (former Moderators) and Scholars have no role management authority.
   return {
     allowed: false,
-    reason: 'Insufficient permissions: role management requires administrative privileges.'
+    reason: 'Only Super Administrators possess permission to modify user roles and permissions.'
   };
 }

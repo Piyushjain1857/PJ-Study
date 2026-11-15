@@ -45,7 +45,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.NOTES_DOWNLOAD
   ]),
 
-  [ROLES.MODERATOR]: Object.freeze([
+  [ROLES.ADMIN]: Object.freeze([
     PERMISSIONS.NOTES_READ,
     PERMISSIONS.NOTES_DOWNLOAD,
     PERMISSIONS.NOTES_CREATE,
@@ -57,7 +57,8 @@ export const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.NOTES_REJECT
   ]),
 
-  [ROLES.ADMIN]: Object.freeze([
+  // Legacy compatibility: MODERATOR maps to identical permissions as ADMIN
+  [ROLES.MODERATOR]: Object.freeze([
     PERMISSIONS.NOTES_READ,
     PERMISSIONS.NOTES_DOWNLOAD,
     PERMISSIONS.NOTES_CREATE,
@@ -66,14 +67,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.NOTES_SUBMIT_REVIEW,
     PERMISSIONS.NOTES_REVIEW,
     PERMISSIONS.NOTES_APPROVE,
-    PERMISSIONS.NOTES_REJECT,
-    PERMISSIONS.NOTES_MANAGE_ALL,
-    PERMISSIONS.CATEGORIES_MANAGE,
-    PERMISSIONS.USERS_READ,
-    PERMISSIONS.USERS_UPDATE,
-    PERMISSIONS.USERS_SUSPEND,
-    PERMISSIONS.USERS_CHANGE_ROLE,
-    PERMISSIONS.AUDIT_LOGS_READ
+    PERMISSIONS.NOTES_REJECT
   ]),
 
   [ROLES.SUPER_ADMIN]: Object.freeze([
@@ -130,18 +124,6 @@ export function getPermissionsForRole(role) {
  * @param {string} candidateRole
  * @returns {boolean}
  */
-export function canManageRole(callerRole, currentTargetRole, candidateRole) {
-  if (callerRole === ROLES.SUPER_ADMIN) {
-    return true;
-  }
-  if (callerRole === ROLES.ADMIN) {
-    if (candidateRole === ROLES.SUPER_ADMIN || candidateRole === ROLES.ADMIN) {
-      return false;
-    }
-    if (currentTargetRole === ROLES.SUPER_ADMIN || currentTargetRole === ROLES.ADMIN) {
-      return false;
-    }
-    return true;
-  }
-  return false;
+export function canManageRole(callerRole, _currentTargetRole, _candidateRole) {
+  return callerRole === ROLES.SUPER_ADMIN;
 }

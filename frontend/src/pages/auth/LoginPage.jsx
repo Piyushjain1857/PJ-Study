@@ -55,9 +55,11 @@ export function LoginPage() {
       });
       const userRole = result?.user?.role;
       let targetPath = location.state?.from?.pathname;
-      if (!targetPath || targetPath === '/dashboard') {
-        if (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') {
+      if (!targetPath || targetPath === '/dashboard' || targetPath === '/admin' || targetPath === '/admin-workspace') {
+        if (userRole === 'SUPER_ADMIN') {
           targetPath = '/admin';
+        } else if (userRole === 'ADMIN' || userRole === 'MODERATOR') {
+          targetPath = '/admin-workspace';
         } else {
           targetPath = '/dashboard';
         }
@@ -126,7 +128,7 @@ export function LoginPage() {
                 <div>
                   <h4 className="auth-feature-item__title">Verified Academic Quality</h4>
                   <p className="auth-feature-item__desc">
-                    100% of public notes are reviewed and verified by academic moderators.
+                    100% of public notes are reviewed and verified by academic administrators.
                   </p>
                 </div>
               </div>
@@ -197,16 +199,16 @@ export function LoginPage() {
                 </button>
                 <button
                   type="button"
-                  className={`auth-demo-pill ${activeDemo === 'moderator' ? 'auth-demo-pill--active' : ''}`}
-                  onClick={() => handleDemoSelect('moderator', 'moderator@portal.com')}
+                  className={`auth-demo-pill ${activeDemo === 'admin' ? 'auth-demo-pill--active' : ''}`}
+                  onClick={() => handleDemoSelect('admin', 'admin@portal.com')}
                 >
                   <span className="auth-demo-pill__emoji">🛡️</span>
-                  <span>Moderator</span>
+                  <span>Admin</span>
                 </button>
                 <button
                   type="button"
-                  className={`auth-demo-pill ${activeDemo === 'admin' ? 'auth-demo-pill--active' : ''}`}
-                  onClick={() => handleDemoSelect('admin', 'superadmin@portal.com')}
+                  className={`auth-demo-pill ${activeDemo === 'superadmin' ? 'auth-demo-pill--active' : ''}`}
+                  onClick={() => handleDemoSelect('superadmin', 'superadmin@portal.com')}
                 >
                   <span className="auth-demo-pill__emoji">⚡</span>
                   <span>Super Admin</span>
