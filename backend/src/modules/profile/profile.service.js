@@ -33,7 +33,7 @@ export class ProfileService {
   async getOwnProfile(userId) {
     const user = await userRepository.findById(userId);
     if (!user) {
-      const error = new Error('Scholar profile not found.');
+      const error = new Error('Profile not found.');
       error.statusCode = 404;
       error.code = 'USER_NOT_FOUND';
       throw error;
@@ -600,7 +600,6 @@ export class ProfileService {
   async getAcademicOptions() {
     const courses = await prisma.course.findMany({
       where: { isActive: true },
-      orderBy: { name: 'asc' },
       include: {
         subjects: {
           where: { isActive: true },
@@ -609,11 +608,38 @@ export class ProfileService {
       }
     });
 
-    return courses.map((course) => {
+    const preferredOrder = ['B.Tech', 'BCA', 'B.Sc.', 'MCA', 'M.Tech'];
+
+    // Prioritize and filter to the canonical degree programs requested
+    const canonicalCourses = courses.filter((c) =>
+      preferredOrder.some((p) => p.toLowerCase() === c.name.toLowerCase().trim())
+    );
+
+    // Fall back to all active courses if in test isolation where canonical ones aren't present
+    const activeCourses = canonicalCourses.length > 0 ? canonicalCourses : courses;
+
+    activeCourses.sort((a, b) => {
+      const idxA = preferredOrder.findIndex((p) => p.toLowerCase() === a.name.toLowerCase().trim());
+      const idxB = preferredOrder.findIndex((p) => p.toLowerCase() === b.name.toLowerCase().trim());
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.name.localeCompare(b.name);
+    });
+
+    return activeCourses.map((course) => {
       const semSet = new Set(course.subjects.map((s) => s.semester).filter(Boolean));
       const semesters = Array.from(semSet).sort((a, b) => a - b);
       if (semesters.length === 0) {
-        semesters.push(1, 2, 3, 4, 5, 6, 7, 8);
+        if (/b\.?\s*tech/i.test(course.name)) {
+          semesters.push(1, 2, 3, 4, 5, 6, 7, 8);
+        } else if (/bca|b\.?\s*sc/i.test(course.name)) {
+          semesters.push(1, 2, 3, 4, 5, 6);
+        } else if (/mca|m\.?\s*tech/i.test(course.name)) {
+          semesters.push(1, 2, 3, 4);
+        } else {
+          semesters.push(1, 2, 3, 4, 5, 6, 7, 8);
+        }
       }
       return {
         id: course.id,

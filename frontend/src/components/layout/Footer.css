@@ -1,11 +1,13 @@
 /**
  * Footer Component Styles
+ * High-End Academic Editorial & Dark Forest Aesthetic
  */
 
 .footer-root {
   margin-top: auto;
-  background-color: var(--color-surface);
-  border-top: 1px solid var(--color-border);
+  background-color: #101814;
+  color: #faf9f6;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding-top: var(--space-16);
   padding-bottom: var(--space-10);
 }
@@ -30,7 +32,7 @@
 
 @media (min-width: 1024px) {
   .footer-grid {
-    grid-template-columns: 2.2fr 1fr 1fr 1fr;
+    grid-template-columns: 2.2fr 1fr 1.2fr 1fr;
     gap: var(--space-8);
   }
 }
@@ -41,74 +43,111 @@
 }
 
 .footer-brand {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
   text-decoration: none;
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.footer-brand__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: linear-gradient(135deg, #24785a 0%, #174d3b 100%);
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 700;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .footer-brand__name {
   font-family: var(--font-heading);
-  font-size: var(--font-size-3xl);
-  color: var(--color-text-primary);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #ffffff;
   line-height: 1;
+  letter-spacing: -0.02em;
 }
 
 .footer-tagline {
   font-family: var(--font-body);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-primary);
-  margin-bottom: var(--space-3);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #c48a45;
+  margin-bottom: var(--space-2);
 }
 
 .footer-description {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  line-height: var(--line-height-relaxed);
-  max-width: 420px;
+  font-size: 0.875rem;
+  color: #94a39b;
+  line-height: var(--leading-relaxed);
+  max-width: 440px;
+  margin-bottom: var(--space-4);
+}
+
+.footer-programs-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.footer-program-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #b9d8c6;
+  background: rgba(36, 120, 90, 0.15);
+  border: 1px solid rgba(185, 216, 198, 0.2);
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
 }
 
 .footer-col__title {
-  font-family: var(--font-body);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--color-text-primary);
+  color: #ffffff;
   margin-bottom: var(--space-4);
 }
 
 .footer-links {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
 .footer-links a,
 .footer-links span {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  color: #94a39b;
+  text-decoration: none;
   transition: color var(--transition-fast);
 }
 
 .footer-links a:hover {
-  color: var(--color-primary);
-}
-
-.footer-links--meta span {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
+  color: #6fe3b2;
 }
 
 .footer-bottom {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding-top: var(--space-8);
-  border-top: 1px solid var(--color-border);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
+  padding-top: var(--space-6);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.75rem;
+  color: #728279;
 }
 
 @media (min-width: 768px) {
@@ -119,13 +158,39 @@
   }
 }
 
-.footer-bottom-meta {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
+.footer-bottom__copy {
+  color: #83958c;
 }
 
-.footer-sep {
-  color: var(--color-border);
+.footer-bottom__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background-color: #2ed573;
+  box-shadow: 0 0 8px rgba(46, 213, 115, 0.6);
+  animation: pulse-status 2.5s infinite ease-in-out;
+}
+
+@keyframes pulse-status {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.9);
+  }
+}
+
+.footer-status-text {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #b9d8c6;
 }

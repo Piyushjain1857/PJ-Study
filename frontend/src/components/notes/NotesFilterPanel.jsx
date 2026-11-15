@@ -99,6 +99,19 @@ export function NotesFilterPanel({
     onCategoryChange
   ]);
 
+  // Preferred academic program order: B.Tech, BCA, B.Sc., MCA, M.Tech
+  const preferredCourseOrder = ['b.tech', 'bca', 'b.sc.', 'mca', 'm.tech'];
+  const displayCourses = useMemo(() => {
+    return [...courses].sort((a, b) => {
+      const idxA = preferredCourseOrder.indexOf(a.name?.toLowerCase().trim());
+      const idxB = preferredCourseOrder.indexOf(b.name?.toLowerCase().trim());
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+  }, [courses]);
+
   const hasActiveFilters = activeFilters.length > 0;
 
   function handleCourseSelect(newCourseId) {
@@ -176,7 +189,7 @@ export function NotesFilterPanel({
               className="notes-filter-group__select"
             >
               <option value="">All Courses</option>
-              {courses.map((c) => (
+              {displayCourses.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>

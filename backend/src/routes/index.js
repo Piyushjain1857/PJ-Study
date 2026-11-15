@@ -4,11 +4,14 @@ import authRoutes from '../modules/auth/auth.routes.js';
 import adminRoutes from '../modules/admin/admin.routes.js';
 import noteRoutes from '../modules/notes/note.routes.js';
 import categoryRoutes from '../modules/categories/category.routes.js';
+import courseRoutes from '../modules/courses/course.routes.js';
+import subjectRoutes from '../modules/subjects/subject.routes.js';
 import dashboardRoutes from '../modules/dashboard/dashboard.routes.js';
 import recommendationRoutes from '../modules/recommendations/recommendation.routes.js';
 import reviewRoutes from '../modules/reviews/review.routes.js';
 import profileRoutes from '../modules/profile/profile.routes.js';
 import contributorRoutes from '../modules/profile/contributor.routes.js';
+import notificationRoutes from '../modules/notifications/notification.routes.js';
 import { requireAuth } from '../auth/requireAuth.js';
 import noteController from '../modules/notes/note.controller.js';
 
@@ -84,6 +87,18 @@ router.use('/admin', adminRoutes);
 router.use('/categories', categoryRoutes);
 
 /**
+ * Academic course catalog routes.
+ * /api/v1/courses/...
+ */
+router.use('/courses', courseRoutes);
+
+/**
+ * Academic curriculum subject routes.
+ * /api/v1/subjects/...
+ */
+router.use('/subjects', subjectRoutes);
+
+/**
  * Study notes and ownership-governed resources.
  * /api/v1/notes/...
  */
@@ -118,6 +133,12 @@ router.use('/profile', profileRoutes);
  * /api/v1/contributors/...
  */
 router.use('/contributors', contributorRoutes);
+
+/**
+ * In-app notifications, unread count & delivery preferences.
+ * /api/v1/notifications/...
+ */
+router.use('/notifications', notificationRoutes);
 
 /**
  * User personal resources shortcut (/api/v1/users/me/notes)

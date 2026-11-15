@@ -135,7 +135,17 @@ export class CourseService {
       courseRepository.count(where)
     ]);
 
-    return buildPaginatedResponse(items, totalItems, pagination);
+    const preferredOrder = ['B.Tech', 'BCA', 'B.Sc.', 'MCA', 'M.Tech'];
+    const sortedItems = [...items].sort((a, b) => {
+      const idxA = preferredOrder.findIndex((p) => p.toLowerCase() === a.name.toLowerCase().trim());
+      const idxB = preferredOrder.findIndex((p) => p.toLowerCase() === b.name.toLowerCase().trim());
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.name.localeCompare(b.name);
+    });
+
+    return buildPaginatedResponse(sortedItems, totalItems, pagination);
   }
 }
 

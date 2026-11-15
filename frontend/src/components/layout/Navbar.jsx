@@ -45,7 +45,7 @@ export function Navbar() {
   const userMenuItems = [
     { label: 'Student Dashboard', onClick: () => navigate('/dashboard') },
     { label: 'My Study Library', onClick: () => navigate('/my-notes') },
-    { label: 'Scholar Profile', onClick: () => navigate('/profile') },
+    { label: 'Profile', onClick: () => navigate('/profile') },
     ...(isAdmin || isModerator
       ? [{ label: 'Admin Portal', onClick: () => navigate('/admin') }]
       : []),
@@ -89,25 +89,19 @@ export function Navbar() {
           <a href="/#how-it-works" className="navbar-nav__link">
             How It Works
           </a>
-          <NavLink
-            to="/design-system"
-            className={({ isActive }) =>
-              `navbar-nav__link ${isActive ? 'navbar-nav__link--active' : ''}`
-            }
-          >
-            Design System
-          </NavLink>
         </nav>
 
         {/* Desktop Actions */}
         <div className="navbar-actions">
           {isAuthenticated ? (
             <div className="d-flex items-center gap-3">
-              <Link to="/notes/new">
-                <Button variant="outline" size="sm">
-                  + Upload Note
-                </Button>
-              </Link>
+              {isModerator && (
+                <Link to="/notes/new">
+                  <Button variant="outline" size="sm">
+                    + Upload Note
+                  </Button>
+                </Link>
+              )}
               <Link to="/dashboard">
                 <Button variant="primary" size="sm">
                   Dashboard
@@ -192,15 +186,6 @@ export function Navbar() {
             <a href="/#how-it-works" onClick={closeMobileMenu} className="navbar-mobile-nav__link">
               How It Works
             </a>
-            <NavLink
-              to="/design-system"
-              onClick={closeMobileMenu}
-              className={({ isActive }) =>
-                `navbar-mobile-nav__link ${isActive ? 'navbar-mobile-nav__link--active' : ''}`
-              }
-            >
-              Design System
-            </NavLink>
 
             {isAuthenticated && (
               <>
@@ -223,15 +208,17 @@ export function Navbar() {
                 >
                   My Study Library
                 </NavLink>
-                <NavLink
-                  to="/notes/new"
-                  onClick={closeMobileMenu}
-                  className={({ isActive }) =>
-                    `navbar-mobile-nav__link ${isActive ? 'navbar-mobile-nav__link--active' : ''}`
-                  }
-                >
-                  + Upload Note
-                </NavLink>
+                {isModerator && (
+                  <NavLink
+                    to="/notes/new"
+                    onClick={closeMobileMenu}
+                    className={({ isActive }) =>
+                      `navbar-mobile-nav__link ${isActive ? 'navbar-mobile-nav__link--active' : ''}`
+                    }
+                  >
+                    + Upload Note
+                  </NavLink>
+                )}
                 <NavLink
                   to="/profile"
                   onClick={closeMobileMenu}
@@ -239,7 +226,7 @@ export function Navbar() {
                     `navbar-mobile-nav__link ${isActive ? 'navbar-mobile-nav__link--active' : ''}`
                   }
                 >
-                  Scholar Profile
+                  Profile
                 </NavLink>
                 {(isAdmin || isModerator) && (
                   <NavLink

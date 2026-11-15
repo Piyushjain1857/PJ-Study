@@ -3,6 +3,7 @@ import { Outlet, Link, NavLink, useLocation, useNavigate } from 'react-router-do
 import Avatar from '../components/common/Avatar.jsx';
 import Dropdown from '../components/common/Dropdown.jsx';
 import Badge from '../components/common/Badge.jsx';
+import NotificationBell from '../components/notifications/NotificationBell.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import './AppLayout.css';
 
@@ -66,7 +67,8 @@ export function AppLayout() {
     if (path.includes('/edit')) return 'Edit Study Note';
     if (path.startsWith('/notes/')) return 'Study Manuscript Details';
     if (path.startsWith('/contributors/')) return 'Academic Contributor Profile';
-    if (path.startsWith('/profile')) return 'Scholar Profile & Security';
+    if (path.startsWith('/profile')) return 'Profile & Security';
+    if (path.startsWith('/notifications')) return 'Notification Center';
     if (path.startsWith('/admin')) return 'Academic Moderation Console';
     if (path.startsWith('/design-system')) return 'Design System Reference';
     return 'PJ Study Workspace';
@@ -74,6 +76,7 @@ export function AppLayout() {
 
   const userMenuItems = [
     { label: 'View Profile', onClick: () => navigate('/profile') },
+    { label: 'Notifications', onClick: () => navigate('/notifications') },
     { label: 'My Study Library', onClick: () => navigate('/my-notes') },
     { label: 'Explore Catalog', onClick: () => navigate('/notes/explore') },
     ...(isAdmin || isModerator
@@ -184,7 +187,7 @@ export function AppLayout() {
   const secondaryNavItems = [
     {
       to: '/profile',
-      label: 'Scholar Profile',
+      label: 'Profile',
       requiresAuth: true,
       icon: (
         <svg
@@ -197,6 +200,24 @@ export function AppLayout() {
         >
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
           <circle cx="12" cy="7" r="4" />
+        </svg>
+      )
+    },
+    {
+      to: '/notifications',
+      label: 'Notifications',
+      requiresAuth: true,
+      icon: (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
       )
     },
@@ -465,6 +486,9 @@ export function AppLayout() {
               <span className="app-shell__search-text">Search notes, subjects...</span>
               <kbd className="app-shell__search-kbd">⌘K</kbd>
             </button>
+
+            {/* Notification Center Trigger */}
+            {isAuthenticated && <NotificationBell />}
 
             {/* User Account Menu */}
             {isAuthenticated ? (

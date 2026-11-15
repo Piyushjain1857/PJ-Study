@@ -624,4 +624,34 @@ test('Notes Ratings, Reviews & Quality Feedback Suite', async (t) => {
     assert.ok(Array.isArray(body.data.items));
     assert.strictEqual(body.data.pagination.page, 1);
   });
+
+  t.after(async () => {
+    await prisma.reviewReport.deleteMany({
+      where: { reporter: { email: { contains: 'review-' } } }
+    });
+    await prisma.reviewHelpfulVote.deleteMany({
+      where: { user: { email: { contains: 'review-' } } }
+    });
+    await prisma.review.deleteMany({
+      where: { user: { email: { contains: 'review-' } } }
+    });
+    await prisma.note.deleteMany({
+      where: { uploadedBy: { email: { contains: 'review-' } } }
+    });
+    await prisma.subject.deleteMany({
+      where: { slug: 'rev-test-subject' }
+    });
+    await prisma.course.deleteMany({
+      where: { slug: 'rev-test-course' }
+    });
+    await prisma.category.deleteMany({
+      where: { slug: 'rev-test-category' }
+    });
+    await prisma.user.deleteMany({
+      where: { email: { contains: 'review-' } }
+    });
+    if (server) {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
 });

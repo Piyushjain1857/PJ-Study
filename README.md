@@ -93,7 +93,7 @@ The frontend provides a cohesive editorial user experience for scholars:
   - `VerifyEmailPage` (`/verify-email`): Token validation banner with resend fallback.
   - `ForgotPasswordPage` (`/forgot-password`): Secure email recovery request.
   - `ResetPasswordPage` (`/reset-password`): Password reset with strength verification.
-  - `ProfilePage` (`/profile`): Scholar profile, verification badge, and password change form.
+  - `ProfilePage` (`/profile`): Profile, verification badge, and password change form.
 
 ---
 

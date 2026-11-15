@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import adminService from '../../services/adminService.js';
 import reviewService from '../../services/reviewService.js';
@@ -10,17 +10,20 @@ import { Input } from '../../components/common/Input.jsx';
 import { Modal } from '../../components/common/Modal.jsx';
 import { EmptyState } from '../../components/common/EmptyState.jsx';
 import { Skeleton } from '../../components/common/Skeleton.jsx';
+import { AnnouncementModal } from '../../components/notifications/AnnouncementModal.jsx';
+import { formatRelativeTime } from '../../utils/formatTime.js';
 import './AdminDashboardPage.css';
 import '../auth/Auth.css';
 
 /**
- * Editorial Academic Governance & Role Management Dashboard.
+ * Editorial Academic Governance & Role Management Dashboard (V3 Production-Grade).
  */
 export function AdminDashboardPage() {
   const { user: currentUser, isSuperAdmin } = useAuth();
 
   const [activeTab, setActiveTab] = useState('users');
   const [stats, setStats] = useState(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   // User Directory State
   const [users, setUsers] = useState([]);
@@ -29,6 +32,7 @@ export function AdminDashboardPage() {
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Audit Log State
   const [auditLogs, setAuditLogs] = useState([]);
@@ -44,6 +48,9 @@ export function AdminDashboardPage() {
   const [reviewReports, setReviewReports] = useState([]);
   const [isLoadingReports, setIsLoadingReports] = useState(false);
   const [reportFilter, setReportFilter] = useState('OPEN');
+
+  // Announcement Modal State
+  const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(false);
 
   // Feedback notifications
   const [actionNotice, setActionNotice] = useState({ type: '', message: '' });
@@ -63,30 +70,43 @@ export function AdminDashboardPage() {
   // Load KPI metrics
   const fetchStats = useCallback(async () => {
     try {
+      setIsLoadingStats(true);
       const data = await adminService.getStats();
       setStats(data);
     } catch {
       // Non-blocking metric fetch
+    } finally {
+      setIsLoadingStats(false);
     }
   }, []);
 
-  // Fetch Users
+  // Fetch Users with explicit overrides to prevent stale closures
   const fetchUsers = useCallback(
-    async (pageToLoad = 1) => {
+    async (pageToLoad = 1, overrides = {}) => {
       setIsLoadingUsers(true);
-      setActionNotice({ type: '', message: '' });
       try {
+        const qSearch = overrides.search !== undefined ? overrides.search : search;
+        const qRole = overrides.role !== undefined ? overrides.role : roleFilter;
+        const qStatus = overrides.status !== undefined ? overrides.status : statusFilter;
+
         const response = await adminService.getUsers({
           page: pageToLoad,
           limit: 10,
-          search: search.trim() || undefined,
-          role: roleFilter || undefined,
-          status: statusFilter || undefined
+          search: qSearch.trim() || undefined,
+          role: qRole || undefined,
+          status: qStatus || undefined
         });
-        setUsers(response.data || []);
-        if (response.pagination) {
-          setPagination(response.pagination);
-        }
+
+        const userList = response?.data || response?.items || [];
+        setUsers(userList);
+
+        const pag = response?.pagination || response?.meta || {};
+        setPagination({
+          page: pag.page || pageToLoad,
+          limit: pag.limit || 10,
+          total: pag.total ?? pag.totalItems ?? userList.length,
+          totalPages: pag.totalPages || 1
+        });
       } catch (err) {
         setActionNotice({
           type: 'danger',
@@ -107,10 +127,15 @@ export function AdminDashboardPage() {
         page: pageToLoad,
         limit: 15
       });
-      setAuditLogs(response.data || []);
-      if (response.pagination) {
-        setAuditPagination(response.pagination);
-      }
+      const logList = response?.data || response?.items || [];
+      setAuditLogs(logList);
+      const pag = response?.pagination || response?.meta || {};
+      setAuditPagination({
+        page: pag.page || pageToLoad,
+        limit: pag.limit || 15,
+        total: pag.total ?? pag.totalItems ?? logList.length,
+        totalPages: pag.totalPages || 1
+      });
     } catch (err) {
       setActionNotice({
         type: 'danger',
@@ -121,19 +146,6 @@ export function AdminDashboardPage() {
     }
   }, []);
 
-  // Initial load
-  useEffect(() => {
-    fetchStats();
-    fetchUsers(1);
-  }, [fetchStats, fetchUsers]);
-
-  // Load audit logs when switching to audit tab
-  useEffect(() => {
-    if (activeTab === 'audit') {
-      fetchAuditLogs(1);
-    }
-  }, [activeTab, fetchAuditLogs]);
-
   // Fetch Review Reports
   const fetchReviewReports = useCallback(async () => {
     setIsLoadingReports(true);
@@ -143,7 +155,7 @@ export function AdminDashboardPage() {
         limit: 20,
         status: reportFilter || undefined
       });
-      setReviewReports(response.items || []);
+      setReviewReports(response?.items || response?.data || []);
     } catch (err) {
       setActionNotice({
         type: 'danger',
@@ -154,17 +166,63 @@ export function AdminDashboardPage() {
     }
   }, [reportFilter]);
 
-  // Load review reports when switching to reviews tab
+  // Initial load on mount
   useEffect(() => {
-    if (activeTab === 'reviews') {
+    fetchStats();
+    fetchUsers(1, { search: '', role: '', status: '' });
+  }, []);
+
+  // Tab change handler
+  useEffect(() => {
+    if (activeTab === 'audit') {
+      fetchAuditLogs(1);
+    } else if (activeTab === 'reviews') {
       fetchReviewReports();
+    } else if (activeTab === 'users' || activeTab === 'staff') {
+      fetchUsers(1);
     }
-  }, [activeTab, fetchReviewReports]);
+  }, [activeTab]);
 
   // Handle Search Submission
   function handleSearchSubmit(e) {
     e.preventDefault();
-    fetchUsers(1);
+    fetchUsers(1, { search, role: roleFilter, status: statusFilter });
+  }
+
+  // Handle Role Filter Change
+  function handleRoleChange(e) {
+    const newRole = e.target.value;
+    setRoleFilter(newRole);
+    fetchUsers(1, { role: newRole });
+  }
+
+  // Handle Status Filter Change
+  function handleStatusChange(e) {
+    const newStatus = e.target.value;
+    setStatusFilter(newStatus);
+    fetchUsers(1, { status: newStatus });
+  }
+
+  // Handle Reset Filters
+  function handleResetFilters() {
+    setSearch('');
+    setRoleFilter('');
+    setStatusFilter('');
+    fetchUsers(1, { search: '', role: '', status: '' });
+  }
+
+  // Refresh Console
+  async function handleRefreshConsole() {
+    setIsRefreshing(true);
+    await Promise.all([
+      fetchStats(),
+      activeTab === 'audit'
+        ? fetchAuditLogs(auditPagination.page)
+        : activeTab === 'reviews'
+          ? fetchReviewReports()
+          : fetchUsers(pagination.page)
+    ]);
+    setTimeout(() => setIsRefreshing(false), 400);
   }
 
   // Open Role Modal
@@ -287,109 +345,448 @@ export function AdminDashboardPage() {
     }
   }
 
-  // Render Role Badge
+  // Render Role Badge with Icons
   function renderRoleBadge(role) {
     switch (role) {
       case ROLES.SUPER_ADMIN:
         return (
-          <Badge variant="accent" size="sm">
+          <span className="admin-role-badge admin-role-badge--super">
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
             Super Admin
-          </Badge>
+          </span>
         );
       case ROLES.ADMIN:
         return (
-          <Badge variant="primary" size="sm">
+          <span className="admin-role-badge admin-role-badge--admin">
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
             Admin
-          </Badge>
+          </span>
         );
       case ROLES.MODERATOR:
         return (
-          <Badge variant="warning" size="sm">
+          <span className="admin-role-badge admin-role-badge--moderator">
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
             Moderator
-          </Badge>
+          </span>
         );
       default:
         return (
-          <Badge variant="neutral" size="sm">
+          <span className="admin-role-badge admin-role-badge--student">
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+              <path d="M6 12v5c3 3 9 3 12 0v-5" />
+            </svg>
             Student
-          </Badge>
+          </span>
         );
     }
   }
+
+  // Helper for human-readable audit detail text
+  function formatAuditDetails(log) {
+    if (!log.metadata) return 'No additional context provided';
+    const m = log.metadata;
+    if (m.oldRole && m.newRole) {
+      return `Role changed from ${m.oldRole} → ${m.newRole}${m.reason ? ` (${m.reason})` : ''}`;
+    }
+    if (m.reason) {
+      return m.reason;
+    }
+    if (typeof m === 'object') {
+      const keys = Object.keys(m);
+      if (keys.length === 0) return '—';
+      return keys.map((k) => `${k}: ${String(m[k])}`).join(', ');
+    }
+    return String(m);
+  }
+
+  const hasActiveFilters = Boolean(search || roleFilter || statusFilter);
 
   return (
     <div className="admin-dashboard">
       <div className="container">
         {/* Header */}
         <header className="admin-header">
-          <span className="admin-header__badge">Academic Governance</span>
-          <h1 className="admin-header__title">Role-Based Access Control</h1>
-          <p className="admin-header__subtitle">
-            Manage university student accounts, faculty moderators, and audit compliance logs.
-          </p>
+          <div className="admin-header__left">
+            <span className="admin-header__badge">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+              Academic Governance
+            </span>
+            <h1 className="admin-header__title">Role-Based Access Control</h1>
+            <p className="admin-header__subtitle">
+              Manage university scholar accounts, faculty moderators, access permissions, and
+              governance audit trails.
+            </p>
+          </div>
+
+          <div className="admin-header__actions">
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={() => setIsAnnouncementOpen(true)}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ marginRight: '6px' }}
+                aria-hidden="true"
+              >
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+              </svg>
+              Broadcast Notice
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleRefreshConsole}
+              disabled={isRefreshing}
+              title="Refresh console metrics and tables"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={isRefreshing ? 'admin-spin-icon' : ''}
+                style={{ marginRight: '6px' }}
+                aria-hidden="true"
+              >
+                <polyline points="23 4 23 10 17 10" />
+                <polyline points="1 20 1 14 7 14" />
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+              </svg>
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </Button>
+          </div>
         </header>
 
-        {/* Global Action Banner */}
+        {/* Global Action Notice */}
         {actionNotice.message && (
           <div
             className={`auth-alert auth-alert--${actionNotice.type}`}
-            style={{ marginBottom: '24px' }}
+            style={{
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}
           >
             <span>{actionNotice.message}</span>
+            <button
+              type="button"
+              onClick={() => setActionNotice({ type: '', message: '' })}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '14px',
+                color: 'inherit'
+              }}
+              aria-label="Dismiss message"
+            >
+              ✕
+            </button>
           </div>
         )}
 
         {/* KPI Metrics */}
-        {stats && (
+        {isLoadingStats && !stats ? (
+          <div className="admin-metrics">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="admin-metric-card">
+                <Skeleton height="20px" width="60%" style={{ marginBottom: '12px' }} />
+                <Skeleton height="36px" width="40%" style={{ marginBottom: '8px' }} />
+                <Skeleton height="14px" width="70%" />
+              </div>
+            ))}
+          </div>
+        ) : stats ? (
           <div className="admin-metrics">
             <div className="admin-metric-card">
-              <div className="admin-metric-card__label">Total Scholars</div>
+              <div className="admin-metric-card__top">
+                <span className="admin-metric-card__label">Total Scholars</span>
+                <span className="admin-metric-card__icon admin-metric-card__icon--blue">
+                  <svg
+                    width="17"
+                    height="17"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                </span>
+              </div>
               <p className="admin-metric-card__value">{stats.totalUsers}</p>
+              <div className="admin-metric-card__footer">
+                <span className="admin-metric-card__subtext">Enrolled university accounts</span>
+                <span className="admin-metric-card__pill admin-metric-card__pill--blue">
+                  All Courses
+                </span>
+              </div>
             </div>
+
             <div className="admin-metric-card">
-              <div className="admin-metric-card__label">Active Accounts</div>
+              <div className="admin-metric-card__top">
+                <span className="admin-metric-card__label">Active Accounts</span>
+                <span className="admin-metric-card__icon admin-metric-card__icon--green">
+                  <svg
+                    width="17"
+                    height="17"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                  </svg>
+                </span>
+              </div>
               <p className="admin-metric-card__value" style={{ color: 'var(--color-success)' }}>
                 {stats.activeUsers}
               </p>
+              <div className="admin-metric-card__footer">
+                <span className="admin-metric-card__subtext">Good academic standing</span>
+                <span className="admin-metric-card__pill admin-metric-card__pill--green">
+                  {Math.round(((stats.activeUsers || 0) / (stats.totalUsers || 1)) * 100)}% Verified
+                </span>
+              </div>
             </div>
+
             <div className="admin-metric-card">
-              <div className="admin-metric-card__label">Suspended</div>
-              <p className="admin-metric-card__value" style={{ color: 'var(--color-danger)' }}>
+              <div className="admin-metric-card__top">
+                <span className="admin-metric-card__label">Suspended Accounts</span>
+                <span className="admin-metric-card__icon admin-metric-card__icon--red">
+                  <svg
+                    width="17"
+                    height="17"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                  </svg>
+                </span>
+              </div>
+              <p
+                className="admin-metric-card__value"
+                style={{
+                  color:
+                    stats.suspendedUsers > 0 ? 'var(--color-danger)' : 'var(--color-text-primary)'
+                }}
+              >
                 {stats.suspendedUsers}
               </p>
+              <div className="admin-metric-card__footer">
+                <span className="admin-metric-card__subtext">Access restricted</span>
+                {stats.suspendedUsers > 0 ? (
+                  <span className="admin-metric-card__pill admin-metric-card__pill--red">
+                    Hold Active
+                  </span>
+                ) : (
+                  <span className="admin-metric-card__pill admin-metric-card__pill--green">
+                    Zero Holds
+                  </span>
+                )}
+              </div>
             </div>
+
             <div className="admin-metric-card">
-              <div className="admin-metric-card__label">Moderators & Admins</div>
+              <div className="admin-metric-card__top">
+                <span className="admin-metric-card__label">Staff & Governance</span>
+                <span className="admin-metric-card__icon admin-metric-card__icon--purple">
+                  <svg
+                    width="17"
+                    height="17"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                </span>
+              </div>
               <p className="admin-metric-card__value">
                 {(stats.roles?.MODERATOR || 0) +
                   (stats.roles?.ADMIN || 0) +
                   (stats.roles?.SUPER_ADMIN || 0)}
               </p>
+              <div className="admin-metric-card__footer">
+                <span className="admin-metric-card__subtext">Faculty evaluators & staff</span>
+                <span className="admin-metric-card__pill admin-metric-card__pill--purple">
+                  {stats.roles?.MODERATOR || 0} Mod ·{' '}
+                  {(stats.roles?.ADMIN || 0) + (stats.roles?.SUPER_ADMIN || 0)} Adm
+                </span>
+              </div>
             </div>
           </div>
-        )}
+        ) : null}
 
-        {/* Tab Controls */}
+        {/* Tab Navigation */}
         <nav className="admin-tabs" aria-label="Administrative Views">
           <button
             type="button"
             className={`admin-tab-btn ${activeTab === 'users' ? 'admin-tab-btn--active' : ''}`}
             onClick={() => setActiveTab('users')}
           >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
             User Directory
+            {stats && <span className="admin-tab-count">{stats.totalUsers}</span>}
           </button>
           <button
             type="button"
             className={`admin-tab-btn ${activeTab === 'staff' ? 'admin-tab-btn--active' : ''}`}
             onClick={() => setActiveTab('staff')}
           >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
             Staff & Moderators
+            {stats && (
+              <span className="admin-tab-count">
+                {(stats.roles?.MODERATOR || 0) +
+                  (stats.roles?.ADMIN || 0) +
+                  (stats.roles?.SUPER_ADMIN || 0)}
+              </span>
+            )}
           </button>
           <button
             type="button"
             className={`admin-tab-btn ${activeTab === 'audit' ? 'admin-tab-btn--active' : ''}`}
             onClick={() => setActiveTab('audit')}
           >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 14 14" />
+            </svg>
             Audit Log Trail
           </button>
           <button
@@ -397,13 +794,50 @@ export function AdminDashboardPage() {
             className={`admin-tab-btn ${activeTab === 'reviews' ? 'admin-tab-btn--active' : ''}`}
             onClick={() => setActiveTab('reviews')}
           >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+              <line x1="4" y1="22" x2="4" y2="15" />
+            </svg>
             Review Moderation
+            {reviewReports.length > 0 && (
+              <span
+                className="admin-tab-count"
+                style={{ backgroundColor: 'rgba(234, 179, 8, 0.2)', color: '#ca8a04' }}
+              >
+                {reviewReports.length}
+              </span>
+            )}
           </button>
           <button
             type="button"
             className={`admin-tab-btn ${activeTab === 'matrix' ? 'admin-tab-btn--active' : ''}`}
             onClick={() => setActiveTab('matrix')}
           >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <line x1="3" y1="9" x2="21" y2="9" />
+              <line x1="9" y1="21" x2="9" y2="9" />
+            </svg>
             Permissions Matrix
           </button>
         </nav>
@@ -432,7 +866,7 @@ export function AdminDashboardPage() {
                   </svg>
                   <input
                     type="search"
-                    placeholder="Search name or email..."
+                    placeholder="Search by scholar name or email..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="admin-search-input"
@@ -443,10 +877,10 @@ export function AdminDashboardPage() {
                       type="button"
                       onClick={() => {
                         setSearch('');
-                        fetchUsers(1);
+                        fetchUsers(1, { search: '' });
                       }}
                       className="admin-search-clear"
-                      title="Clear search"
+                      title="Clear search query"
                       aria-label="Clear search query"
                     >
                       ✕
@@ -459,10 +893,7 @@ export function AdminDashboardPage() {
                     <select
                       className="admin-select"
                       value={roleFilter}
-                      onChange={(e) => {
-                        setRoleFilter(e.target.value);
-                        fetchUsers(1);
-                      }}
+                      onChange={handleRoleChange}
                       aria-label="Filter by role"
                     >
                       <option value="">All Roles</option>
@@ -492,15 +923,12 @@ export function AdminDashboardPage() {
                   <select
                     className="admin-select"
                     value={statusFilter}
-                    onChange={(e) => {
-                      setStatusFilter(e.target.value);
-                      fetchUsers(1);
-                    }}
+                    onChange={handleStatusChange}
                     aria-label="Filter by status"
                   >
                     <option value="">All Statuses</option>
-                    <option value="active">Active Only</option>
-                    <option value="suspended">Suspended Only</option>
+                    <option value="active">Active Accounts</option>
+                    <option value="suspended">Suspended Accounts</option>
                   </select>
                   <svg
                     className="admin-select-chevron"
@@ -519,28 +947,39 @@ export function AdminDashboardPage() {
                 </div>
 
                 <Button type="submit" variant="primary" size="sm">
-                  Search
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{ marginRight: '5px' }}
+                    aria-hidden="true"
+                  >
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  Filter
                 </Button>
 
-                {(search || roleFilter || statusFilter) && (
+                {hasActiveFilters && (
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      setSearch('');
-                      setRoleFilter('');
-                      setStatusFilter('');
-                      fetchUsers(1);
-                    }}
+                    onClick={handleResetFilters}
+                    title="Reset all filters"
                   >
-                    Reset
+                    ✕ Clear
                   </Button>
                 )}
               </form>
 
               <div className="admin-toolbar__count">
-                <span>
+                <span className="admin-count-pill">
                   {pagination.total} {pagination.total === 1 ? 'scholar' : 'scholars'}
                 </span>
               </div>
@@ -550,12 +989,19 @@ export function AdminDashboardPage() {
             <div className="admin-table-container">
               {isLoadingUsers ? (
                 <div style={{ padding: '24px' }}>
-                  <Skeleton height="36px" count={5} style={{ marginBottom: '12px' }} />
+                  <Skeleton height="40px" count={5} style={{ marginBottom: '12px' }} />
                 </div>
               ) : users.length === 0 ? (
                 <EmptyState
                   title="No scholars found"
                   description="No accounts match your current search and role filters."
+                  action={
+                    hasActiveFilters ? (
+                      <Button variant="outline" size="sm" onClick={handleResetFilters}>
+                        Reset all filters
+                      </Button>
+                    ) : null
+                  }
                 />
               ) : (
                 <table className="admin-table">
@@ -566,7 +1012,7 @@ export function AdminDashboardPage() {
                       <th>Role</th>
                       <th>Status</th>
                       <th>Joined</th>
-                      <th>Actions</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -596,43 +1042,45 @@ export function AdminDashboardPage() {
                                 <Avatar name={userItem.name} src={userItem.avatarUrl} size="sm" />
                                 <div>
                                   <p className="admin-user-cell__name">
-                                    {userItem.name} {isSelf && '(You)'}
+                                    {userItem.name}
+                                    {isSelf && <span className="admin-self-pill">You</span>}
                                   </p>
+                                  <span className="admin-user-cell__meta">
+                                    ID: {userItem.id ? userItem.id.slice(0, 8) : '—'}
+                                  </span>
                                 </div>
                               </div>
                             </td>
                             <td>
-                              <span
-                                style={{
-                                  color: 'var(--color-text-secondary)',
-                                  fontSize: '0.875rem'
-                                }}
-                              >
-                                {userItem.email}
-                              </span>
+                              <span className="admin-email-text">{userItem.email}</span>
                             </td>
                             <td>{renderRoleBadge(userItem.role)}</td>
                             <td>
-                              {userItem.isActive ? (
-                                <Badge variant="success" size="sm">
-                                  Active
-                                </Badge>
-                              ) : (
-                                <Badge variant="danger" size="sm">
-                                  Suspended
-                                </Badge>
-                              )}
-                            </td>
-                            <td
-                              style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}
-                            >
-                              {new Date(userItem.createdAt).toLocaleDateString()}
+                              <span
+                                className={`admin-status-pill ${
+                                  userItem.isActive
+                                    ? 'admin-status-pill--active'
+                                    : 'admin-status-pill--suspended'
+                                }`}
+                              >
+                                <span className="admin-status-pill__dot" />
+                                {userItem.isActive ? 'Active' : 'Suspended'}
+                              </span>
                             </td>
                             <td>
+                              <span className="admin-date-text">
+                                {new Date(userItem.createdAt).toLocaleDateString(undefined, {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric'
+                                })}
+                              </span>
+                            </td>
+                            <td style={{ textAlign: 'right' }}>
                               <div className="admin-actions-cell">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
+                                <button
+                                  type="button"
+                                  className="admin-action-btn admin-action-btn--role"
                                   disabled={!canChangeRole}
                                   onClick={() => handleOpenRoleModal(userItem)}
                                   title={
@@ -643,12 +1091,31 @@ export function AdminDashboardPage() {
                                         : 'Change user role'
                                   }
                                 >
+                                  <svg
+                                    width="13"
+                                    height="13"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    aria-hidden="true"
+                                  >
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                    <circle cx="9" cy="7" r="4" />
+                                    <polyline points="16 11 18 13 22 9" />
+                                  </svg>
                                   Change Role
-                                </Button>
+                                </button>
 
-                                <Button
-                                  variant={userItem.isActive ? 'ghost' : 'secondary'}
-                                  size="sm"
+                                <button
+                                  type="button"
+                                  className={`admin-action-btn ${
+                                    userItem.isActive
+                                      ? 'admin-action-btn--suspend'
+                                      : 'admin-action-btn--reactivate'
+                                  }`}
                                   disabled={!canSuspend}
                                   onClick={() => handleOpenSuspendModal(userItem)}
                                   title={
@@ -657,12 +1124,48 @@ export function AdminDashboardPage() {
                                       : !canSuspend
                                         ? 'Cannot suspend this administrator'
                                         : userItem.isActive
-                                          ? 'Suspend user'
-                                          : 'Reactivate user'
+                                          ? 'Suspend user account'
+                                          : 'Reactivate user account'
                                   }
                                 >
-                                  {userItem.isActive ? 'Suspend' : 'Reactivate'}
-                                </Button>
+                                  {userItem.isActive ? (
+                                    <>
+                                      <svg
+                                        width="13"
+                                        height="13"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        aria-hidden="true"
+                                      >
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                                      </svg>
+                                      Suspend
+                                    </>
+                                  ) : (
+                                    <>
+                                      <svg
+                                        width="13"
+                                        height="13"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        aria-hidden="true"
+                                      >
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                        <polyline points="22 4 12 14.01 9 11.01" />
+                                      </svg>
+                                      Reactivate
+                                    </>
+                                  )}
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -723,7 +1226,7 @@ export function AdminDashboardPage() {
                     <th>Actor</th>
                     <th>Action</th>
                     <th>Entity</th>
-                    <th>Details</th>
+                    <th>Event Details</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -732,25 +1235,39 @@ export function AdminDashboardPage() {
                       <td
                         style={{
                           color: 'var(--color-text-secondary)',
-                          fontSize: '0.825rem',
+                          fontSize: 'var(--text-xs)',
                           whiteSpace: 'nowrap'
                         }}
                       >
-                        {new Date(log.createdAt).toLocaleString()}
+                        {formatRelativeTime(log.createdAt)}
+                        <span
+                          style={{
+                            display: 'block',
+                            fontSize: '10px',
+                            color: 'var(--color-text-muted)'
+                          }}
+                        >
+                          {new Date(log.createdAt).toLocaleTimeString()}
+                        </span>
                       </td>
                       <td>
                         {log.actor ? (
-                          <div>
-                            <span style={{ fontWeight: 600 }}>{log.actor.name}</span>
-                            <span
-                              style={{
-                                display: 'block',
-                                fontSize: '0.75rem',
-                                color: 'var(--color-text-secondary)'
-                              }}
-                            >
-                              {log.actor.role}
-                            </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Avatar name={log.actor.name} size="xs" />
+                            <div>
+                              <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                                {log.actor.name}
+                              </span>
+                              <span
+                                style={{
+                                  display: 'block',
+                                  fontSize: '11px',
+                                  color: 'var(--color-text-secondary)'
+                                }}
+                              >
+                                {log.actor.role}
+                              </span>
+                            </div>
                           </div>
                         ) : (
                           <span style={{ color: 'var(--color-text-secondary)' }}>System</span>
@@ -770,11 +1287,22 @@ export function AdminDashboardPage() {
                           {log.action}
                         </Badge>
                       </td>
-                      <td style={{ fontSize: '0.85rem' }}>
-                        {log.entityType} ({log.entityId.slice(0, 8)}...)
+                      <td style={{ fontSize: 'var(--text-xs)' }}>
+                        <span style={{ fontWeight: 500 }}>{log.entityType}</span>
+                        <span
+                          style={{
+                            display: 'block',
+                            color: 'var(--color-text-muted)',
+                            fontSize: '11px'
+                          }}
+                        >
+                          ID: {log.entityId ? log.entityId.slice(0, 8) + '...' : '—'}
+                        </span>
                       </td>
-                      <td style={{ fontSize: '0.825rem', color: 'var(--color-text-secondary)' }}>
-                        {log.metadata ? JSON.stringify(log.metadata) : '—'}
+                      <td
+                        style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
+                      >
+                        {formatAuditDetails(log)}
                       </td>
                     </tr>
                   ))}
@@ -849,28 +1377,28 @@ export function AdminDashboardPage() {
                       <td style={{ fontWeight: 500 }}>{row.label}</td>
                       <td style={{ textAlign: 'center' }}>
                         {hasStudent ? (
-                          <span className="matrix-check">✓ Yes</span>
+                          <span className="matrix-check">✓ Granted</span>
                         ) : (
                           <span className="matrix-cross">—</span>
                         )}
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         {hasMod ? (
-                          <span className="matrix-check">✓ Yes</span>
+                          <span className="matrix-check">✓ Granted</span>
                         ) : (
                           <span className="matrix-cross">—</span>
                         )}
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         {hasAdmin ? (
-                          <span className="matrix-check">✓ Yes</span>
+                          <span className="matrix-check">✓ Granted</span>
                         ) : (
                           <span className="matrix-cross">—</span>
                         )}
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         {hasSuper ? (
-                          <span className="matrix-check">✓ Yes</span>
+                          <span className="matrix-check">✓ Granted</span>
                         ) : (
                           <span className="matrix-cross">—</span>
                         )}
@@ -883,7 +1411,7 @@ export function AdminDashboardPage() {
           </div>
         )}
 
-        {/* TAB: REVIEW MODERATION */}
+        {/* TAB 5: REVIEW MODERATION */}
         {activeTab === 'reviews' && (
           <div>
             <div className="admin-toolbar" style={{ justifyContent: 'space-between' }}>
@@ -969,7 +1497,11 @@ export function AdminDashboardPage() {
                           <td>
                             <strong>{review?.note?.title || 'Unknown Note'}</strong>
                             <div
-                              style={{ fontSize: '0.75rem', color: '#74756f', marginTop: '2px' }}
+                              style={{
+                                fontSize: '0.75rem',
+                                color: 'var(--color-text-secondary)',
+                                marginTop: '2px'
+                              }}
                             >
                               By {review?.user?.name || review?.user?.email || 'Scholar'}
                             </div>
@@ -989,13 +1521,15 @@ export function AdminDashboardPage() {
                             <p
                               style={{
                                 margin: 0,
-                                fontSize: '0.8125rem',
-                                color: '#334155',
+                                fontSize: 'var(--text-xs)',
+                                color: 'var(--color-text-secondary)',
                                 maxWidth: '280px'
                               }}
                             >
                               {review?.comment || (
-                                <em style={{ color: '#94a3b8' }}>No written critique</em>
+                                <em style={{ color: 'var(--color-text-muted)' }}>
+                                  No written critique
+                                </em>
                               )}
                             </p>
                           </td>
@@ -1008,7 +1542,11 @@ export function AdminDashboardPage() {
                             </Badge>
                             {report.description && (
                               <p
-                                style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#64748b' }}
+                                style={{
+                                  margin: '4px 0 0',
+                                  fontSize: '11px',
+                                  color: 'var(--color-text-secondary)'
+                                }}
                               >
                                 &ldquo;{report.description}&rdquo;
                               </p>
@@ -1019,7 +1557,11 @@ export function AdminDashboardPage() {
                               {report.reporter?.name || report.reporter?.email || 'Scholar'}
                             </span>
                             <div
-                              style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}
+                              style={{
+                                fontSize: '11px',
+                                color: 'var(--color-text-muted)',
+                                marginTop: '2px'
+                              }}
                             >
                               {new Date(report.createdAt).toLocaleDateString()}
                             </div>
@@ -1113,8 +1655,8 @@ export function AdminDashboardPage() {
                   htmlFor="select-target-role"
                   style={{
                     display: 'block',
-                    fontSize: '0.9rem',
-                    fontWeight: 600,
+                    fontSize: 'var(--text-xs)',
+                    fontWeight: 'var(--weight-semibold)',
                     marginBottom: '6px'
                   }}
                 >
@@ -1234,6 +1776,18 @@ export function AdminDashboardPage() {
             </div>
           )}
         </Modal>
+
+        {/* BROADCAST ANNOUNCEMENT MODAL (STEP 14) */}
+        <AnnouncementModal
+          isOpen={isAnnouncementOpen}
+          onClose={() => setIsAnnouncementOpen(false)}
+          onSuccess={(result) => {
+            setActionNotice({
+              type: 'success',
+              message: `Announcement broadcast successfully to ${result?.recipientCount || 0} scholars!`
+            });
+          }}
+        />
       </div>
     </div>
   );

@@ -140,10 +140,21 @@ export function AuthProvider({ children }) {
   }, [updateAccessToken]);
 
   /**
-   * Updates local user state.
+   * Updates local user state with shallow diffing to prevent no-op state updates.
    */
   const updateUser = useCallback((userData) => {
-    setUser((prev) => (prev ? { ...prev, ...userData } : userData));
+    if (!userData) return;
+    setUser((prev) => {
+      if (!prev) return userData;
+      let hasChanged = false;
+      for (const [key, val] of Object.entries(userData)) {
+        if (prev[key] !== val) {
+          hasChanged = true;
+          break;
+        }
+      }
+      return hasChanged ? { ...prev, ...userData } : prev;
+    });
   }, []);
 
   // Centralized RBAC capabilities for active user
@@ -165,28 +176,44 @@ export function AuthProvider({ children }) {
     [user]
   );
 
-  const value = {
-    user,
-    accessToken,
-    isAuthenticated: Boolean(user),
-    isLoading,
-    error,
-    role: user?.role || null,
-    permissions,
-    isSuperAdmin: user?.role === ROLES.SUPER_ADMIN,
-    isAdmin: user?.role === ROLES.ADMIN || user?.role === ROLES.SUPER_ADMIN,
-    isModerator:
-      user?.role === ROLES.MODERATOR ||
-      user?.role === ROLES.ADMIN ||
-      user?.role === ROLES.SUPER_ADMIN,
-    hasPermission,
-    hasRole,
-    login,
-    register,
-    logout,
-    refreshUser,
-    updateUser
-  };
+  const value = useMemo(
+    () => ({
+      user,
+      accessToken,
+      isAuthenticated: Boolean(user),
+      isLoading,
+      error,
+      role: user?.role || null,
+      permissions,
+      isSuperAdmin: user?.role === ROLES.SUPER_ADMIN,
+      isAdmin: user?.role === ROLES.ADMIN || user?.role === ROLES.SUPER_ADMIN,
+      isModerator:
+        user?.role === ROLES.MODERATOR ||
+        user?.role === ROLES.ADMIN ||
+        user?.role === ROLES.SUPER_ADMIN,
+      hasPermission,
+      hasRole,
+      login,
+      register,
+      logout,
+      refreshUser,
+      updateUser
+    }),
+    [
+      user,
+      accessToken,
+      isLoading,
+      error,
+      permissions,
+      hasPermission,
+      hasRole,
+      login,
+      register,
+      logout,
+      refreshUser,
+      updateUser
+    ]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

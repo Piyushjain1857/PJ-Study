@@ -1,6 +1,7 @@
 import React from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.jsx';
+import { NotificationProvider } from './context/NotificationContext.jsx';
 import { router } from './app/router.jsx';
 
 /**
@@ -9,7 +10,9 @@ import { router } from './app/router.jsx';
 export function App() {
   return (
     <AuthProvider>
-      <RouterProvider router={router} future={{ v7_startTransition: true }} />
+      <NotificationProvider>
+        <RouterProvider router={router} future={{ v7_startTransition: true }} />
+      </NotificationProvider>
     </AuthProvider>
   );
 }

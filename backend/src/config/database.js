@@ -7,6 +7,8 @@ import env from './env.js';
  */
 let prisma;
 
+const isVerbosePrisma = process.env.PRISMA_VERBOSE === 'true';
+
 if (process.env.NODE_ENV === 'production') {
   prisma = new PrismaClient({
     log: ['error', 'warn']
@@ -14,7 +16,7 @@ if (process.env.NODE_ENV === 'production') {
 } else {
   if (!global.__pj_prisma) {
     global.__pj_prisma = new PrismaClient({
-      log: ['query', 'info', 'warn', 'error']
+      log: isVerbosePrisma ? ['query', 'info', 'warn', 'error'] : ['error', 'warn']
     });
   }
   prisma = global.__pj_prisma;

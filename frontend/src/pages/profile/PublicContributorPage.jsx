@@ -101,7 +101,7 @@ export function PublicContributorPage() {
           </div>
           <h2 className="contributor-empty-title">Contributor Profile Unavailable</h2>
           <p className="contributor-empty-desc">
-            {error || 'The scholar profile you requested does not exist or has been deactivated.'}
+            {error || 'The Profile you requested does not exist or has been deactivated.'}
           </p>
           <Link to="/notes/explore" className="btn btn--primary">
             Explore Study Notes

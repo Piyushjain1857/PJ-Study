@@ -5,6 +5,7 @@
 
 .btn {
   display: inline-flex;
+  flex-direction: row !important;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
@@ -16,7 +17,7 @@
   cursor: pointer;
   text-decoration: none;
   line-height: 1;
-  white-space: nowrap;
+  white-space: nowrap !important;
   user-select: none;
   transition:
     background-color var(--transition-fast),
@@ -133,6 +134,35 @@
   cursor: not-allowed;
   pointer-events: none;
   box-shadow: none !important;
+}
+
+/* Button Icon & Text Elements */
+.btn__icon {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.btn__icon svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+.btn__text {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-1-5, 6px);
+  white-space: nowrap !important;
+  line-height: 1.2;
+}
+
+.btn__text svg {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
 }
 
 /* Spinner Icon */

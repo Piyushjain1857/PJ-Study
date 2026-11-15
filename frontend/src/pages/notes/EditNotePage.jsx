@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import noteService from '../../services/noteService.js';
+import courseService from '../../services/courseService.js';
 import subjectService from '../../services/subjectService.js';
 import categoryService from '../../services/categoryService.js';
 import NoteForm from '../../components/notes/NoteForm.jsx';
@@ -16,6 +17,7 @@ export function EditNotePage() {
   const navigate = useNavigate();
 
   const [note, setNote] = useState(null);
+  const [courses, setCourses] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,12 +30,14 @@ export function EditNotePage() {
       setIsLoading(true);
       setLoadError('');
       try {
-        const [noteData, subjData, catData] = await Promise.all([
+        const [noteData, courseData, subjData, catData] = await Promise.all([
           noteService.getNoteById(id),
+          courseService.listCourses(),
           subjectService.listSubjects(),
           categoryService.listCategories()
         ]);
         setNote(noteData);
+        setCourses(courseData || []);
         setSubjects(subjData || []);
         setCategories(catData || []);
       } catch (err) {
@@ -133,6 +137,7 @@ export function EditNotePage() {
           initialValues={{
             title: note.title,
             description: note.description || '',
+            courseId: note.courseId || '',
             subjectId: note.subjectId,
             categoryId: note.categoryId || '',
             semester: note.semester || '',
@@ -140,6 +145,7 @@ export function EditNotePage() {
             content: note.content || '',
             fileName: note.fileName || ''
           }}
+          courses={courses}
           subjects={subjects}
           categories={categories}
           onSubmit={handleSubmit}

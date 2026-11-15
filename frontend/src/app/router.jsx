@@ -15,6 +15,7 @@ import ResetPasswordPage from '../pages/auth/ResetPasswordPage.jsx';
 import ProfilePage from '../pages/auth/ProfilePage.jsx';
 import PublicContributorPage from '../pages/profile/PublicContributorPage.jsx';
 import AdminDashboardPage from '../pages/admin/AdminDashboardPage.jsx';
+import NotificationCenterPage from '../pages/notifications/NotificationCenterPage.jsx';
 import UnauthorizedPage from '../pages/UnauthorizedPage.jsx';
 import StudentDashboardPage from '../pages/dashboard/StudentDashboardPage.jsx';
 
@@ -106,6 +107,14 @@ export const router = createBrowserRouter(
           element: (
             <ProtectedRoute>
               <ProfilePage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'notifications',
+          element: (
+            <ProtectedRoute>
+              <NotificationCenterPage />
             </ProtectedRoute>
           )
         },

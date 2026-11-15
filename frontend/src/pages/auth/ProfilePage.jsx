@@ -78,57 +78,89 @@ export function ProfilePage() {
   // Email verification state
   const [isResending, setIsResending] = useState(false);
   const [resendNotice, setResendNotice] = useState('');
+  const userRef = useRef(user);
 
-  // Fetch full profile and statistics
-  const fetchProfile = useCallback(async () => {
-    setIsLoadingProfile(true);
-    try {
-      const data = await profileService.getOwnProfile();
-      setProfileData(data);
-      if (data) {
-        updateUser(data);
-        setEditForm({
-          name: data.name || '',
-          bio: data.bio || '',
-          university: data.university || '',
-          courseId: data.courseId || '',
-          semester:
-            data.semester !== null && data.semester !== undefined ? String(data.semester) : ''
-        });
-        setPrivacySettings({
-          publicProfileEnabled: data.publicProfileEnabled ?? true,
-          showAcademicInfo: data.showAcademicInfo ?? true,
-          showBio: data.showBio ?? true,
-          showContributionStats: data.showContributionStats ?? true
-        });
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
+  // Fetch full profile and statistics once on mount or when explicitly reloaded
+  const fetchProfile = useCallback(
+    async (options = {}) => {
+      setIsLoadingProfile(true);
+      try {
+        const data = await profileService.getOwnProfile(options);
+        setProfileData(data);
+        if (data) {
+          // Synchronize auth context user state safely with shallow-checked user fields
+          updateUser({
+            id: data.id,
+            name: data.name,
+            email: data.email,
+            avatarUrl: data.avatarUrl,
+            bio: data.bio,
+            university: data.university,
+            courseId: data.courseId,
+            semester: data.semester,
+            role: data.role,
+            publicProfileEnabled: data.publicProfileEnabled,
+            showAcademicInfo: data.showAcademicInfo,
+            showBio: data.showBio,
+            showContributionStats: data.showContributionStats
+          });
+          setEditForm({
+            name: data.name || '',
+            bio: data.bio || '',
+            university: data.university || '',
+            courseId: data.courseId || '',
+            semester:
+              data.semester !== null && data.semester !== undefined ? String(data.semester) : ''
+          });
+          setPrivacySettings({
+            publicProfileEnabled: data.publicProfileEnabled ?? true,
+            showAcademicInfo: data.showAcademicInfo ?? true,
+            showBio: data.showBio ?? true,
+            showContributionStats: data.showContributionStats ?? true
+          });
+        }
+      } catch {
+        // Fallback to user from ref if network fails
+        const fallbackUser = userRef.current;
+        if (fallbackUser) {
+          setEditForm({
+            name: fallbackUser.name || '',
+            bio: fallbackUser.bio || '',
+            university: fallbackUser.university || '',
+            courseId: fallbackUser.courseId || '',
+            semester: fallbackUser.semester ? String(fallbackUser.semester) : ''
+          });
+        }
+      } finally {
+        setIsLoadingProfile(false);
       }
-    } catch {
-      // Fallback to user from context
-      if (user) {
-        setEditForm({
-          name: user.name || '',
-          bio: user.bio || '',
-          university: user.university || '',
-          courseId: user.courseId || '',
-          semester: user.semester ? String(user.semester) : ''
-        });
-      }
-    } finally {
-      setIsLoadingProfile(false);
-    }
-  }, [user, updateUser]);
+    },
+    [updateUser]
+  );
 
   // Fetch academic options
   useEffect(() => {
+    let isMounted = true;
     async function loadAcademicOptions() {
       try {
         const opts = await profileService.getAcademicOptions();
-        setCourses(opts || []);
+        if (isMounted) {
+          setCourses(opts || []);
+        }
       } catch {
-        setCourses([]);
+        if (isMounted) {
+          setCourses([]);
+        }
       }
     }
     loadAcademicOptions();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -162,7 +194,7 @@ export function ProfilePage() {
     if (activeTab === 'uploads') {
       fetchUploads(1, uploadsStatus, uploadsSearch);
     }
-  }, [activeTab, uploadsStatus, fetchUploads, uploadsSearch]);
+  }, [activeTab, fetchUploads, uploadsStatus, uploadsSearch]);
 
   // Avatar file upload handler
   async function handleAvatarChange(e) {
@@ -279,6 +311,23 @@ export function ProfilePage() {
     }
   }
 
+  // Discard changes and reset form to current profile data
+  function handleDiscardChanges() {
+    const data = profileData || user;
+    if (data) {
+      setEditForm({
+        name: data.name || '',
+        bio: data.bio || '',
+        university: data.university || '',
+        courseId: data.courseId || '',
+        semester:
+          data.semester !== null && data.semester !== undefined ? String(data.semester) : ''
+      });
+      setProfileError('');
+      setProfileSuccess('');
+    }
+  }
+
   // Privacy settings toggle submit handler
   async function handlePrivacySubmit(e) {
     e.preventDefault();
@@ -299,6 +348,21 @@ export function ProfilePage() {
       setIsSavingPrivacy(false);
     }
   }
+
+  // Filter and sort canonical degree courses: B.Tech, BCA, B.Sc., MCA, M.Tech
+  const allowedCourseNames = ['b.tech', 'bca', 'b.sc.', 'mca', 'm.tech'];
+  const preferredCourseOrder = ['b.tech', 'bca', 'b.sc.', 'mca', 'm.tech'];
+  const canonicalCourses = courses.filter((c) =>
+    allowedCourseNames.includes(c.name?.toLowerCase().trim())
+  );
+  const displayCourses = (canonicalCourses.length > 0 ? canonicalCourses : courses).sort((a, b) => {
+    const idxA = preferredCourseOrder.indexOf(a.name?.toLowerCase().trim());
+    const idxB = preferredCourseOrder.indexOf(b.name?.toLowerCase().trim());
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return a.name.localeCompare(b.name);
+  });
 
   // Available semesters for selected course
   const selectedCourse = courses.find((c) => c.id === editForm.courseId);
@@ -396,7 +460,7 @@ export function ProfilePage() {
       <div className="profile-container" style={{ padding: '48px 0', textAlign: 'center' }}>
         <div className="spinner" style={{ margin: '0 auto 16px' }} />
         <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
-          Loading scholar profile and academic records...
+          Loading Profile and academic records...
         </p>
       </div>
     );
@@ -810,203 +874,353 @@ export function ProfilePage() {
       {/* TAB 3: EDIT PROFILE & ACADEMIC IDENTITY */}
       {activeTab === 'edit' && (
         <div className="profile-tab-content">
-          <div className="profile-section-card">
-            <h2 className="profile-section-title">Edit Personal & Academic Identity</h2>
-            <p className="profile-section-desc">
-              Manage your scholar display name, biography, university, and current semester.
-            </p>
+          <div className="profile-section-card profile-section-card--edit">
+            <div className="profile-edit-header">
+              <h2 className="profile-section-title">Edit Personal & Academic Identity</h2>
+              <p className="profile-section-desc">
+                Manage your scholar display name, biography, university affiliation, and curriculum
+                semester.
+              </p>
+            </div>
 
             {profileSuccess && (
-              <div className="auth-alert auth-alert--success" style={{ marginBottom: '16px' }}>
+              <div className="auth-alert auth-alert--success" style={{ marginBottom: '20px' }}>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ marginRight: '8px', flexShrink: 0 }}
+                  aria-hidden="true"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
                 <span>{profileSuccess}</span>
               </div>
             )}
 
             {profileError && (
-              <div className="auth-alert auth-alert--danger" style={{ marginBottom: '16px' }}>
+              <div className="auth-alert auth-alert--danger" style={{ marginBottom: '20px' }}>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ marginRight: '8px', flexShrink: 0 }}
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
                 <span>{profileError}</span>
               </div>
             )}
 
-            {/* Profile Avatar Card */}
-            <div className="profile-edit-avatar-card">
-              <div className="profile-edit-avatar-left">
-                <Avatar
-                  name={currentUser?.name || 'Scholar'}
-                  src={currentUser?.avatarUrl}
-                  size="xl"
-                />
-              </div>
-              <div className="profile-edit-avatar-right">
-                <h3 className="profile-edit-avatar-heading">Profile Photo</h3>
-                <p className="profile-edit-avatar-subtext">
-                  Upload an academic photo or avatar (JPG, PNG, or WebP, up to 5MB). This image is
-                  saved permanently to your profile and displayed across your dashboard, notes, and
-                  comments.
-                </p>
-                <div className="profile-edit-avatar-actions">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploadingAvatar}
-                  >
-                    {isUploadingAvatar ? 'Uploading...' : 'Upload New Photo'}
-                  </Button>
-                  {currentUser?.avatarUrl && (
-                    <Button
-                      type="button"
-                      variant="danger"
-                      size="sm"
-                      onClick={handleAvatarRemove}
-                      disabled={isUploadingAvatar}
-                    >
-                      Remove Photo
-                    </Button>
-                  )}
-                </div>
-                {avatarSuccess && <p className="profile-avatar-success">{avatarSuccess}</p>}
-                {avatarError && <p className="profile-avatar-error">{avatarError}</p>}
-              </div>
-            </div>
-
-            {/* Profile Avatar Card */}
-            <div className="profile-edit-avatar-card">
-              <div className="profile-edit-avatar-left">
-                <Avatar
-                  name={currentUser?.name || 'Scholar'}
-                  src={currentUser?.avatarUrl}
-                  size="xl"
-                />
-              </div>
-              <div className="profile-edit-avatar-right">
-                <h3 className="profile-edit-avatar-heading">Profile Photo</h3>
-                <p className="profile-edit-avatar-subtext">
-                  Upload an academic photo or avatar (JPG, PNG, or WebP, up to 5MB). This image is saved permanently to your profile and displayed across your dashboard, notes, and comments.
-                </p>
-                <div className="profile-edit-avatar-actions">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploadingAvatar}
-                  >
-                    {isUploadingAvatar ? 'Uploading...' : 'Upload New Photo'}
-                  </Button>
-                  {currentUser?.avatarUrl && (
-                    <Button
-                      type="button"
-                      variant="danger"
-                      size="sm"
-                      onClick={handleAvatarRemove}
-                      disabled={isUploadingAvatar}
-                    >
-                      Remove Photo
-                    </Button>
-                  )}
-                </div>
-                {avatarSuccess && <p className="profile-avatar-success">{avatarSuccess}</p>}
-                {avatarError && <p className="profile-avatar-error">{avatarError}</p>}
-              </div>
-            </div>
-
             <form onSubmit={handleProfileSubmit} className="profile-edit-form">
-              <Input
-                label="Display Name *"
-                id="edit-name"
-                name="name"
-                type="text"
-                value={editForm.name}
-                onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
-                required
-                maxLength={120}
-              />
-
-              <div className="input-group">
-                <label htmlFor="edit-bio" className="input-label">
-                  Biography (Short Academic Bio)
-                </label>
-                <textarea
-                  id="edit-bio"
-                  name="bio"
-                  rows={3}
-                  className="profile-textarea"
-                  placeholder="Tell fellow scholars about your academic focus, major subjects, or study goals..."
-                  value={editForm.bio}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, bio: e.target.value }))}
-                  maxLength={300}
-                />
-                <span className="profile-char-count">{editForm.bio.length} / 300 characters</span>
+              {/* SECTION 1: PROFILE PHOTO */}
+              <div className="profile-edit-section">
+                <div className="profile-edit-avatar-row">
+                  <div className="profile-edit-avatar-preview">
+                    <Avatar
+                      name={currentUser?.name || 'Scholar'}
+                      src={currentUser?.avatarUrl}
+                      size="xl"
+                    />
+                  </div>
+                  <div className="profile-edit-avatar-info">
+                    <div className="profile-edit-avatar-title-row">
+                      <h3 className="profile-edit-avatar-heading">Profile Photo</h3>
+                      <span className="profile-avatar-chip">JPG, PNG, WebP · Max 5MB</span>
+                    </div>
+                    <p className="profile-edit-avatar-subtext">
+                      Upload an academic photo or avatar. This image is saved permanently and
+                      displayed across your dashboard, notes, and comments.
+                    </p>
+                    <div className="profile-edit-avatar-actions">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploadingAvatar}
+                        icon={
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                          </svg>
+                        }
+                      >
+                        {isUploadingAvatar ? 'Uploading...' : 'Upload New Photo'}
+                      </Button>
+                      {currentUser?.avatarUrl && (
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="sm"
+                          onClick={handleAvatarRemove}
+                          disabled={isUploadingAvatar}
+                          icon={
+                            <svg
+                              width="13"
+                              height="13"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                          }
+                        >
+                          Remove Photo
+                        </Button>
+                      )}
+                    </div>
+                    {avatarSuccess && <p className="profile-avatar-success">✓ {avatarSuccess}</p>}
+                    {avatarError && <p className="profile-avatar-error">✕ {avatarError}</p>}
+                  </div>
+                </div>
               </div>
 
-              <Input
-                label="University / College / Institution"
-                id="edit-university"
-                name="university"
-                type="text"
-                placeholder="e.g. Stanford University"
-                value={editForm.university}
-                onChange={(e) => setEditForm((prev) => ({ ...prev, university: e.target.value }))}
-                maxLength={150}
-              />
+              {/* SECTION 2: PERSONAL IDENTITY */}
+              <div className="profile-edit-section">
+                <div className="profile-edit-section-header">
+                  <span className="profile-edit-section-tag">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    Personal Identity
+                  </span>
+                </div>
 
-              <div className="profile-form-row">
-                <div className="input-group" style={{ flex: 1 }}>
-                  <label htmlFor="edit-course" className="input-label">
-                    Academic Program / Degree
-                  </label>
-                  <select
-                    id="edit-course"
-                    className="profile-select"
-                    value={editForm.courseId}
+                <div className="profile-field-block">
+                  <Input
+                    label="Display Name"
+                    id="edit-name"
+                    name="name"
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+                    required
+                    maxLength={120}
+                    placeholder="Enter your full name or academic pen-name"
+                  />
+                </div>
+
+                <div className="input-group profile-field-block">
+                  <div className="profile-label-with-counter">
+                    <label htmlFor="edit-bio" className="input-label">
+                      Biography (Short Academic Bio)
+                    </label>
+                    <span className="profile-char-count-pill">{editForm.bio.length} / 300</span>
+                  </div>
+                  <textarea
+                    id="edit-bio"
+                    name="bio"
+                    rows={3}
+                    className="profile-textarea"
+                    placeholder="Tell fellow scholars about your academic focus, major subjects, research interests, or study goals..."
+                    value={editForm.bio}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, bio: e.target.value }))}
+                    maxLength={300}
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 3: ACADEMIC CURRICULUM */}
+              <div className="profile-edit-section">
+                <div className="profile-edit-section-header">
+                  <span className="profile-edit-section-tag">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                      <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                    </svg>
+                    Academic Curriculum & Institution
+                  </span>
+                </div>
+
+                <div className="profile-field-block">
+                  <Input
+                    label="University / College / Institution"
+                    id="edit-university"
+                    name="university"
+                    type="text"
+                    placeholder="e.g. Stanford University or Delhi University"
+                    value={editForm.university}
                     onChange={(e) =>
-                      setEditForm((prev) => ({
-                        ...prev,
-                        courseId: e.target.value,
-                        semester: '' // reset semester on course switch
-                      }))
+                      setEditForm((prev) => ({ ...prev, university: e.target.value }))
+                    }
+                    maxLength={150}
+                  />
+                </div>
+
+                <div className="profile-form-grid-2">
+                  <div className="input-group">
+                    <label htmlFor="edit-course" className="input-label">
+                      Academic Program / Degree
+                    </label>
+                    <div className="profile-select-wrapper">
+                      <select
+                        id="edit-course"
+                        className="profile-select"
+                        value={editForm.courseId}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            courseId: e.target.value,
+                            semester: '' // reset semester on course switch
+                          }))
+                        }
+                      >
+                        <option value="">Select an academic program...</option>
+                        {displayCourses.map((course) => (
+                          <option key={course.id} value={course.id}>
+                            {course.name}
+                          </option>
+                        ))}
+                      </select>
+                      <svg
+                        className="profile-select-chevron"
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div className="input-group">
+                    <label htmlFor="edit-semester" className="input-label">
+                      Current Semester
+                    </label>
+                    <div className="profile-select-wrapper">
+                      <select
+                        id="edit-semester"
+                        className="profile-select"
+                        value={editForm.semester}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({ ...prev, semester: e.target.value }))
+                        }
+                      >
+                        <option value="">Select semester...</option>
+                        {availableSemesters.map((sem) => (
+                          <option key={sem} value={sem}>
+                            Semester {sem}
+                          </option>
+                        ))}
+                      </select>
+                      <svg
+                        className="profile-select-chevron"
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ACTION FOOTER */}
+              <div className="profile-edit-footer">
+                <span className="profile-edit-footer-hint">
+                  Saved updates reflect across all your published notes, reviews, and contributor
+                  identity.
+                </span>
+                <div className="profile-edit-footer-actions">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="md"
+                    onClick={handleDiscardChanges}
+                    disabled={isSavingProfile}
+                  >
+                    Discard Changes
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="md"
+                    isLoading={isSavingProfile}
+                    icon={
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
                     }
                   >
-                    <option value="">Select an academic program...</option>
-                    {courses.map((course) => (
-                      <option key={course.id} value={course.id}>
-                        {course.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="input-group" style={{ width: '160px' }}>
-                  <label htmlFor="edit-semester" className="input-label">
-                    Current Semester
-                  </label>
-                  <select
-                    id="edit-semester"
-                    className="profile-select"
-                    value={editForm.semester}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, semester: e.target.value }))}
-                  >
-                    <option value="">Select...</option>
-                    {availableSemesters.map((sem) => (
-                      <option key={sem} value={sem}>
-                        Semester {sem}
-                      </option>
-                    ))}
-                  </select>
+                    Save Academic Profile
+                  </Button>
                 </div>
               </div>
-
-              <Button
-                type="submit"
-                variant="primary"
-                size="md"
-                isLoading={isSavingProfile}
-                style={{ marginTop: '12px' }}
-              >
-                Save Academic Profile
-              </Button>
             </form>
           </div>
         </div>

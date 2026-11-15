@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import FileUpload from './FileUpload.jsx';
 import Button from '../common/Button.jsx';
 import './NoteForm.css';
@@ -8,8 +8,10 @@ import './NoteForm.css';
  */
 export function NoteForm({
   initialValues = {},
+  courses = [],
   subjects = [],
   categories = [],
+  isLoadingTaxonomies = false,
   onSubmit,
   onCancel,
   isSubmitting = false,
@@ -17,9 +19,12 @@ export function NoteForm({
 }) {
   const [title, setTitle] = useState(initialValues.title || '');
   const [description, setDescription] = useState(initialValues.description || '');
+  const [courseId, setCourseId] = useState(initialValues.courseId || '');
+  const [semester, setSemester] = useState(
+    initialValues.semester ? String(initialValues.semester) : ''
+  );
   const [subjectId, setSubjectId] = useState(initialValues.subjectId || '');
   const [categoryId, setCategoryId] = useState(initialValues.categoryId || '');
-  const [semester, setSemester] = useState(initialValues.semester || '');
   const [academicYear, setAcademicYear] = useState(initialValues.academicYear || '');
   const [content, setContent] = useState(initialValues.content || '');
   const [file, setFile] = useState(null);
@@ -28,13 +33,115 @@ export function NoteForm({
   // Field validation errors
   const [errors, setErrors] = useState({});
 
+  // Sync initialValues if they arrive late (e.g. edit mode fetch)
+  useEffect(() => {
+    if (initialValues.title !== undefined) setTitle(initialValues.title || '');
+    if (initialValues.description !== undefined) setDescription(initialValues.description || '');
+    if (initialValues.courseId !== undefined) setCourseId(initialValues.courseId || '');
+    if (initialValues.semester !== undefined) {
+      setSemester(initialValues.semester ? String(initialValues.semester) : '');
+    }
+    if (initialValues.subjectId !== undefined) setSubjectId(initialValues.subjectId || '');
+    if (initialValues.categoryId !== undefined) setCategoryId(initialValues.categoryId || '');
+    if (initialValues.academicYear !== undefined) setAcademicYear(initialValues.academicYear || '');
+    if (initialValues.content !== undefined) setContent(initialValues.content || '');
+    if (initialValues.fileName !== undefined) setExistingFileName(initialValues.fileName || '');
+  }, [initialValues]);
+
+  // If a subject is selected or preloaded, auto-sync its courseId and semester if not manually set
+  useEffect(() => {
+    if (subjectId && subjects.length > 0) {
+      const match = subjects.find((s) => s.id === subjectId);
+      if (match) {
+        if (!courseId && match.courseId) {
+          setCourseId(match.courseId);
+        }
+        if (!semester && match.semester) {
+          setSemester(String(match.semester));
+        }
+      }
+    }
+  }, [subjectId, subjects, courseId, semester]);
+
+  // Preferred academic program order: B.Tech, BCA, B.Sc., MCA, M.Tech
+  const preferredCourseOrder = ['b.tech', 'bca', 'b.sc.', 'mca', 'm.tech'];
+  const displayCourses = useMemo(() => {
+    return [...courses].sort((a, b) => {
+      const idxA = preferredCourseOrder.indexOf(a.name?.toLowerCase().trim());
+      const idxB = preferredCourseOrder.indexOf(b.name?.toLowerCase().trim());
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+  }, [courses]);
+
+  // In-memory filtered subjects according to selected course and/or semester
+  const filteredSubjects = useMemo(() => {
+    if (!Array.isArray(subjects)) return [];
+    return subjects.filter((s) => {
+      if (courseId && s.courseId !== courseId) return false;
+      if (semester && s.semester !== parseInt(semester, 10)) return false;
+      return true;
+    });
+  }, [subjects, courseId, semester]);
+
+  // Handle Course selection change
+  const handleCourseChange = (newCourseId) => {
+    setCourseId(newCourseId);
+    if (errors.subjectId) setErrors((prev) => ({ ...prev, subjectId: '' }));
+
+    // If currently selected subject is not in the new course, reset it
+    if (subjectId) {
+      const currentSubj = subjects.find((s) => s.id === subjectId);
+      if (currentSubj && newCourseId && currentSubj.courseId !== newCourseId) {
+        setSubjectId('');
+      }
+    }
+  };
+
+  // Handle Semester selection change
+  const handleSemesterChange = (newSemester) => {
+    setSemester(newSemester);
+    if (errors.subjectId) setErrors((prev) => ({ ...prev, subjectId: '' }));
+
+    // If currently selected subject is not in the new semester, reset it
+    if (subjectId) {
+      const currentSubj = subjects.find((s) => s.id === subjectId);
+      if (currentSubj && newSemester && currentSubj.semester !== parseInt(newSemester, 10)) {
+        setSubjectId('');
+      }
+    }
+  };
+
+  // Handle Subject selection change
+  const handleSubjectChange = (newSubjectId) => {
+    setSubjectId(newSubjectId);
+    if (errors.subjectId) setErrors((prev) => ({ ...prev, subjectId: '' }));
+
+    // Automatically sync course and semester from chosen subject
+    if (newSubjectId) {
+      const match = subjects.find((s) => s.id === newSubjectId);
+      if (match) {
+        if (!courseId && match.courseId) setCourseId(match.courseId);
+        if (!semester && match.semester) setSemester(String(match.semester));
+      }
+    }
+  };
+
+  // Reset curriculum filters
+  const handleResetFilters = () => {
+    setCourseId('');
+    setSemester('');
+  };
+
   function validate() {
     const errs = {};
     if (!title.trim()) {
       errs.title = 'Manuscript title is required.';
     }
     if (!subjectId) {
-      errs.subjectId = 'Please select an academic subject.';
+      errs.subjectId = 'Please select an academic curriculum subject.';
     }
 
     const hasContent = content.trim().length > 0;
@@ -42,7 +149,7 @@ export function NoteForm({
 
     if (!hasContent && !hasFile) {
       errs.contentOrFile =
-        'Please either write note content or attach a study document (PDF/Word/PPTX).';
+        'Please either write study note content or attach an educational document (PDF/Word/PPTX).';
     }
 
     setErrors(errs);
@@ -52,12 +159,13 @@ export function NoteForm({
   function handleSubmit(action) {
     if (!validate()) return;
 
-    // Build payload (FormData if file attached, otherwise plain object)
+    // Build payload (FormData if file attached, otherwise plain JSON object)
     if (file) {
       const formData = new FormData();
       formData.append('title', title.trim());
       formData.append('description', description.trim());
       formData.append('subjectId', subjectId);
+      if (courseId) formData.append('courseId', courseId);
       if (categoryId) formData.append('categoryId', categoryId);
       if (semester) formData.append('semester', semester);
       if (academicYear) formData.append('academicYear', academicYear.trim());
@@ -70,6 +178,7 @@ export function NoteForm({
         title: title.trim(),
         description: description.trim(),
         subjectId,
+        courseId: courseId || null,
         categoryId: categoryId || null,
         semester: semester ? parseInt(semester, 10) : null,
         academicYear: academicYear.trim() || null,
@@ -108,34 +217,110 @@ export function NoteForm({
         {errors.title && <span className="note-form__error">{errors.title}</span>}
       </div>
 
-      {/* Curriculum Taxonomy Row */}
+      {/* Curriculum Filtering Controls */}
       <div className="note-form__row">
-        {/* Subject */}
+        {/* Academic Course (Program) */}
         <div className="note-form__group">
-          <label htmlFor="note-subject" className="note-form__label">
-            Academic Subject <span className="note-form__required">*</span>
+          <label htmlFor="note-course" className="note-form__label">
+            Degree / Academic Course
           </label>
+          <select
+            id="note-course"
+            value={courseId}
+            onChange={(e) => handleCourseChange(e.target.value)}
+            className="note-form__select"
+            disabled={isSubmitting || isLoadingTaxonomies}
+          >
+            <option value="">All Academic Programs (Filter)</option>
+            {displayCourses.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Curriculum Semester */}
+        <div className="note-form__group">
+          <label htmlFor="note-semester" className="note-form__label">
+            Curriculum Semester
+          </label>
+          <select
+            id="note-semester"
+            value={semester}
+            onChange={(e) => handleSemesterChange(e.target.value)}
+            className="note-form__select"
+            disabled={isSubmitting || isLoadingTaxonomies}
+          >
+            <option value="">All Semesters (Filter)</option>
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+              <option key={s} value={String(s)}>
+                Semester {s}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Subject & Category Row */}
+      <div className="note-form__row">
+        {/* Academic Subject (Required) */}
+        <div className="note-form__group">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <label htmlFor="note-subject" className="note-form__label">
+              Academic Subject <span className="note-form__required">*</span>
+            </label>
+            {(courseId || semester) && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="note-form__filter-reset"
+                title="Clear course and semester filters"
+              >
+                Showing {filteredSubjects.length} of {subjects.length} • Clear filters
+              </button>
+            )}
+          </div>
           <select
             id="note-subject"
             value={subjectId}
-            onChange={(e) => {
-              setSubjectId(e.target.value);
-              if (errors.subjectId) setErrors((prev) => ({ ...prev, subjectId: '' }));
-            }}
+            onChange={(e) => handleSubjectChange(e.target.value)}
             className={`note-form__select ${errors.subjectId ? 'note-form__input--error' : ''}`}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoadingTaxonomies}
           >
-            <option value="">Select Curriculum Subject...</option>
-            {subjects.map((s) => (
+            {isLoadingTaxonomies ? (
+              <option value="">Loading academic subjects...</option>
+            ) : filteredSubjects.length === 0 ? (
+              <option value="" disabled>
+                No subjects found for selected course and semester
+              </option>
+            ) : (
+              <option value="">Select Academic Subject...</option>
+            )}
+            {filteredSubjects.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.name} (Semester {s.semester})
+                {s.name} (Semester {s.semester}
+                {s.course?.name ? ` • ${s.course.name}` : ''})
               </option>
             ))}
           </select>
           {errors.subjectId && <span className="note-form__error">{errors.subjectId}</span>}
+          {!isLoadingTaxonomies && filteredSubjects.length === 0 && (
+            <span className="note-form__empty-hint">
+              No subjects match the selected course and semester combination.{' '}
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="note-form__empty-hint-btn"
+              >
+                Reset filters
+              </button>{' '}
+              to show all subjects.
+            </span>
+          )}
         </div>
 
-        {/* Category */}
+        {/* Study Category */}
         <div className="note-form__group">
           <label htmlFor="note-category" className="note-form__label">
             Study Material Category
@@ -145,7 +330,7 @@ export function NoteForm({
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
             className="note-form__select"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoadingTaxonomies}
           >
             <option value="">Select Category...</option>
             {categories.map((c) => (
@@ -157,43 +342,20 @@ export function NoteForm({
         </div>
       </div>
 
-      <div className="note-form__row">
-        {/* Semester */}
-        <div className="note-form__group">
-          <label htmlFor="note-semester" className="note-form__label">
-            Curriculum Semester
-          </label>
-          <select
-            id="note-semester"
-            value={semester}
-            onChange={(e) => setSemester(e.target.value)}
-            className="note-form__select"
-            disabled={isSubmitting}
-          >
-            <option value="">Select Semester...</option>
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
-              <option key={s} value={s}>
-                Semester {s}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Academic Year */}
-        <div className="note-form__group">
-          <label htmlFor="note-year" className="note-form__label">
-            Academic Year
-          </label>
-          <input
-            id="note-year"
-            type="text"
-            value={academicYear}
-            onChange={(e) => setAcademicYear(e.target.value)}
-            placeholder="e.g., 2025-2026"
-            className="note-form__input"
-            disabled={isSubmitting}
-          />
-        </div>
+      {/* Academic Year */}
+      <div className="note-form__group">
+        <label htmlFor="note-year" className="note-form__label">
+          Academic Year
+        </label>
+        <input
+          id="note-year"
+          type="text"
+          value={academicYear}
+          onChange={(e) => setAcademicYear(e.target.value)}
+          placeholder="e.g., 2025-2026"
+          className="note-form__input"
+          disabled={isSubmitting}
+        />
       </div>
 
       {/* Description / Abstract */}

@@ -1,6 +1,7 @@
 import reviewRepository from './review.repository.js';
 import noteRepository from '../notes/note.repository.js';
 import auditService from '../audit/audit.service.js';
+import notificationService from '../notifications/notification.service.js';
 import { getPaginationParams, buildPaginatedResponse } from '../../utils/pagination.js';
 import prisma from '../../config/database.js';
 
@@ -114,12 +115,37 @@ export class ReviewService {
     }
 
     // Create new review
-    return this.repo.create({
+    const createdReview = await this.repo.create({
       noteId,
       userId,
       rating: data.rating,
       comment: data.comment
     });
+
+    // Notify note author of new genuine review
+    if (note.uploadedById && note.uploadedById !== userId) {
+      notificationService
+        .createNotification({
+          userId: note.uploadedById,
+          type: 'NEW_REVIEW',
+          category: 'REVIEWS',
+          title: 'New Review Received',
+          message: `A fellow scholar rated your manuscript "${note.title}" with ${data.rating} stars.`,
+          targetUrl: `/notes/${noteId}`,
+          eventKey: `review_${noteId}_${userId}`,
+          metadata: {
+            noteId,
+            rating: data.rating,
+            reviewerId: userId
+          }
+        })
+        .catch((err) => {
+          // eslint-disable-next-line no-console
+          console.error('Failed to dispatch review notification:', err.message);
+        });
+    }
+
+    return createdReview;
   }
 
   /**
@@ -224,6 +250,25 @@ export class ReviewService {
     const existingVote = await this.repo.findHelpfulVote(reviewId, userId);
     if (!existingVote) {
       await this.repo.createHelpfulVote(reviewId, userId);
+
+      // Notify review author of genuine community appreciation
+      if (review.userId && review.userId !== userId) {
+        notificationService
+          .createNotification({
+            userId: review.userId,
+            type: 'HELPFUL_VOTE',
+            category: 'COMMUNITY',
+            title: 'Helpful Review Feedback',
+            message: 'A fellow scholar marked your peer review as helpful.',
+            targetUrl: `/notes/${review.noteId}`,
+            eventKey: `helpful_vote_${reviewId}_${userId}`,
+            metadata: {
+              reviewId,
+              noteId: review.noteId
+            }
+          })
+          .catch(() => {});
+      }
     }
 
     const count = await this.repo.countHelpfulVotes(reviewId);

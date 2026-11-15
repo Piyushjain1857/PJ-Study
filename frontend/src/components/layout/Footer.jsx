@@ -14,14 +14,23 @@ export function Footer() {
         <div className="footer-grid">
           {/* Brand Column */}
           <div className="footer-brand-col">
-            <Link to="/" className="footer-brand">
+            <Link to="/" className="footer-brand" aria-label="PJ Study Homepage">
+              <span className="footer-brand__mark">PJ</span>
               <span className="footer-brand__name">PJ Study</span>
             </Link>
             <p className="footer-tagline">Your Entire Study World, One Place.</p>
             <p className="footer-description">
-              A curated academic repository and study workspace designed for students, researchers,
-              and educators pursuing academic excellence.
+              A focused academic workspace designed for higher education scholars and educators.
+              Explore structured study materials, discover curriculum subjects, and organize your
+              entire academic journey.
             </p>
+            <div className="footer-programs-pills" aria-label="Academic degree programs">
+              <span className="footer-program-pill">B.Tech</span>
+              <span className="footer-program-pill">BCA</span>
+              <span className="footer-program-pill">B.Sc.</span>
+              <span className="footer-program-pill">MCA</span>
+              <span className="footer-program-pill">M.Tech</span>
+            </div>
           </div>
 
           {/* Navigation Column */}
@@ -38,48 +47,54 @@ export function Footer() {
                 <a href="/#how-it-works">How It Works</a>
               </li>
               <li>
-                <Link to="/design-system">Design System</Link>
+                <Link to="/dashboard">Student Dashboard</Link>
               </li>
               <li>
-                <Link to="/dashboard">Student Dashboard</Link>
+                <Link to="/my-notes">My Study Library</Link>
               </li>
             </ul>
           </div>
 
-          {/* Standards & Philosophy */}
+          {/* Academic Degrees */}
+          <div className="footer-col">
+            <h4 className="footer-col__title">Academic Programs</h4>
+            <ul className="footer-links">
+              <li>
+                <Link to="/notes/explore">B.Tech (8 Semesters)</Link>
+              </li>
+              <li>
+                <Link to="/notes/explore">BCA (6 Semesters)</Link>
+              </li>
+              <li>
+                <Link to="/notes/explore">B.Sc. (6 Semesters)</Link>
+              </li>
+              <li>
+                <Link to="/notes/explore">MCA (4 Semesters)</Link>
+              </li>
+              <li>
+                <Link to="/notes/explore">M.Tech (4 Semesters)</Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Standards & Integrity */}
           <div className="footer-col">
             <h4 className="footer-col__title">Academic Standards</h4>
             <ul className="footer-links">
               <li>
-                <span>Verified Curriculum</span>
+                <span>Curated Taxonomies</span>
               </li>
               <li>
                 <span>Academic Integrity Code</span>
               </li>
               <li>
-                <span>Peer Review System</span>
+                <span>Peer Quality Feedback</span>
               </li>
               <li>
-                <span>Open Science Policy</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Institutional / Contact */}
-          <div className="footer-col">
-            <h4 className="footer-col__title">Legal & Security</h4>
-            <ul className="footer-links">
-              <li>
-                <span>Terms of Service</span>
+                <span>Ad-Free Learning</span>
               </li>
               <li>
-                <span>Privacy Protocol</span>
-              </li>
-              <li>
-                <span>Security Overview</span>
-              </li>
-              <li>
-                <span>Cookie Directives</span>
+                <span>Role-Based Access Control</span>
               </li>
             </ul>
           </div>

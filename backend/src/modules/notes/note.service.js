@@ -7,6 +7,7 @@ import subjectRepository from '../subjects/subject.repository.js';
 import topicRepository from '../topics/topic.repository.js';
 import categoryRepository from '../categories/category.repository.js';
 import storageService from '../../services/storage/storage.service.js';
+import notificationService from '../notifications/notification.service.js';
 import { slugify } from '../courses/course.service.js';
 import { getPaginationParams, buildPaginatedResponse } from '../../utils/pagination.js';
 import { assertNoteOwnership } from '../../auth/ownership.js';
@@ -576,6 +577,44 @@ export class NoteService {
         }
       });
 
+      // Create transactional in-app notification for the author
+      if (normalized === 'APPROVED') {
+        await notificationService.createNotification(
+          {
+            userId: note.uploadedById,
+            type: 'NOTE_APPROVED',
+            category: 'ACADEMIC',
+            title: 'Note Approved',
+            message: `Your manuscript "${note.title}" has been reviewed, approved, and published to the academic catalog.`,
+            targetUrl: `/notes/${noteId}`,
+            eventKey: `note_approved_${noteId}`,
+            metadata: {
+              noteId,
+              noteTitle: note.title
+            }
+          },
+          tx
+        );
+      } else if (normalized === 'REJECTED') {
+        await notificationService.createNotification(
+          {
+            userId: note.uploadedById,
+            type: 'NOTE_REJECTED',
+            category: 'ACADEMIC',
+            title: 'Note Needs Attention',
+            message: `Your uploaded note "${note.title}" requires revisions: ${reason.trim()}`,
+            targetUrl: `/notes/${noteId}/edit`,
+            eventKey: `note_rejected_${noteId}_${Date.now()}`,
+            metadata: {
+              noteId,
+              noteTitle: note.title,
+              rejectionReason: reason.trim()
+            }
+          },
+          tx
+        );
+      }
+
       return updated;
     });
 
@@ -773,8 +812,18 @@ export class NoteService {
       semesters.push(1, 2, 3, 4, 5, 6, 7, 8);
     }
 
+    const preferredOrder = ['B.Tech', 'BCA', 'B.Sc.', 'MCA', 'M.Tech'];
+    const sortedCourses = [...courses].sort((a, b) => {
+      const idxA = preferredOrder.findIndex((p) => p.toLowerCase() === a.name.toLowerCase().trim());
+      const idxB = preferredOrder.findIndex((p) => p.toLowerCase() === b.name.toLowerCase().trim());
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.name.localeCompare(b.name);
+    });
+
     return {
-      courses: courses.map((c) => ({
+      courses: sortedCourses.map((c) => ({
         id: c.id,
         name: c.name,
         slug: c.slug

@@ -27,15 +27,18 @@ test('Student Profiles, Academic Identity & Public Contributor Profiles Suite', 
     baseUrl = `http://localhost:${port}/api/v1`;
 
     // 1. Create or fetch test course, subject, category
-    testCourse = await prisma.course.upsert({
-      where: { slug: 'profile-test-course' },
-      update: {},
-      create: {
-        name: 'Computer Science & Engineering',
-        slug: 'profile-test-course',
-        description: 'Profile testing degree'
-      }
+    testCourse = await prisma.course.findUnique({
+      where: { slug: 'b-tech' }
     });
+    if (!testCourse) {
+      testCourse = await prisma.course.create({
+        data: {
+          name: 'B.Tech',
+          slug: 'b-tech',
+          description: 'Profile testing degree'
+        }
+      });
+    }
 
     testSubject = await prisma.subject.upsert({
       where: {
@@ -573,5 +576,19 @@ test('Student Profiles, Academic Identity & Public Contributor Profiles Suite', 
     const course = body.data.find((c) => c.id === testCourse.id);
     assert.ok(course, 'Should find profile test course');
     assert.ok(Array.isArray(course.semesters));
+  });
+
+  t.after(async () => {
+    if (testSubject) {
+      await prisma.note.deleteMany({ where: { subjectId: testSubject.id } });
+      await prisma.subject.deleteMany({ where: { id: testSubject.id } });
+    }
+    await prisma.course.deleteMany({ where: { slug: 'profile-test-course' } });
+    if (studentA) {
+      await prisma.user.deleteMany({ where: { id: { in: [studentA.id, studentB.id] } } });
+    }
+    if (server) {
+      await new Promise((resolve) => server.close(resolve));
+    }
   });
 });

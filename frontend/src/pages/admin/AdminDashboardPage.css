@@ -1,23 +1,34 @@
 /* ==========================================================================
-   PJ STUDY ADMINISTRATIVE DASHBOARD STYLES (V2/V3 UPGRADE)
-   Academic Governance, Metrics, Clean Responsive Toolbar, Refined Tables
+   PJ STUDY ADMINISTRATIVE DASHBOARD STYLES (V3 PRODUCTION-GRADE)
+   Academic Governance, Refined Metrics, Streamlined Toolbar & Modern Tables
    ========================================================================== */
 
 .admin-dashboard {
   width: 100%;
-  padding: 0 0 var(--space-12) 0;
+  padding-bottom: var(--space-12);
 }
 
 /* -----------------------------------------------------------------------------
-   1. Page Header & Badge
+   1. Page Header
    ----------------------------------------------------------------------------- */
 .admin-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
   margin-bottom: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.admin-header__left {
+  max-width: 680px;
 }
 
 .admin-header__badge {
-  display: inline-block;
-  padding: 3px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
   background-color: var(--color-primary-subtle);
   color: var(--color-primary);
   font-size: var(--text-2xs);
@@ -44,16 +55,35 @@
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
   line-height: var(--line-normal);
-  max-width: 680px;
   margin: 0;
 }
 
+.admin-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  flex-shrink: 0;
+}
+
+.admin-spin-icon {
+  animation: admin-spin 0.8s linear infinite;
+}
+
+@keyframes admin-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* -----------------------------------------------------------------------------
-   2. Metric KPI Cards
+   2. Metric KPI Cards (Linear/Stripe Grade)
    ----------------------------------------------------------------------------- */
 .admin-metrics {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-4);
   margin-bottom: var(--space-6);
 }
@@ -64,6 +94,10 @@
   border-radius: var(--radius-lg);
   padding: var(--space-4) var(--space-5);
   box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 120px;
   transition:
     transform var(--transition-fast),
     box-shadow var(--transition-fast),
@@ -76,13 +110,49 @@
   border-color: var(--color-border-hover);
 }
 
+.admin-metric-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
 .admin-metric-card__label {
   font-size: var(--text-2xs);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--color-text-tertiary);
   font-weight: var(--weight-semibold);
-  margin-bottom: var(--space-1);
+}
+
+.admin-metric-card__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.admin-metric-card__icon--blue {
+  background-color: rgba(37, 99, 235, 0.08);
+  color: #2563eb;
+}
+
+.admin-metric-card__icon--green {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.admin-metric-card__icon--red {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.admin-metric-card__icon--purple {
+  background-color: rgba(139, 92, 246, 0.1);
+  color: #7c3aed;
 }
 
 .admin-metric-card__value {
@@ -95,11 +165,57 @@
   line-height: 1.1;
 }
 
+.admin-metric-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.admin-metric-card__subtext {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-metric-card__pill {
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.admin-metric-card__pill--blue {
+  background-color: rgba(37, 99, 235, 0.08);
+  color: #2563eb;
+}
+
+.admin-metric-card__pill--green {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.admin-metric-card__pill--red {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.admin-metric-card__pill--purple {
+  background-color: rgba(139, 92, 246, 0.1);
+  color: #7c3aed;
+}
+
 /* -----------------------------------------------------------------------------
-   3. Tab Navigation
+   3. Tab Navigation (Segmented Aesthetic)
    ----------------------------------------------------------------------------- */
 .admin-tabs {
   display: flex;
+  align-items: center;
   gap: var(--space-1);
   border-bottom: 1px solid var(--color-border);
   margin-bottom: var(--space-5);
@@ -108,6 +224,9 @@
 }
 
 .admin-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   background: none;
   border: none;
   padding: 10px 16px;
@@ -135,6 +254,20 @@
   border-bottom-color: var(--color-primary);
   font-weight: var(--weight-semibold);
   background-color: var(--color-surface-subtle);
+}
+
+.admin-tab-count {
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-secondary);
+  font-weight: var(--weight-semibold);
+}
+
+.admin-tab-btn--active .admin-tab-count {
+  background-color: var(--color-primary-subtle);
+  color: var(--color-primary);
 }
 
 /* -----------------------------------------------------------------------------
@@ -167,8 +300,8 @@
   position: relative;
   display: flex;
   align-items: center;
-  min-width: 220px;
-  max-width: 320px;
+  min-width: 240px;
+  max-width: 340px;
   flex: 1;
 }
 
@@ -235,7 +368,7 @@
 .admin-select {
   height: 38px;
   appearance: none;
-  padding: 0 30px 0 12px;
+  padding: 0 32px 0 12px;
   font-family: var(--font-body);
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
@@ -265,9 +398,18 @@
 }
 
 .admin-toolbar__count {
+  display: flex;
+  align-items: center;
+}
+
+.admin-count-pill {
   font-size: var(--text-xs);
   color: var(--color-text-secondary);
   font-weight: var(--weight-medium);
+  background-color: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
   white-space: nowrap;
 }
 
@@ -327,12 +469,169 @@
   color: var(--color-text-primary);
   margin: 0;
   line-height: 1.3;
-}
-
-.admin-actions-cell {
   display: flex;
   align-items: center;
+  gap: 6px;
+}
+
+.admin-user-cell__meta {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono, monospace);
+  margin-top: 1px;
+}
+
+.admin-self-pill {
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  padding: 1px 6px;
+  background-color: var(--color-primary-subtle);
+  color: var(--color-primary);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-primary-border);
+}
+
+.admin-email-text {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.admin-date-text {
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+/* Role Badges with Icons */
+.admin-role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.admin-role-badge--super {
+  background-color: rgba(139, 92, 246, 0.1);
+  color: #7c3aed;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+}
+
+.admin-role-badge--admin {
+  background-color: var(--color-primary-subtle);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary-border);
+}
+
+.admin-role-badge--moderator {
+  background-color: rgba(234, 179, 8, 0.12);
+  color: #b45309;
+  border: 1px solid rgba(234, 179, 8, 0.25);
+}
+
+.admin-role-badge--student {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+/* Status Pill */
+.admin-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.02em;
+}
+
+.admin-status-pill--active {
+  background-color: var(--color-success-subtle);
+  color: var(--color-success);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.admin-status-pill--suspended {
+  background-color: var(--color-danger-subtle);
+  color: var(--color-danger);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.admin-status-pill__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.admin-status-pill--active .admin-status-pill__dot {
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+}
+
+.admin-status-pill--suspended .admin-status-pill__dot {
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25);
+}
+
+/* Action Buttons */
+.admin-actions-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
   gap: var(--space-2);
+}
+
+.admin-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.admin-action-btn:hover:not(:disabled) {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-hover);
+}
+
+.admin-action-btn--role:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background-color: var(--color-primary-subtle);
+}
+
+.admin-action-btn--suspend:hover:not(:disabled) {
+  border-color: rgba(239, 68, 68, 0.4);
+  color: var(--color-danger);
+  background-color: var(--color-danger-subtle);
+}
+
+.admin-action-btn--reactivate:hover:not(:disabled) {
+  border-color: rgba(16, 185, 129, 0.4);
+  color: var(--color-success);
+  background-color: var(--color-success-subtle);
+}
+
+.admin-action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* -----------------------------------------------------------------------------
@@ -410,22 +709,23 @@
 /* -----------------------------------------------------------------------------
    9. Responsive Breakpoints
    ----------------------------------------------------------------------------- */
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .admin-metrics {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .admin-toolbar__form {
-    width: 100%;
-  }
-
-  .admin-search-wrapper {
-    max-width: none;
-    min-width: 100%;
   }
 }
 
 @media (max-width: 640px) {
+  .admin-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-header__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
   .admin-metrics {
     grid-template-columns: 1fr;
   }
@@ -438,6 +738,11 @@
   .admin-toolbar__form {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .admin-search-wrapper {
+    max-width: none;
+    min-width: 100%;
   }
 
   .admin-select-wrapper {

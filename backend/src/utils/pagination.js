@@ -74,6 +74,7 @@ export function buildPaginatedResponse(items, totalItems, paginationOrPage, mayb
   const meta = {
     page,
     limit,
+    total: totalItems,
     totalItems,
     totalPages,
     hasNextPage: page < totalPages,

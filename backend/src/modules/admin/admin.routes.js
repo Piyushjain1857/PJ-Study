@@ -1,10 +1,14 @@
 import { Router } from 'express';
 import adminController from './admin.controller.js';
 import reviewController from '../reviews/review.controller.js';
+import notificationController from '../notifications/notification.controller.js';
 import { validateUpdateUser, validateChangeRole } from './admin.validation.js';
+import { validateCreateAnnouncement } from '../notifications/notification.validation.js';
 import { requireAuth } from '../../auth/requireAuth.js';
+import { requireRole } from '../../auth/requireRole.js';
 import { requirePermission } from '../../auth/requirePermission.js';
 import { PERMISSIONS } from '../../auth/permissions.js';
+import { ROLES } from '../../auth/rolePermissions.js';
 
 const router = Router();
 
@@ -87,6 +91,23 @@ router.post(
   '/review-reports/:id/dismiss',
   requirePermission(PERMISSIONS.NOTES_REVIEW),
   reviewController.dismissReport
+);
+
+/**
+ * Administrative Platform Announcements
+ * POST /api/v1/admin/announcements
+ * GET /api/v1/admin/announcements
+ */
+router.post(
+  '/announcements',
+  requireRole(ROLES.ADMIN, ROLES.SUPER_ADMIN),
+  validateCreateAnnouncement,
+  notificationController.createAnnouncement
+);
+router.get(
+  '/announcements',
+  requireRole(ROLES.ADMIN, ROLES.SUPER_ADMIN),
+  notificationController.getAnnouncements
 );
 
 export default router;
