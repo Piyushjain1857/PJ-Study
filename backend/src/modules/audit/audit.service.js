@@ -78,14 +78,18 @@ export class AuditService {
   }
 
   /**
-   * Retrieves paginated audit logs for administrators.
+   * Retrieves paginated audit logs for administrators with multi-field search and filtering.
    *
    * @param {{
    *   page?: number|string,
    *   limit?: number|string,
    *   action?: string,
    *   entityType?: string,
-   *   actorId?: string
+   *   actorId?: string,
+   *   actorType?: 'SYSTEM' | 'USER',
+   *   search?: string,
+   *   startDate?: string,
+   *   endDate?: string
    * }} query
    * @returns {Promise<any>}
    */
@@ -93,22 +97,61 @@ export class AuditService {
     const { page, limit, skip } = getPaginationParams(query);
 
     const where = {};
-    if (query.action) {
-      where.action = query.action;
+
+    if (query.action && query.action !== 'ALL') {
+      if (query.action.includes(',')) {
+        where.action = { in: query.action.split(',').map((a) => a.trim()) };
+      } else {
+        where.action = query.action;
+      }
     }
-    if (query.entityType) {
+
+    if (query.entityType && query.entityType !== 'ALL') {
       where.entityType = query.entityType;
     }
+
     if (query.actorId) {
       where.actorId = query.actorId;
     }
 
-    const [logs, total] = await Promise.all([
+    if (query.actorType === 'SYSTEM') {
+      where.actorId = null;
+    } else if (query.actorType === 'USER') {
+      where.actorId = { not: null };
+    }
+
+    if (query.search && query.search.trim()) {
+      const term = query.search.trim();
+      where.OR = [
+        { action: { contains: term } },
+        { entityType: { contains: term } },
+        { entityId: { contains: term } },
+        { actor: { name: { contains: term } } },
+        { actor: { email: { contains: term } } }
+      ];
+    }
+
+    if (query.startDate || query.endDate) {
+      where.createdAt = {};
+      if (query.startDate) where.createdAt.gte = new Date(query.startDate);
+      if (query.endDate) where.createdAt.lte = new Date(query.endDate);
+    }
+
+    const [logs, total, totalSystem, totalUsers] = await Promise.all([
       this.repo.findMany({ skip, take: limit, where }),
-      this.repo.count(where)
+      this.repo.count(where),
+      this.repo.count({ actorId: null }),
+      this.repo.count({ actorId: { not: null } })
     ]);
 
-    return buildPaginatedResponse(logs, total, page, limit);
+    const res = buildPaginatedResponse(logs, total, page, limit);
+    res.summary = {
+      totalEvents: total,
+      systemEvents: totalSystem,
+      userEvents: totalUsers
+    };
+
+    return res;
   }
 }
 

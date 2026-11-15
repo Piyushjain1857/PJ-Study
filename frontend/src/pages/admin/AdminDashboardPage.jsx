@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import adminService from '../../services/adminService.js';
@@ -90,6 +90,15 @@ export function AdminDashboardPage() {
     totalPages: 1
   });
   const [isLoadingAudit, setIsLoadingAudit] = useState(false);
+  const [auditSearch, setAuditSearch] = useState('');
+  const [auditActionFilter, setAuditActionFilter] = useState('ALL');
+  const [auditEntityFilter, setAuditEntityFilter] = useState('ALL');
+  const [auditActorFilter, setAuditActorFilter] = useState('ALL');
+  const [auditDateFilter, setAuditDateFilter] = useState('ALL');
+  const [selectedAuditLog, setSelectedAuditLog] = useState(null);
+  const [copiedEntityId, setCopiedEntityId] = useState(null);
+  const [auditSummary, setAuditSummary] = useState(null);
+  const activeTabRef = useRef(null);
 
   // Review Moderation State
   const [reviewReports, setReviewReports] = useState([]);
@@ -382,32 +391,66 @@ export function AdminDashboardPage() {
     [search, roleFilter, statusFilter]
   );
 
-  // Fetch Audit Logs
-  const fetchAuditLogs = useCallback(async (pageToLoad = 1) => {
-    setIsLoadingAudit(true);
-    try {
-      const response = await adminService.getAuditLogs({
-        page: pageToLoad,
-        limit: 15
-      });
-      const logList = response?.data || response?.items || [];
-      setAuditLogs(logList);
-      const pag = response?.pagination || response?.meta || {};
-      setAuditPagination({
-        page: pag.page || pageToLoad,
-        limit: pag.limit || 15,
-        total: pag.total ?? pag.totalItems ?? logList.length,
-        totalPages: pag.totalPages || 1
-      });
-    } catch (err) {
-      setActionNotice({
-        type: 'danger',
-        message: err.message || 'Failed to load audit logs.'
-      });
-    } finally {
-      setIsLoadingAudit(false);
-    }
-  }, []);
+  // Fetch Audit Logs with Multi-Dimensional Filtering
+  const fetchAuditLogs = useCallback(
+    async (pageToLoad = 1, filterOverrides = {}) => {
+      setIsLoadingAudit(true);
+      try {
+        const searchVal =
+          filterOverrides.search !== undefined ? filterOverrides.search : auditSearch;
+        const actionVal =
+          filterOverrides.action !== undefined ? filterOverrides.action : auditActionFilter;
+        const entityVal =
+          filterOverrides.entityType !== undefined ? filterOverrides.entityType : auditEntityFilter;
+        const actorVal =
+          filterOverrides.actorType !== undefined ? filterOverrides.actorType : auditActorFilter;
+        const dateVal =
+          filterOverrides.dateRange !== undefined ? filterOverrides.dateRange : auditDateFilter;
+
+        let startDate = null;
+        const now = new Date();
+        if (dateVal === 'today') {
+          startDate = new Date(now.setHours(0, 0, 0, 0)).toISOString();
+        } else if (dateVal === '7d') {
+          startDate = new Date(now.setDate(now.getDate() - 7)).toISOString();
+        } else if (dateVal === '30d') {
+          startDate = new Date(now.setDate(now.getDate() - 30)).toISOString();
+        }
+
+        const params = {
+          page: pageToLoad,
+          limit: 15,
+          ...(searchVal?.trim() ? { search: searchVal.trim() } : {}),
+          ...(actionVal && actionVal !== 'ALL' ? { action: actionVal } : {}),
+          ...(entityVal && entityVal !== 'ALL' ? { entityType: entityVal } : {}),
+          ...(actorVal && actorVal !== 'ALL' ? { actorType: actorVal } : {}),
+          ...(startDate ? { startDate } : {})
+        };
+
+        const response = await adminService.getAuditLogs(params);
+        const logList = response?.data || response?.items || [];
+        setAuditLogs(logList);
+        if (response?.summary) {
+          setAuditSummary(response.summary);
+        }
+        const pag = response?.pagination || response?.meta || {};
+        setAuditPagination({
+          page: pag.page || pageToLoad,
+          limit: pag.limit || 15,
+          total: pag.total ?? pag.totalItems ?? logList.length,
+          totalPages: pag.totalPages || 1
+        });
+      } catch (err) {
+        setActionNotice({
+          type: 'danger',
+          message: err.message || 'Failed to retrieve audit compliance trail.'
+        });
+      } finally {
+        setIsLoadingAudit(false);
+      }
+    },
+    [auditSearch, auditActionFilter, auditEntityFilter, auditActorFilter, auditDateFilter]
+  );
 
   // Fetch Review Reports
   const fetchReviewReports = useCallback(async () => {
@@ -513,6 +556,17 @@ export function AdminDashboardPage() {
       setActiveTab('backups');
     }
   }, [location.pathname, fetchUsers]);
+
+  // Auto-scroll active tab into view on horizontal nav
+  useEffect(() => {
+    if (activeTabRef.current) {
+      activeTabRef.current.scrollIntoView({
+        behavior: 'smooth',
+        inline: 'center',
+        block: 'nearest'
+      });
+    }
+  }, [activeTab]);
 
   // Tab data loader
   useEffect(() => {
@@ -1025,29 +1079,276 @@ export function AdminDashboardPage() {
     }
   }
 
-  // Helper for human-readable audit detail text
-  function formatAuditDetails(log) {
-    if (!log.metadata) return 'No additional context provided';
+  // CSV Export for Audit Trail
+  const handleExportAuditCSV = () => {
+    if (!auditLogs.length) return;
+    const headers = ['Timestamp', 'ISO Time', 'Actor Name', 'Actor Email', 'Actor Role', 'Action', 'Entity Type', 'Entity ID', 'Details'];
+    const rows = auditLogs.map((log) => [
+      `"${new Date(log.createdAt).toLocaleString().replace(/"/g, '""')}"`,
+      `"${log.createdAt}"`,
+      `"${(log.actor?.name || 'System Engine').replace(/"/g, '""')}"`,
+      `"${(log.actor?.email || 'N/A').replace(/"/g, '""')}"`,
+      `"${log.actor?.role || 'SYSTEM'}"`,
+      `"${log.action}"`,
+      `"${log.entityType}"`,
+      `"${log.entityId}"`,
+      `"${JSON.stringify(log.metadata || {}).replace(/"/g, '""')}"`
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `pj-study-audit-trail-${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // JSON Export for Forensic Analysis
+  const handleExportAuditJSON = () => {
+    if (!auditLogs.length) return;
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(auditLogs, null, 2));
+    const link = document.createElement('a');
+    link.setAttribute('href', dataStr);
+    link.setAttribute('download', `pj-study-audit-trail-${new Date().toISOString().slice(0, 10)}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // 1-Click Entity ID Copy
+  const handleCopyEntityId = (id) => {
+    if (!id) return;
+    window.navigator?.clipboard?.writeText(id);
+    setCopiedEntityId(id);
+    setTimeout(() => setCopiedEntityId(null), 2000);
+  };
+
+  // Semantic Normalization for Action Badges
+  const normalizeAuditAction = (actionStr) => {
+    if (!actionStr) return { label: 'Action Event', variant: 'neutral', icon: '•' };
+    const norm = String(actionStr).trim();
+    if (norm === 'NOTE_PUBLISHED') {
+      return { label: 'Note Published', variant: 'success', icon: '✓' };
+    }
+    if (norm === 'NOTE_UNPUBLISHED') {
+      return { label: 'Note Unpublished', variant: 'warning', icon: '⊘' };
+    }
+    if (norm === 'NOTE_DELETED_BY_ADMIN') {
+      return { label: 'Note Deleted', variant: 'danger', icon: '🗑' };
+    }
+    if (norm === 'USER_ROLE_CHANGED') {
+      return { label: 'Role Modified', variant: 'accent', icon: '🛡' };
+    }
+    if (norm === 'USER_SUSPENDED') {
+      return { label: 'Account Suspended', variant: 'danger', icon: '✕' };
+    }
+    if (norm === 'USER_REACTIVATED' || norm === 'USER_RESTORED') {
+      return { label: 'Account Restored', variant: 'success', icon: '✓' };
+    }
+    if (norm === 'USER_PROFILE_UPDATED') {
+      return { label: 'Profile Updated', variant: 'info', icon: '✎' };
+    }
+    if (norm === 'review_report:dismiss' || norm === 'REVIEW_REPORT_DISMISSED') {
+      return { label: 'Report Dismissed', variant: 'neutral', icon: '✓' };
+    }
+    if (norm === 'review_report:action' || norm === 'REVIEW_REPORT_ACTIONED') {
+      return { label: 'Report Actioned', variant: 'warning', icon: '⚡' };
+    }
+    if (norm === 'review:restore') {
+      return { label: 'Review Restored', variant: 'success', icon: '👁' };
+    }
+    if (norm === 'review:hide') {
+      return { label: 'Review Hidden', variant: 'warning', icon: '⊘' };
+    }
+    if (norm === 'PLATFORM_SETTINGS_UPDATED') {
+      return { label: 'Settings Updated', variant: 'primary', icon: '⚙' };
+    }
+    if (norm === 'ANNOUNCEMENT_CREATED') {
+      return { label: 'Broadcast Created', variant: 'accent', icon: '📢' };
+    }
+    if (norm === 'NOTE_REPORT_DISMISSED') {
+      return { label: 'Report Dismissed', variant: 'neutral', icon: '✓' };
+    }
+    if (norm === 'NOTE_REPORT_RESOLVED') {
+      return { label: 'Report Resolved', variant: 'success', icon: '✓' };
+    }
+
+    const formatted = norm
+      .replace(/_/g, ' ')
+      .replace(/:/g, ' → ')
+      .toLowerCase()
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+    return { label: formatted, variant: 'neutral', icon: '•' };
+  };
+
+  // Rich Micro-Component Renderer for Event Details
+  const renderAuditDetails = (log) => {
+    if (!log.metadata) {
+      return <span className="admin-audit-detail-empty">No additional context provided</span>;
+    }
     const m = log.metadata;
-    if (m.oldRole && m.newRole) {
-      return `Role changed from ${m.oldRole} → ${m.newRole}${m.reason ? ` (${m.reason})` : ''}`;
+
+    // Case 1: Status Lifecycle Transitions (Notes)
+    if (m.newStatus || m.previousStatus) {
+      return (
+        <div className="admin-audit-detail-block">
+          {m.noteTitle && (
+            <span className="admin-audit-detail-title" title={m.noteTitle}>
+              📄 {m.noteTitle}
+            </span>
+          )}
+          <div className="admin-audit-transition-group">
+            {m.previousStatus && (
+              <span className={`admin-audit-status-pill admin-audit-status-pill--${String(m.previousStatus).toLowerCase()}`}>
+                {m.previousStatus}
+              </span>
+            )}
+            <span className="admin-audit-arrow">→</span>
+            {m.newStatus && (
+              <span className={`admin-audit-status-pill admin-audit-status-pill--${String(m.newStatus).toLowerCase()}`}>
+                {m.newStatus}
+              </span>
+            )}
+          </div>
+          {m.reason && <p className="admin-audit-detail-reason">"{m.reason}"</p>}
+        </div>
+      );
     }
-    if (m.reason) {
-      return m.reason;
+
+    // Case 2: Role Transitions
+    if (m.newRole || m.oldRole || m.previousRole) {
+      const prev = m.previousRole || m.oldRole || 'SCHOLAR';
+      const next = m.newRole;
+      return (
+        <div className="admin-audit-detail-block">
+          <div className="admin-audit-transition-group">
+            <span className="admin-audit-role-chip">{prev}</span>
+            <span className="admin-audit-arrow">→</span>
+            <span className="admin-audit-role-chip admin-audit-role-chip--highlight">{next}</span>
+          </div>
+          {m.reason && <p className="admin-audit-detail-reason">"{m.reason}"</p>}
+        </div>
+      );
     }
-    if (typeof m === 'object') {
-      const keys = Object.keys(m);
-      if (keys.length === 0) return '—';
-      return keys.map((k) => `${k}: ${String(m[k])}`).join(', ');
+
+    // Case 3: Moderation reasons & violations
+    if (m.reason && typeof m.reason === 'string') {
+      return (
+        <div className="admin-audit-detail-block">
+          <span className="admin-audit-flag-reason">"{m.reason}"</span>
+          {m.action && <span className="admin-audit-meta-tag">Action: {m.action}</span>}
+        </div>
+      );
     }
+
+    // Case 4: Platform settings configuration
+    if (typeof m === 'object' && !Array.isArray(m)) {
+      const entries = Object.entries(m);
+      if (entries.length === 0) return <span className="admin-audit-detail-empty">—</span>;
+      return (
+        <div className="admin-audit-chips-wrap">
+          {entries.slice(0, 3).map(([k, v]) => (
+            <span key={k} className="admin-audit-kv-chip">
+              <strong className="admin-audit-kv-chip__key">{k}:</strong> {String(v)}
+            </span>
+          ))}
+          {entries.length > 3 && (
+            <span className="admin-audit-kv-chip admin-audit-kv-chip--more">
+              +{entries.length - 3} more
+            </span>
+          )}
+        </div>
+      );
+    }
+
     return String(m);
-  }
+  };
+
+  const handleAuditSearchSubmit = (e) => {
+    e.preventDefault();
+    fetchAuditLogs(1, { search: auditSearch });
+  };
+
+  const handleClearAuditSearch = () => {
+    setAuditSearch('');
+    fetchAuditLogs(1, { search: '' });
+  };
+
+  const handleAuditActionFilterChange = (e) => {
+    const val = e.target.value;
+    setAuditActionFilter(val);
+    fetchAuditLogs(1, { action: val });
+  };
+
+  const handleAuditEntityFilterChange = (e) => {
+    const val = e.target.value;
+    setAuditEntityFilter(val);
+    fetchAuditLogs(1, { entityType: val });
+  };
+
+  const handleAuditActorFilterChange = (e) => {
+    const val = e.target.value;
+    setAuditActorFilter(val);
+    fetchAuditLogs(1, { actorType: val });
+  };
+
+  const handleAuditDateFilterChange = (e) => {
+    const val = e.target.value;
+    setAuditDateFilter(val);
+    fetchAuditLogs(1, { dateRange: val });
+  };
+
+  const handleResetAuditFilters = () => {
+    setAuditSearch('');
+    setAuditActionFilter('ALL');
+    setAuditEntityFilter('ALL');
+    setAuditActorFilter('ALL');
+    setAuditDateFilter('ALL');
+    fetchAuditLogs(1, { search: '', action: 'ALL', entityType: 'ALL', actorType: 'ALL', dateRange: 'ALL' });
+  };
+
+  const hasActiveAuditFilters = Boolean(
+    auditSearch.trim() ||
+    auditActionFilter !== 'ALL' ||
+    auditEntityFilter !== 'ALL' ||
+    auditActorFilter !== 'ALL' ||
+    auditDateFilter !== 'ALL'
+  );
+
+  // Dynamic Header Configuration
+  const getHeaderInfo = () => {
+    if (activeTab === 'audit') {
+      return {
+        seo: 'Audit Compliance Trail | PJ Study Super Admin',
+        badge: 'Forensic Audit Ledger',
+        title: 'Audit Compliance Trail',
+        subtitle: 'Tamper-evident forensic ledger of privileged administrative operations, role modifications, access control events, and publication lifecycle changes.'
+      };
+    }
+    if (activeTab === 'overview') {
+      return {
+        seo: 'Super Admin Command Center | PJ Study',
+        badge: 'Platform Control Center',
+        title: 'Super Admin Command Center',
+        subtitle: 'Unified platform governance, institutional oversight, direct publishing status, and security metrics.'
+      };
+    }
+    return {
+      seo: 'Academic Governance & Administration | PJ Study',
+      badge: 'Academic Governance',
+      title: 'Role-Based Access Control',
+      subtitle: 'Manage university scholar accounts, academic admins, access permissions, and governance audit trails.'
+    };
+  };
+
+  const headerInfo = getHeaderInfo();
 
   const hasActiveFilters = Boolean(search || roleFilter || statusFilter);
 
   return (
     <div className="admin-dashboard">
-      <SEO title="Academic Governance & Administration" noindex={true} />
+      <SEO title={headerInfo.seo} noindex={true} />
       <div className="container">
         {/* Header */}
         <header className="admin-header">
@@ -1066,66 +1367,126 @@ export function AdminDashboardPage() {
               >
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
-              Academic Governance
+              {headerInfo.badge}
             </span>
-            <h1 className="admin-header__title">Role-Based Access Control</h1>
-            <p className="admin-header__subtitle">
-              Manage university scholar accounts, academic admins, access permissions, and
-              governance audit trails.
-            </p>
+            <h1 className="admin-header__title">{headerInfo.title}</h1>
+            <p className="admin-header__subtitle">{headerInfo.subtitle}</p>
           </div>
 
           <div className="admin-header__actions">
-            <Button
-              type="button"
-              variant="primary"
-              size="sm"
-              onClick={() => setIsAnnouncementOpen(true)}
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ marginRight: '6px' }}
-                aria-hidden="true"
-              >
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
-              </svg>
-              Broadcast Notice
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleRefreshConsole}
-              disabled={isRefreshing}
-              title="Refresh console metrics and tables"
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={isRefreshing ? 'admin-spin-icon' : ''}
-                style={{ marginRight: '6px' }}
-                aria-hidden="true"
-              >
-                <polyline points="23 4 23 10 17 10" />
-                <polyline points="1 20 1 14 7 14" />
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-              </svg>
-              {isRefreshing ? 'Refreshing...' : 'Refresh'}
-            </Button>
+            {activeTab === 'audit' ? (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportAuditCSV}
+                  disabled={auditLogs.length === 0}
+                  title="Export audit logs to CSV"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  Export CSV
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportAuditJSON}
+                  disabled={auditLogs.length === 0}
+                  title="Export audit logs to JSON"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                    <polyline points="16 18 22 12 16 6" />
+                    <polyline points="8 6 2 12 8 18" />
+                  </svg>
+                  Export JSON
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefreshConsole}
+                  disabled={isRefreshing}
+                  title="Refresh audit compliance records"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={isRefreshing ? 'admin-spin-icon' : ''}
+                    style={{ marginRight: '6px' }}
+                    aria-hidden="true"
+                  >
+                    <polyline points="23 4 23 10 17 10" />
+                    <polyline points="1 20 1 14 7 14" />
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                  </svg>
+                  {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setIsAnnouncementOpen(true)}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{ marginRight: '6px' }}
+                    aria-hidden="true"
+                  >
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+                  </svg>
+                  Broadcast Notice
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefreshConsole}
+                  disabled={isRefreshing}
+                  title="Refresh console metrics and tables"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={isRefreshing ? 'admin-spin-icon' : ''}
+                    style={{ marginRight: '6px' }}
+                    aria-hidden="true"
+                  >
+                    <polyline points="23 4 23 10 17 10" />
+                    <polyline points="1 20 1 14 7 14" />
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                  </svg>
+                  {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                </Button>
+              </>
+            )}
           </div>
         </header>
 
@@ -1159,7 +1520,71 @@ export function AdminDashboardPage() {
         )}
 
         {/* KPI Metrics */}
-        {isLoadingStats && !stats ? (
+        {activeTab === 'audit' ? (
+          <div className="admin-metrics">
+            <div className="admin-metric-card">
+              <div className="admin-metric-card__top">
+                <span className="admin-metric-card__label">Total Audit Events</span>
+                <span className="admin-metric-card__icon admin-metric-card__icon--blue">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 14 14" /></svg>
+                </span>
+              </div>
+              <p className="admin-metric-card__value">{auditPagination.total}</p>
+              <div className="admin-metric-card__footer">
+                <span className="admin-metric-card__subtext">Tamper-evident trail</span>
+                <span className="admin-metric-card__pill admin-metric-card__pill--blue">Immutable</span>
+              </div>
+            </div>
+
+            <div className="admin-metric-card">
+              <div className="admin-metric-card__top">
+                <span className="admin-metric-card__label">Publication Actions</span>
+                <span className="admin-metric-card__icon admin-metric-card__icon--green">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                </span>
+              </div>
+              <p className="admin-metric-card__value" style={{ color: 'var(--color-success)' }}>
+                {auditLogs.filter((l) => l.action?.includes('NOTE') || l.action?.includes('PUBLISH')).length}
+              </p>
+              <div className="admin-metric-card__footer">
+                <span className="admin-metric-card__subtext">Direct publish events</span>
+                <span className="admin-metric-card__pill admin-metric-card__pill--green">Verified</span>
+              </div>
+            </div>
+
+            <div className="admin-metric-card">
+              <div className="admin-metric-card__top">
+                <span className="admin-metric-card__label">Staff & Governance</span>
+                <span className="admin-metric-card__icon admin-metric-card__icon--purple">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                </span>
+              </div>
+              <p className="admin-metric-card__value">
+                {auditSummary?.userEvents ?? auditLogs.filter((l) => l.actorId !== null).length}
+              </p>
+              <div className="admin-metric-card__footer">
+                <span className="admin-metric-card__subtext">Privileged human actions</span>
+                <span className="admin-metric-card__pill admin-metric-card__pill--purple">Admins</span>
+              </div>
+            </div>
+
+            <div className="admin-metric-card">
+              <div className="admin-metric-card__top">
+                <span className="admin-metric-card__label">System Engine</span>
+                <span className="admin-metric-card__icon admin-metric-card__icon--blue">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+                </span>
+              </div>
+              <p className="admin-metric-card__value">
+                {auditSummary?.systemEvents ?? auditLogs.filter((l) => l.actorId === null).length}
+              </p>
+              <div className="admin-metric-card__footer">
+                <span className="admin-metric-card__subtext">Automated operations</span>
+                <span className="admin-metric-card__pill admin-metric-card__pill--blue">Daemon</span>
+              </div>
+            </div>
+          </div>
+        ) : isLoadingStats && !stats ? (
           <div className="admin-metrics">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="admin-metric-card">
@@ -1315,6 +1740,7 @@ export function AdminDashboardPage() {
         {/* Tab Navigation */}
         <nav className="admin-tabs" aria-label="Administrative Views">
           <button
+            ref={activeTab === 'overview' ? activeTabRef : null}
             type="button"
             className={`admin-tab-btn ${activeTab === 'overview' ? 'admin-tab-btn--active' : ''}`}
             onClick={() => navigate('/admin')}
@@ -1323,6 +1749,7 @@ export function AdminDashboardPage() {
             Command Overview
           </button>
           <button
+            ref={activeTab === 'analytics' ? activeTabRef : null}
             type="button"
             className={`admin-tab-btn ${activeTab === 'analytics' ? 'admin-tab-btn--active' : ''}`}
             onClick={() => navigate('/admin/analytics')}
@@ -1331,6 +1758,7 @@ export function AdminDashboardPage() {
             Analytics
           </button>
           <button
+            ref={activeTab === 'activity' ? activeTabRef : null}
             type="button"
             className={`admin-tab-btn ${activeTab === 'activity' ? 'admin-tab-btn--active' : ''}`}
             onClick={() => navigate('/admin/activity')}
@@ -1339,6 +1767,7 @@ export function AdminDashboardPage() {
             Live Activity
           </button>
           <button
+            ref={activeTab === 'users' ? activeTabRef : null}
             type="button"
             className={`admin-tab-btn ${activeTab === 'users' ? 'admin-tab-btn--active' : ''}`}
             onClick={() => navigate('/admin/users')}
@@ -1348,6 +1777,7 @@ export function AdminDashboardPage() {
             {stats && <span className="admin-tab-count">{stats.totalUsers}</span>}
           </button>
           <button
+            ref={activeTab === 'staff' ? activeTabRef : null}
             type="button"
             className={`admin-tab-btn ${activeTab === 'staff' ? 'admin-tab-btn--active' : ''}`}
             onClick={() => navigate('/admin/moderators')}
@@ -1361,6 +1791,7 @@ export function AdminDashboardPage() {
             )}
           </button>
           <button
+            ref={activeTab === 'notes' ? activeTabRef : null}
             type="button"
             className={`admin-tab-btn ${activeTab === 'notes' ? 'admin-tab-btn--active' : ''}`}
             onClick={() => navigate('/admin/notes')}
@@ -1369,6 +1800,7 @@ export function AdminDashboardPage() {
             Notes & Content
           </button>
           <button
+            ref={activeTab === 'reports' ? activeTabRef : null}
             type="button"
             className={`admin-tab-btn ${activeTab === 'reports' ? 'admin-tab-btn--active' : ''}`}
             onClick={() => navigate('/admin/reports')}
@@ -1377,6 +1809,7 @@ export function AdminDashboardPage() {
             Content Reports
           </button>
           <button
+            ref={activeTab === 'reviews' ? activeTabRef : null}
             type="button"
             className={`admin-tab-btn ${activeTab === 'reviews' ? 'admin-tab-btn--active' : ''}`}
             onClick={() => navigate('/admin/reviews')}
@@ -1390,6 +1823,7 @@ export function AdminDashboardPage() {
             )}
           </button>
           <button
+            ref={activeTab === 'academics' ? activeTabRef : null}
             type="button"
             className={`admin-tab-btn ${activeTab === 'academics' ? 'admin-tab-btn--active' : ''}`}
             onClick={() => navigate('/admin/academics')}
@@ -1399,6 +1833,7 @@ export function AdminDashboardPage() {
             {academics.courses?.length > 0 && <span className="admin-tab-count">{academics.courses.length}</span>}
           </button>
           <button
+            ref={activeTab === 'announcements' ? activeTabRef : null}
             type="button"
             className={`admin-tab-btn ${activeTab === 'announcements' ? 'admin-tab-btn--active' : ''}`}
             onClick={() => navigate('/admin/announcements')}
@@ -1407,6 +1842,7 @@ export function AdminDashboardPage() {
             Announcements
           </button>
           <button
+            ref={activeTab === 'settings' ? activeTabRef : null}
             type="button"
             className={`admin-tab-btn ${activeTab === 'settings' ? 'admin-tab-btn--active' : ''}`}
             onClick={() => navigate('/admin/settings')}
@@ -1415,6 +1851,7 @@ export function AdminDashboardPage() {
             Settings
           </button>
           <button
+            ref={activeTab === 'audit' ? activeTabRef : null}
             type="button"
             className={`admin-tab-btn ${activeTab === 'audit' ? 'admin-tab-btn--active' : ''}`}
             onClick={() => navigate('/admin/audit-logs')}
@@ -1423,6 +1860,7 @@ export function AdminDashboardPage() {
             Audit Trail
           </button>
           <button
+            ref={(activeTab === 'health' || activeTab === 'storage' || activeTab === 'backups' || activeTab === 'security') ? activeTabRef : null}
             type="button"
             className={`admin-tab-btn ${activeTab === 'health' || activeTab === 'storage' || activeTab === 'backups' || activeTab === 'security' ? 'admin-tab-btn--active' : ''}`}
             onClick={() => navigate('/admin/health')}
@@ -1797,112 +2235,363 @@ export function AdminDashboardPage() {
 
         {/* TAB 3: AUDIT LOG TRAIL */}
         {activeTab === 'audit' && (
-          <div className="admin-table-container">
+          <div className="admin-audit-hub">
+            {/* Multi-Dimensional Filter Toolbar */}
+            <div className="admin-audit-toolbar">
+              <div className="admin-audit-toolbar__controls">
+                <form onSubmit={handleAuditSearchSubmit} className="admin-audit-toolbar__search">
+                  <svg
+                    className="admin-audit-toolbar__search-icon"
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <input
+                    type="search"
+                    placeholder="Search by actor, action, note title, or ID..."
+                    value={auditSearch}
+                    onChange={(e) => setAuditSearch(e.target.value)}
+                    className="admin-audit-toolbar__search-input"
+                    aria-label="Search audit trail"
+                  />
+                  {auditSearch && (
+                    <button
+                      type="button"
+                      className="admin-audit-toolbar__clear-search"
+                      onClick={handleClearAuditSearch}
+                      title="Clear search"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </form>
+
+                <div className="admin-audit-toolbar__filters">
+                  <select
+                    value={auditActionFilter}
+                    onChange={handleAuditActionFilterChange}
+                    className="admin-audit-select"
+                    aria-label="Filter by action category"
+                  >
+                    <option value="ALL">All Action Categories</option>
+                    <option value="NOTE_PUBLISHED,NOTE_UNPUBLISHED,NOTE_DELETED_BY_ADMIN">
+                      Publications & Catalog
+                    </option>
+                    <option value="USER_ROLE_CHANGED">Role Modifications</option>
+                    <option value="USER_SUSPENDED,USER_REACTIVATED,USER_RESTORED">
+                      User Holds & Access
+                    </option>
+                    <option value="review_report:dismiss,review:hide,review:restore,REVIEW_REPORT_DISMISSED,REVIEW_REPORT_ACTIONED">
+                      Review & Moderation
+                    </option>
+                    <option value="PLATFORM_SETTINGS_UPDATED">System Configuration</option>
+                    <option value="ANNOUNCEMENT_CREATED">Announcements</option>
+                  </select>
+
+                  <select
+                    value={auditEntityFilter}
+                    onChange={handleAuditEntityFilterChange}
+                    className="admin-audit-select"
+                    aria-label="Filter by entity type"
+                  >
+                    <option value="ALL">All Entity Types</option>
+                    <option value="Note">Notes (Documents)</option>
+                    <option value="User">Users (Scholars & Admins)</option>
+                    <option value="review">Reviews</option>
+                    <option value="review_report">Review Reports</option>
+                    <option value="PLATFORM_SETTINGS">Platform Settings</option>
+                  </select>
+
+                  <select
+                    value={auditActorFilter}
+                    onChange={handleAuditActorFilterChange}
+                    className="admin-audit-select"
+                    aria-label="Filter by actor type"
+                  >
+                    <option value="ALL">All Actors</option>
+                    <option value="SYSTEM">System Engine (Daemon)</option>
+                    <option value="USER">Staff & Admins</option>
+                  </select>
+
+                  <select
+                    value={auditDateFilter}
+                    onChange={handleAuditDateFilterChange}
+                    className="admin-audit-select"
+                    aria-label="Filter by date horizon"
+                  >
+                    <option value="ALL">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="7d">Last 7 Days</option>
+                    <option value="30d">Last 30 Days</option>
+                  </select>
+
+                  {hasActiveAuditFilters && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleResetAuditFilters}
+                      title="Clear all active filters"
+                    >
+                      Reset
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Active Filter Chips */}
+              {hasActiveAuditFilters && (
+                <div className="admin-audit-filter-tags">
+                  <span className="admin-audit-filter-tags__label">Active Filters:</span>
+                  {auditSearch && (
+                    <span className="admin-audit-filter-chip">
+                      Query: "{auditSearch}"
+                      <button
+                        type="button"
+                        onClick={handleClearAuditSearch}
+                        className="admin-audit-filter-chip__remove"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  )}
+                  {auditActionFilter !== 'ALL' && (
+                    <span className="admin-audit-filter-chip">
+                      Action: {auditActionFilter.split(',')[0]}
+                      <button
+                        type="button"
+                        onClick={() => handleAuditActionFilterChange({ target: { value: 'ALL' } })}
+                        className="admin-audit-filter-chip__remove"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  )}
+                  {auditEntityFilter !== 'ALL' && (
+                    <span className="admin-audit-filter-chip">
+                      Entity: {auditEntityFilter}
+                      <button
+                        type="button"
+                        onClick={() => handleAuditEntityFilterChange({ target: { value: 'ALL' } })}
+                        className="admin-audit-filter-chip__remove"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  )}
+                  {auditActorFilter !== 'ALL' && (
+                    <span className="admin-audit-filter-chip">
+                      Actor: {auditActorFilter === 'SYSTEM' ? 'System Engine' : 'Administrators'}
+                      <button
+                        type="button"
+                        onClick={() => handleAuditActorFilterChange({ target: { value: 'ALL' } })}
+                        className="admin-audit-filter-chip__remove"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  )}
+                  {auditDateFilter !== 'ALL' && (
+                    <span className="admin-audit-filter-chip">
+                      Horizon: {auditDateFilter}
+                      <button
+                        type="button"
+                        onClick={() => handleAuditDateFilterChange({ target: { value: 'ALL' } })}
+                        className="admin-audit-filter-chip__remove"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleResetAuditFilters}
+                    className="admin-audit-clear-all-btn"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Results Summary Bar */}
+            <div className="admin-audit-summary-bar">
+              <span className="admin-audit-summary-bar__badge">
+                <span className="admin-audit-summary-bar__dot" />
+                Live Audit Trail · Showing {auditLogs.length} of {auditPagination.total} compliance records
+              </span>
+              <span>
+                Page {auditPagination.page} of {auditPagination.totalPages}
+              </span>
+            </div>
+
+            {/* Table or States */}
             {isLoadingAudit ? (
               <div style={{ padding: '24px' }}>
-                <Skeleton height="36px" count={6} style={{ marginBottom: '12px' }} />
+                <Skeleton height="38px" count={7} style={{ marginBottom: '12px' }} />
               </div>
             ) : auditLogs.length === 0 ? (
-              <EmptyState
-                title="No audit entries recorded"
-                description="Administrative actions and role updates will appear here."
-              />
+              <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+                <EmptyState
+                  title="No audit entries matched the criteria"
+                  description={
+                    hasActiveAuditFilters
+                      ? 'Try clearing or relaxing your search query and filters to broaden results.'
+                      : 'Administrative actions, publication events, and role updates will appear here.'
+                  }
+                  action={
+                    hasActiveAuditFilters ? (
+                      <Button variant="primary" size="sm" onClick={handleResetAuditFilters}>
+                        Reset Filters
+                      </Button>
+                    ) : null
+                  }
+                />
+              </div>
             ) : (
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Timestamp</th>
-                    <th>Actor</th>
-                    <th>Action</th>
-                    <th>Entity</th>
-                    <th>Event Details</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {auditLogs.map((log) => (
-                    <tr key={log.id}>
-                      <td
-                        style={{
-                          color: 'var(--color-text-secondary)',
-                          fontSize: 'var(--text-xs)',
-                          whiteSpace: 'nowrap'
-                        }}
-                      >
-                        {formatRelativeTime(log.createdAt)}
-                        <span
-                          style={{
-                            display: 'block',
-                            fontSize: '10px',
-                            color: 'var(--color-text-muted)'
-                          }}
-                        >
-                          {new Date(log.createdAt).toLocaleTimeString()}
-                        </span>
-                      </td>
-                      <td>
-                        {log.actor ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Avatar name={log.actor.name} size="xs" />
-                            <div>
-                              <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                                {log.actor.name}
+              <div className="admin-table-container" style={{ margin: 0, border: 'none', borderRadius: 0 }}>
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '150px' }}>Timestamp</th>
+                      <th style={{ width: '220px' }}>Actor</th>
+                      <th style={{ width: '180px' }}>Action</th>
+                      <th style={{ width: '160px' }}>Entity</th>
+                      <th>Event Details</th>
+                      <th style={{ width: '80px', textAlign: 'right' }}>Inspect</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {auditLogs.map((log) => {
+                      const actionInfo = normalizeAuditAction(log.action);
+                      return (
+                        <tr key={log.id}>
+                          {/* 1. Timestamp */}
+                          <td style={{ whiteSpace: 'nowrap' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              <span style={{ fontWeight: 600, color: 'var(--color-text-primary)', fontSize: 'var(--text-xs)' }}>
+                                {formatRelativeTime(log.createdAt)}
                               </span>
-                              <span
-                                style={{
-                                  display: 'block',
-                                  fontSize: '11px',
-                                  color: 'var(--color-text-secondary)'
-                                }}
-                              >
-                                {log.actor.role}
+                              <span style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: '10px', color: 'var(--color-text-muted)' }}>
+                                {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                               </span>
                             </div>
-                          </div>
-                        ) : (
-                          <span style={{ color: 'var(--color-text-secondary)' }}>System</span>
-                        )}
-                      </td>
-                      <td>
-                        <Badge
-                          variant={
-                            log.action.includes('SUSPEND')
-                              ? 'danger'
-                              : log.action.includes('ROLE')
-                                ? 'accent'
-                                : 'primary'
-                          }
-                          size="sm"
-                        >
-                          {log.action}
-                        </Badge>
-                      </td>
-                      <td style={{ fontSize: 'var(--text-xs)' }}>
-                        <span style={{ fontWeight: 500 }}>{log.entityType}</span>
-                        <span
-                          style={{
-                            display: 'block',
-                            color: 'var(--color-text-muted)',
-                            fontSize: '11px'
-                          }}
-                        >
-                          ID: {log.entityId ? log.entityId.slice(0, 8) + '...' : '—'}
-                        </span>
-                      </td>
-                      <td
-                        style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}
-                      >
-                        {formatAuditDetails(log)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                          </td>
+
+                          {/* 2. Actor */}
+                          <td>
+                            {log.actor ? (
+                              <div className="admin-audit-actor">
+                                <Avatar name={log.actor.name} size="xs" />
+                                <div className="admin-audit-actor__details">
+                                  <span className="admin-audit-actor__name">{log.actor.name}</span>
+                                  <div className="admin-audit-actor__meta">
+                                    <span className={`admin-role-micro-badge admin-role-micro-badge--${String(log.actor.role).toLowerCase()}`}>
+                                      {log.actor.role}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="admin-audit-actor admin-audit-actor--system">
+                                <div className="admin-audit-actor__system-avatar">
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="3" />
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                                  </svg>
+                                </div>
+                                <div className="admin-audit-actor__details">
+                                  <span className="admin-audit-actor__name">System Engine</span>
+                                  <span className="admin-audit-actor__subtext">Automated Daemon</span>
+                                </div>
+                              </div>
+                            )}
+                          </td>
+
+                          {/* 3. Action */}
+                          <td>
+                            <span className={`admin-audit-action-badge admin-audit-action-badge--${actionInfo.variant}`}>
+                              <span>{actionInfo.icon}</span>
+                              {actionInfo.label}
+                            </span>
+                          </td>
+
+                          {/* 4. Entity */}
+                          <td>
+                            <div className="admin-audit-entity">
+                              <span className="admin-audit-entity__type">{log.entityType}</span>
+                              {log.entityId ? (
+                                <div className="admin-audit-entity__id-group">
+                                  <code className="admin-audit-entity__id" title={log.entityId}>
+                                    {log.entityId.length > 12 ? `${log.entityId.slice(0, 8)}...` : log.entityId}
+                                  </code>
+                                  <button
+                                    type="button"
+                                    className="admin-audit-copy-btn"
+                                    onClick={() => handleCopyEntityId(log.entityId)}
+                                    title="Copy full entity ID"
+                                    aria-label="Copy entity ID"
+                                  >
+                                    {copiedEntityId === log.entityId ? (
+                                      <span className="admin-audit-copied-tag">Copied!</span>
+                                    ) : (
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                      </svg>
+                                    )}
+                                  </button>
+                                </div>
+                              ) : (
+                                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>SYSTEM</span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* 5. Event Details */}
+                          <td>
+                            {renderAuditDetails(log)}
+                          </td>
+
+                          {/* 6. Inspect */}
+                          <td style={{ textAlign: 'right' }}>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="xs"
+                              className="admin-audit-inspect-btn"
+                              onClick={() => setSelectedAuditLog(log)}
+                              title="Inspect raw audit payload"
+                            >
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}>
+                                <circle cx="11" cy="11" r="8" />
+                                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                              </svg>
+                              Inspect
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
 
+            {/* Pagination Controls */}
             {auditPagination.totalPages > 1 && (
-              <div className="admin-pagination">
+              <div className="admin-pagination" style={{ borderTop: '1px solid var(--color-border)', margin: 0, padding: '14px 20px' }}>
                 <span className="admin-pagination__info">
-                  Page {auditPagination.page} of {auditPagination.totalPages}
+                  Showing Page {auditPagination.page} of {auditPagination.totalPages} ({auditPagination.total} total items)
                 </span>
                 <div className="admin-pagination__actions">
                   <Button
@@ -1925,6 +2614,100 @@ export function AdminDashboardPage() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Forensic Record Inspection Modal */}
+        {selectedAuditLog && (
+          <Modal
+            isOpen={Boolean(selectedAuditLog)}
+            onClose={() => setSelectedAuditLog(null)}
+            title="Forensic Audit Record Inspection"
+            size="lg"
+          >
+            <div className="admin-audit-modal-content">
+              <div className="admin-audit-modal-header-strip">
+                <div className="admin-audit-modal-meta">
+                  <span className="admin-audit-modal-label">RECORD UUID</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <code className="admin-audit-modal-code">{selectedAuditLog.id}</code>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => handleCopyEntityId(selectedAuditLog.id)}
+                    >
+                      {copiedEntityId === selectedAuditLog.id ? 'Copied!' : 'Copy'}
+                    </Button>
+                  </div>
+                </div>
+                <div className="admin-audit-modal-meta">
+                  <span className="admin-audit-modal-label">LOGGED AT (UTC)</span>
+                  <span className="admin-audit-modal-time">
+                    {new Date(selectedAuditLog.createdAt).toUTCString()}
+                  </span>
+                </div>
+              </div>
+
+              <div className="admin-audit-modal-grid">
+                <div className="admin-audit-modal-card">
+                  <span className="admin-audit-modal-label">ACTOR PROFILE</span>
+                  {selectedAuditLog.actor ? (
+                    <div>
+                      <strong>{selectedAuditLog.actor.name}</strong>
+                      <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                        {selectedAuditLog.actor.email}
+                      </div>
+                      <div style={{ marginTop: '6px' }}>
+                        <Badge variant="accent" size="sm">{selectedAuditLog.actor.role}</Badge>
+                      </div>
+                    </div>
+                  ) : (
+                    <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>
+                      System Engine (Automated Lifecycle Daemon)
+                    </span>
+                  )}
+                </div>
+
+                <div className="admin-audit-modal-card">
+                  <span className="admin-audit-modal-label">ACTION & ENTITY TARGET</span>
+                  <div>
+                    <Badge variant="primary" size="sm">{selectedAuditLog.action}</Badge>
+                    <div style={{ marginTop: '8px', fontSize: '12px' }}>
+                      <strong>Entity:</strong> {selectedAuditLog.entityType}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', wordBreak: 'break-all' }}>
+                      ID: {selectedAuditLog.entityId}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="admin-audit-modal-payload-section">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span className="admin-audit-modal-label">STRUCTURED EVENT PAYLOAD (JSON)</span>
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    onClick={() => {
+                      window.navigator?.clipboard?.writeText(JSON.stringify(selectedAuditLog.metadata, null, 2));
+                      setCopiedEntityId('json_copied');
+                      setTimeout(() => setCopiedEntityId(null), 2000);
+                    }}
+                  >
+                    {copiedEntityId === 'json_copied' ? 'Copied JSON!' : 'Copy Payload'}
+                  </Button>
+                </div>
+                <pre className="admin-audit-modal-json">
+                  {JSON.stringify(selectedAuditLog.metadata, null, 2) || '{}'}
+                </pre>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
+                <Button variant="outline" size="sm" onClick={() => setSelectedAuditLog(null)}>
+                  Close Forensic View
+                </Button>
+              </div>
+            </div>
+          </Modal>
         )}
         {/* TAB 4: PERMISSIONS MATRIX */}
         {activeTab === 'matrix' && (
