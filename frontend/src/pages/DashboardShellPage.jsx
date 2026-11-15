@@ -104,9 +104,9 @@ export function DashboardShellPage() {
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => (window.location.href = '/design-system')}
+                onClick={() => (window.location.href = '/notes/explore')}
               >
-                Explore Design System
+                Explore Notes
               </Button>
             </div>
           }

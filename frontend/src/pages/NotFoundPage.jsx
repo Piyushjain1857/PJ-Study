@@ -25,9 +25,9 @@ export function NotFoundPage() {
                 Return to Library Home
               </Button>
             </Link>
-            <Link to="/design-system">
+            <Link to="/notes/explore">
               <Button variant="secondary" size="md">
-                Design System
+                Explore Notes
               </Button>
             </Link>
           </div>

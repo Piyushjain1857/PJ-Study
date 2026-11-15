@@ -30,6 +30,13 @@ export class AuditService {
   }
 
   /**
+   * Alias for logAction for unified logging compatibility.
+   */
+  async log(params, tx) {
+    return this.logAction(params, tx);
+  }
+
+  /**
    * Retrieves paginated audit logs for administrators.
    *
    * @param {{

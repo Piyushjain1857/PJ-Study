@@ -556,3 +556,15 @@ model Announcement {
   @@index([publishedAt])
   @@map("announcements")
 }
+
+/// PlatformSetting stores runtime configurable platform parameters governed by Super Admin.
+model PlatformSetting {
+  key         String   @id @db.VarChar(100)
+  value       String   @db.Text
+  category    String   @default("GENERAL") @db.VarChar(50)
+  description String?  @db.VarChar(255)
+  updatedById String?  @map("updated_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_settings")
+}
