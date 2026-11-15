@@ -120,7 +120,7 @@ export function Navbar() {
                     className="navbar-avatar-btn"
                     aria-label="Scholar account menu"
                   >
-                    <Avatar name={user?.name || 'Scholar'} size="sm" />
+                    <Avatar name={user?.name || 'Scholar'} src={user?.avatarUrl} size="sm" />
                   </button>
                 }
                 items={userMenuItems}
@@ -260,7 +260,7 @@ export function Navbar() {
             {isAuthenticated ? (
               <div className="d-flex flex-col gap-2">
                 <div className="d-flex items-center gap-3 mb-2">
-                  <Avatar name={user?.name || 'Scholar'} size="sm" />
+                  <Avatar name={user?.name || 'Scholar'} src={user?.avatarUrl} size="sm" />
                   <div>
                     <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{user?.name}</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>

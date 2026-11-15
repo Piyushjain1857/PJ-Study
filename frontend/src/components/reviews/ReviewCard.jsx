@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Avatar from '../common/Avatar.jsx';
 import Badge from '../common/Badge.jsx';
 import StarRating from './StarRating.jsx';
@@ -75,21 +76,53 @@ export function ReviewCard({
     <div className="review-card">
       <div className="review-card-top">
         <div className="review-card-author">
-          <Avatar name={user?.name || 'Scholar'} size="sm" />
-          <div className="review-card-author-info">
-            <span className="review-card-author-name">
-              {user?.name || 'Academic Scholar'}
-              {user?.role && user.role !== 'STUDENT' && (
-                <Badge variant="accent" size="sm">
-                  {user.role}
-                </Badge>
-              )}
-            </span>
-            <span className="review-card-date">
-              {displayDate}
-              {isEdited && ' • Edited'}
-            </span>
-          </div>
+          {review.userId || user?.id ? (
+            <Link
+              to={`/contributors/${review.userId || user?.id}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                textDecoration: 'none',
+                color: 'inherit'
+              }}
+              title="View contributor profile"
+            >
+              <Avatar name={user?.name || 'Scholar'} src={user?.avatarUrl} size="sm" />
+              <div className="review-card-author-info">
+                <span className="review-card-author-name">
+                  {user?.name || 'Academic Scholar'}
+                  {user?.role && user.role !== 'STUDENT' && (
+                    <Badge variant="accent" size="sm">
+                      {user.role}
+                    </Badge>
+                  )}
+                </span>
+                <span className="review-card-date">
+                  {displayDate}
+                  {isEdited && ' • Edited'}
+                </span>
+              </div>
+            </Link>
+          ) : (
+            <>
+              <Avatar name={user?.name || 'Scholar'} src={user?.avatarUrl} size="sm" />
+              <div className="review-card-author-info">
+                <span className="review-card-author-name">
+                  {user?.name || 'Academic Scholar'}
+                  {user?.role && user.role !== 'STUDENT' && (
+                    <Badge variant="accent" size="sm">
+                      {user.role}
+                    </Badge>
+                  )}
+                </span>
+                <span className="review-card-date">
+                  {displayDate}
+                  {isEdited && ' • Edited'}
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
         <StarRating value={rating} readOnly size="sm" />

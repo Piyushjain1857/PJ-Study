@@ -69,6 +69,13 @@ model User {
   passwordHash     String      @map("password_hash") @db.VarChar(255)
   avatarUrl        String?     @map("avatar_url") @db.VarChar(1024)
   bio              String?     @db.Text
+  university       String?     @db.VarChar(150)
+  courseId         String?     @map("course_id")
+  semester         Int?        @db.SmallInt
+  publicProfileEnabled   Boolean @default(true) @map("public_profile_enabled")
+  showAcademicInfo       Boolean @default(true) @map("show_academic_info")
+  showBio                Boolean @default(true) @map("show_bio")
+  showContributionStats  Boolean @default(true) @map("show_contribution_stats")
   role             Role        @default(STUDENT)
   isEmailVerified  Boolean     @default(false) @map("is_email_verified")
   isActive         Boolean     @default(true) @map("is_active")
@@ -76,6 +83,7 @@ model User {
   updatedAt        DateTime    @updatedAt @map("updated_at")
 
   // Relationships
+  course                  Course?                  @relation(fields: [courseId], references: [id], onDelete: SetNull)
   notes                   Note[]                   @relation("UserNotes")
   bookmarks               Bookmark[]
   collections             StudyCollection[]
@@ -93,6 +101,7 @@ model User {
 
   @@index([role])
   @@index([isActive])
+  @@index([courseId])
   @@map("users")
 }
 
@@ -107,6 +116,7 @@ model Course {
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
   // Relationships
+  users       User[]
   subjects    Subject[]
   notes       Note[]
 

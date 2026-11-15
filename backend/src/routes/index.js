@@ -7,6 +7,8 @@ import categoryRoutes from '../modules/categories/category.routes.js';
 import dashboardRoutes from '../modules/dashboard/dashboard.routes.js';
 import recommendationRoutes from '../modules/recommendations/recommendation.routes.js';
 import reviewRoutes from '../modules/reviews/review.routes.js';
+import profileRoutes from '../modules/profile/profile.routes.js';
+import contributorRoutes from '../modules/profile/contributor.routes.js';
 import { requireAuth } from '../auth/requireAuth.js';
 import noteController from '../modules/notes/note.controller.js';
 
@@ -104,6 +106,18 @@ router.use('/recommendations', recommendationRoutes);
  * /api/v1/reviews/...
  */
 router.use('/reviews', reviewRoutes);
+
+/**
+ * Scholar personal profile and academic identity.
+ * /api/v1/profile/...
+ */
+router.use('/profile', profileRoutes);
+
+/**
+ * Public contributor profiles and approved manuscripts.
+ * /api/v1/contributors/...
+ */
+router.use('/contributors', contributorRoutes);
 
 /**
  * User personal resources shortcut (/api/v1/users/me/notes)

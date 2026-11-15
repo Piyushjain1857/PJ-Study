@@ -593,7 +593,7 @@ export function AdminDashboardPage() {
                           <tr key={userItem.id}>
                             <td>
                               <div className="admin-user-cell">
-                                <Avatar name={userItem.name} size="sm" />
+                                <Avatar name={userItem.name} src={userItem.avatarUrl} size="sm" />
                                 <div>
                                   <p className="admin-user-cell__name">
                                     {userItem.name} {isSelf && '(You)'}
@@ -1095,7 +1095,7 @@ export function AdminDashboardPage() {
 
               <div className="admin-modal-user-box">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <Avatar name={roleModalUser.name} size="sm" />
+                  <Avatar name={roleModalUser.name} src={roleModalUser.avatarUrl} size="sm" />
                   <div>
                     <strong style={{ display: 'block' }}>{roleModalUser.name}</strong>
                     <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>

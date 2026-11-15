@@ -13,6 +13,7 @@ import VerifyEmailPage from '../pages/auth/VerifyEmailPage.jsx';
 import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage.jsx';
 import ResetPasswordPage from '../pages/auth/ResetPasswordPage.jsx';
 import ProfilePage from '../pages/auth/ProfilePage.jsx';
+import PublicContributorPage from '../pages/profile/PublicContributorPage.jsx';
 import AdminDashboardPage from '../pages/admin/AdminDashboardPage.jsx';
 import UnauthorizedPage from '../pages/UnauthorizedPage.jsx';
 import StudentDashboardPage from '../pages/dashboard/StudentDashboardPage.jsx';
@@ -107,6 +108,10 @@ export const router = createBrowserRouter(
               <ProfilePage />
             </ProtectedRoute>
           )
+        },
+        {
+          path: 'contributors/:userId',
+          element: <PublicContributorPage />
         },
         {
           path: 'admin',

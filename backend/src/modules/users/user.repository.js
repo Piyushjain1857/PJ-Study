@@ -9,11 +9,25 @@ export const USER_SAFE_SELECT = {
   email: true,
   avatarUrl: true,
   bio: true,
+  university: true,
+  courseId: true,
+  semester: true,
+  publicProfileEnabled: true,
+  showAcademicInfo: true,
+  showBio: true,
+  showContributionStats: true,
   role: true,
   isEmailVerified: true,
   isActive: true,
   createdAt: true,
-  updatedAt: true
+  updatedAt: true,
+  course: {
+    select: {
+      id: true,
+      name: true,
+      slug: true
+    }
+  }
 };
 
 /**

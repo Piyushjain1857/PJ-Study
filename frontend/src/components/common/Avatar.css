@@ -20,6 +20,12 @@
 }
 
 /* Sizes */
+.avatar--xs {
+  width: 1.5rem; /* 24px */
+  height: 1.5rem;
+  font-size: 0.625rem;
+}
+
 .avatar--sm {
   width: 1.75rem; /* 28px */
   height: 1.75rem;
@@ -36,6 +42,12 @@
   width: 3rem; /* 48px */
   height: 3rem;
   font-size: var(--font-size-base);
+}
+
+.avatar--xl {
+  width: 4.5rem; /* 72px */
+  height: 4.5rem;
+  font-size: var(--font-size-xl);
 }
 
 .avatar__image {

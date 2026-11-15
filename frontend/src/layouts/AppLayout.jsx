@@ -65,6 +65,7 @@ export function AppLayout() {
     if (path.startsWith('/notes/new')) return 'Upload Study Note';
     if (path.includes('/edit')) return 'Edit Study Note';
     if (path.startsWith('/notes/')) return 'Study Manuscript Details';
+    if (path.startsWith('/contributors/')) return 'Academic Contributor Profile';
     if (path.startsWith('/profile')) return 'Scholar Profile & Security';
     if (path.startsWith('/admin')) return 'Academic Moderation Console';
     if (path.startsWith('/design-system')) return 'Design System Reference';
@@ -361,7 +362,11 @@ export function AppLayout() {
         <div className="app-shell__sidebar-footer">
           {isAuthenticated ? (
             <div className="app-shell__user-container">
-              <Avatar name={user?.name || 'Scholar'} size={sidebarCollapsed ? 'sm' : 'md'} />
+              <Avatar
+                name={user?.name || 'Scholar'}
+                src={user?.avatarUrl}
+                size={sidebarCollapsed ? 'sm' : 'md'}
+              />
               {!sidebarCollapsed && (
                 <div className="app-shell__user-info">
                   <span className="app-shell__user-name">{user?.name || 'Scholar'}</span>
@@ -470,7 +475,7 @@ export function AppLayout() {
                     className="app-shell__avatar-btn"
                     aria-label="Open scholar account menu"
                   >
-                    <Avatar name={user?.name || 'Scholar'} size="sm" />
+                    <Avatar name={user?.name || 'Scholar'} src={user?.avatarUrl} size="sm" />
                   </button>
                 }
                 items={userMenuItems}
