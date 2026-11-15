@@ -3,6 +3,7 @@ import profileController from './profile.controller.js';
 import { requireAuth } from '../../auth/requireAuth.js';
 import { validateUpdateProfile, validatePrivacySettings } from './profile.validation.js';
 import { avatarUpload, handleAvatarUploadErrors } from './profile.upload.js';
+import { fileUploadLimiter } from '../../middleware/rateLimiters.js';
 
 const router = Router();
 
@@ -21,6 +22,7 @@ router.patch('/me/privacy', requireAuth, validatePrivacySettings, profileControl
 router.post(
   '/me/avatar',
   requireAuth,
+  fileUploadLimiter,
   avatarUpload.single('avatar'),
   handleAvatarUploadErrors,
   profileController.uploadAvatar

@@ -17,18 +17,56 @@ import errorHandler from './middleware/errorHandler.js';
 export function createApp() {
   const app = express();
 
-  // Security headers
+  // Disable technology leakage header
+  app.disable('x-powered-by');
+
+  // Enable reverse proxy trust for correct client IP detection in rate limiting
+  app.set('trust proxy', 1);
+
+  // Enterprise Security Headers
   app.use(
     helmet({
-      crossOriginResourcePolicy: { policy: 'cross-origin' }
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+          fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+          imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+          connectSrc: ["'self'", env.frontendUrl, 'http://localhost:5173', 'http://localhost:5001'],
+          objectSrc: ["'none'"],
+          mediaSrc: ["'self'", 'blob:'],
+          frameSrc: ["'none'"],
+          upgradeInsecureRequests: env.isProduction ? [] : null
+        }
+      },
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      crossOriginEmbedderPolicy: false,
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+      xContentTypeOptions: true,
+      xFrameOptions: { action: 'deny' },
+      strictTransportSecurity: env.isProduction
+        ? { maxAge: 31536000, includeSubDomains: true, preload: true }
+        : false
     })
   );
 
   // CORS configuration
   app.use(
     cors({
-      origin: env.isProduction ? env.frontendUrl : true,
-      credentials: true
+      origin: (origin, callback) => {
+        if (!origin || !env.isProduction) {
+          return callback(null, true);
+        }
+        const allowedOrigins = [env.frontendUrl];
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        return callback(new Error('CORS policy: origin not allowed by Access-Control-Allow-Origin.'));
+      },
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
     })
   );
 

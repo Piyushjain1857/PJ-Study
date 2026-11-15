@@ -410,6 +410,13 @@ export class AuthService {
       throw error;
     }
 
+    if (!user.isActive) {
+      const error = new Error('Your academic account has been suspended.');
+      error.statusCode = 403;
+      error.code = 'ACCOUNT_SUSPENDED';
+      throw error;
+    }
+
     const isMatch = await comparePassword(currentPassword, user.passwordHash);
     if (!isMatch) {
       const error = new Error('Current password does not match');

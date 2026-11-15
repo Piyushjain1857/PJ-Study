@@ -421,6 +421,8 @@ export class AdminService {
       moderatorsCount,
       adminsCount,
       superAdminsCount,
+      activeScholars,
+      activeModerators,
       totalNotes,
       approvedNotes,
       pendingNotes,
@@ -437,6 +439,8 @@ export class AdminService {
       prisma.user.count({ where: { role: ROLES.MODERATOR } }),
       prisma.user.count({ where: { role: ROLES.ADMIN } }),
       prisma.user.count({ where: { role: ROLES.SUPER_ADMIN } }),
+      prisma.user.count({ where: { role: ROLES.STUDENT, isActive: true } }),
+      prisma.user.count({ where: { role: ROLES.MODERATOR, isActive: true } }),
       prisma.note.count(),
       prisma.note.count({ where: { status: 'APPROVED' } }),
       prisma.note.count({ where: { status: 'PENDING' } }),
@@ -447,13 +451,6 @@ export class AdminService {
       prisma.report.count({ where: { status: 'PENDING' } }),
       prisma.reviewReport.count({ where: { status: 'OPEN' } })
     ]);
-
-    const activeScholars = await prisma.user.count({
-      where: { role: ROLES.STUDENT, isActive: true }
-    });
-    const activeModerators = await prisma.user.count({
-      where: { role: ROLES.MODERATOR, isActive: true }
-    });
 
     const pendingTotal = pendingNotes + pendingReviewNotes;
     const reportedTotal = openNoteReports + openReviewReports;

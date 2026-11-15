@@ -7,6 +7,7 @@ import NotesGrid from '../../components/notes/NotesGrid.jsx';
 import NotesEmptyState from '../../components/notes/NotesEmptyState.jsx';
 import Container from '../../components/layout/Container.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { isCancellation } from '../../services/api.js';
 import '../../styles/notes.css';
 
 /**
@@ -80,7 +81,9 @@ export function NotesLibraryPage() {
         setNotes(items);
         setPagination(meta);
       } catch (err) {
-        setError(err.message || 'Unable to load study notes from academic library.');
+        if (!isCancellation(err)) {
+          setError(err.message || 'Unable to load study notes from academic library.');
+        }
       } finally {
         setIsLoading(false);
       }

@@ -4,6 +4,7 @@ import { requireAuth, optionalAuth } from '../../auth/requireAuth.js';
 import { requirePermission } from '../../auth/requirePermission.js';
 import { PERMISSIONS } from '../../auth/permissions.js';
 import { noteUpload, handleUploadErrors } from './note.upload.js';
+import { fileUploadLimiter, reviewSubmissionLimiter } from '../../middleware/rateLimiters.js';
 import reviewController from '../reviews/review.controller.js';
 import {
   validateSubmitReview,
@@ -50,6 +51,7 @@ router.post(
   '/',
   requireAuth,
   requirePermission(PERMISSIONS.NOTES_CREATE),
+  fileUploadLimiter,
   noteUpload.single('file'),
   handleUploadErrors,
   noteController.createNote
@@ -105,10 +107,17 @@ router.delete('/:id/bookmark', requireAuth, noteController.removeBookmark);
 // Notes Ratings, Reviews & Quality Feedback
 router.get('/:id/reviews', optionalAuth, validateReviewQuery, reviewController.getReviews);
 router.get('/:id/rating-summary', reviewController.getRatingSummary);
-router.post('/:id/reviews', requireAuth, validateSubmitReview, reviewController.submitReview);
+router.post(
+  '/:id/reviews',
+  requireAuth,
+  reviewSubmissionLimiter,
+  validateSubmitReview,
+  reviewController.submitReview
+);
 router.patch(
   '/:id/reviews/:reviewId',
   requireAuth,
+  reviewSubmissionLimiter,
   validateUpdateReview,
   reviewController.updateReview
 );

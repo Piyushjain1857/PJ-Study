@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext.jsx';
 import notificationService from '../services/notificationService.js';
+import { isCancellation } from '../services/api.js';
 
 const NotificationContext = createContext(null);
 
@@ -48,7 +49,9 @@ export function NotificationProvider({ children }) {
           if (typeof data.unreadCount === 'number') setUnreadCount(data.unreadCount);
         }
       } catch (err) {
-        setError(err.message || 'Failed to fetch notifications');
+        if (!isCancellation(err)) {
+          setError(err.message || 'Failed to fetch notifications');
+        }
       } finally {
         setIsLoading(false);
       }

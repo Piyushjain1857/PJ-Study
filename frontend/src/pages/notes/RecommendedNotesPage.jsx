@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import recommendationService from '../../services/recommendationService.js';
+import { isCancellation } from '../../services/api.js';
 import RecommendationSection from '../../components/recommendations/RecommendationSection.jsx';
 import Button from '../../components/common/Button.jsx';
 import '../../components/recommendations/recommendations.css';
@@ -32,7 +33,9 @@ export function RecommendedNotesPage() {
       setPopularNotes(popular?.recommendations || []);
       setRecentNotes(recent?.recommendations || []);
     } catch (err) {
-      setError(err.message || 'Failed to load recommendations.');
+      if (!isCancellation(err)) {
+        setError(err.message || 'Failed to load recommendations.');
+      }
     } finally {
       setLoading(false);
     }

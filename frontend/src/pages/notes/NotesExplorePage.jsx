@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import noteService from '../../services/noteService.js';
+import { isCancellation } from '../../services/api.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { PERMISSIONS } from '../../utils/permissions.js';
 import Container from '../../components/layout/Container.jsx';
@@ -127,6 +128,7 @@ export function NotesExplorePage() {
     } catch (err) {
       // Check for all forms of aborted or canceled requests
       const isCanceled =
+        isCancellation(err) ||
         err?.isCanceled ||
         err?.name === 'CanceledError' ||
         err?.name === 'AbortError' ||
@@ -218,6 +220,10 @@ export function NotesExplorePage() {
       setDownloadNotice(`✓ Successfully downloaded "${note.fileName}".`);
       setTimeout(() => setDownloadNotice(''), 4000);
     } catch (err) {
+      if (isCancellation(err)) {
+        setDownloadNotice('');
+        return;
+      }
       setError(
         err.response?.data?.error?.message ||
           err.message ||

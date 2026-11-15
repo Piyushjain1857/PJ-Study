@@ -1,10 +1,9 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import PublicLayout from '../layouts/PublicLayout.jsx';
 import AppLayout from '../layouts/AppLayout.jsx';
 import HomePage from '../pages/HomePage.jsx';
 import NotFoundPage from '../pages/NotFoundPage.jsx';
-import DesignSystemPage from '../pages/DesignSystemPage.jsx';
 
 // Auth Pages & Route Guards
 import LoginPage from '../pages/auth/LoginPage.jsx';
@@ -12,23 +11,74 @@ import RegisterPage from '../pages/auth/RegisterPage.jsx';
 import VerifyEmailPage from '../pages/auth/VerifyEmailPage.jsx';
 import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage.jsx';
 import ResetPasswordPage from '../pages/auth/ResetPasswordPage.jsx';
-import ProfilePage from '../pages/auth/ProfilePage.jsx';
-import AdminDashboardPage from '../pages/admin/AdminDashboardPage.jsx';
-import NotificationCenterPage from '../pages/notifications/NotificationCenterPage.jsx';
 import UnauthorizedPage from '../pages/UnauthorizedPage.jsx';
-import StudentDashboardPage from '../pages/dashboard/StudentDashboardPage.jsx';
-
-// Notes Pages
-import NotesExplorePage from '../pages/notes/NotesExplorePage.jsx';
-import NoteDetailsPage from '../pages/notes/NoteDetailsPage.jsx';
-import RecommendedNotesPage from '../pages/notes/RecommendedNotesPage.jsx';
-import CreateNotePage from '../pages/notes/CreateNotePage.jsx';
-import EditNotePage from '../pages/notes/EditNotePage.jsx';
-import MyNotesPage from '../pages/notes/MyNotesPage.jsx';
 
 import ProtectedRoute from '../components/common/ProtectedRoute.jsx';
 import GuestRoute from '../components/common/GuestRoute.jsx';
 import { ROLES } from '../utils/permissions.js';
+
+// Accessible Route-Level Loading Fallback
+function RouteLoadingFallback() {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '40vh',
+        width: '100%',
+        color: 'var(--color-text-secondary, #64748b)'
+      }}
+      role="status"
+      aria-live="polite"
+    >
+      <div
+        style={{
+          width: '32px',
+          height: '32px',
+          borderRadius: '50%',
+          border: '3px solid var(--color-border, #e2e8f0)',
+          borderTopColor: 'var(--color-primary, #0f766e)',
+          animation: 'route-spin 0.7s linear infinite'
+        }}
+      />
+      <span className="sr-only" style={{ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden' }}>
+        Loading page...
+      </span>
+      <style>{`
+        @keyframes route-spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// Helper to wrap lazy components in Suspense
+const withLazy = (Component) => (props) => (
+  <Suspense fallback={<RouteLoadingFallback />}>
+    <Component {...props} />
+  </Suspense>
+);
+
+// Route-Level Code Splitting for heavy views (drastically reduces initial JS bundle)
+const AdminDashboardPage = withLazy(lazy(() => import('../pages/admin/AdminDashboardPage.jsx')));
+const DesignSystemPage = withLazy(lazy(() => import('../pages/DesignSystemPage.jsx')));
+const ProfilePage = withLazy(lazy(() => import('../pages/auth/ProfilePage.jsx')));
+const NotificationCenterPage = withLazy(
+  lazy(() => import('../pages/notifications/NotificationCenterPage.jsx'))
+);
+const StudentDashboardPage = withLazy(
+  lazy(() => import('../pages/dashboard/StudentDashboardPage.jsx'))
+);
+const NotesExplorePage = withLazy(lazy(() => import('../pages/notes/NotesExplorePage.jsx')));
+const NoteDetailsPage = withLazy(lazy(() => import('../pages/notes/NoteDetailsPage.jsx')));
+const RecommendedNotesPage = withLazy(
+  lazy(() => import('../pages/notes/RecommendedNotesPage.jsx'))
+);
+const CreateNotePage = withLazy(lazy(() => import('../pages/notes/CreateNotePage.jsx')));
+const EditNotePage = withLazy(lazy(() => import('../pages/notes/EditNotePage.jsx')));
+const MyNotesPage = withLazy(lazy(() => import('../pages/notes/MyNotesPage.jsx')));
 
 /**
  * Application routing table for PJ Study.

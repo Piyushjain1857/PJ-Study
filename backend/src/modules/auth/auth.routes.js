@@ -9,6 +9,7 @@ import {
   validateChangePassword
 } from './auth.validation.js';
 import { authenticate, strictAuthLimiter, generalAuthLimiter } from './auth.middleware.js';
+import { passwordChangeLimiter } from '../../middleware/rateLimiters.js';
 
 const router = Router();
 
@@ -51,6 +52,7 @@ router.get('/me', authenticate, authController.getMe);
 router.post(
   '/change-password',
   authenticate,
+  passwordChangeLimiter,
   validateChangePassword,
   authController.changePassword
 );

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import dashboardService from '../../services/dashboardService.js';
+import { isCancellation } from '../../services/api.js';
 import DashboardWelcome from '../../components/dashboard/DashboardWelcome.jsx';
 import DashboardStats from '../../components/dashboard/DashboardStats.jsx';
 import DashboardActivityChart from '../../components/dashboard/DashboardActivityChart.jsx';
@@ -33,9 +34,11 @@ export function StudentDashboardPage() {
       const data = await dashboardService.getOverview();
       setOverview(data);
     } catch (err) {
-      setError(
-        err.response?.data?.error?.message || err.message || 'Failed to load dashboard overview.'
-      );
+      if (!isCancellation(err)) {
+        setError(
+          err.response?.data?.error?.message || err.message || 'Failed to load dashboard overview.'
+        );
+      }
     } finally {
       setLoadingOverview(false);
     }

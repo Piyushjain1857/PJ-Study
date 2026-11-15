@@ -16,7 +16,21 @@ export function errorHandler(err, req, res, _next) {
   }
 
   let message = err.message || 'An unexpected internal server error occurred';
-  let code = err.code || (statusCode === 404 ? 'NOT_FOUND' : 'INTERNAL_SERVER_ERROR');
+  let code =
+    err.code ||
+    (statusCode === 400
+      ? 'BAD_REQUEST'
+      : statusCode === 401
+      ? 'UNAUTHORIZED'
+      : statusCode === 403
+      ? 'FORBIDDEN'
+      : statusCode === 404
+      ? 'NOT_FOUND'
+      : statusCode === 409
+      ? 'CONFLICT'
+      : statusCode === 422
+      ? 'VALIDATION_ERROR'
+      : 'INTERNAL_SERVER_ERROR');
 
   // Friendly interception for database connectivity issues (e.g. Prisma P1001)
   if (
@@ -39,6 +53,28 @@ export function errorHandler(err, req, res, _next) {
     code = 'DATABASE_AUTH_FAILED';
     message =
       'Database authentication failed. Please verify the database credentials in backend/.env.';
+  }
+
+  // Intercept Prisma unique constraint violations (P2002)
+  if (err.code === 'P2002') {
+    statusCode = 409;
+    code = 'DUPLICATE_RESOURCE';
+    const fields = Array.isArray(err.meta?.target) ? err.meta.target.join(', ') : 'field';
+    message = `A resource with this ${fields} already exists.`;
+  }
+
+  // Intercept Prisma foreign key constraint failures (P2003)
+  if (err.code === 'P2003') {
+    statusCode = 400;
+    code = 'FOREIGN_KEY_VIOLATION';
+    message = 'Operation failed because related records depend on this resource.';
+  }
+
+  // Intercept Prisma record not found (P2025)
+  if (err.code === 'P2025') {
+    statusCode = 404;
+    code = 'RECORD_NOT_FOUND';
+    message = 'The requested database record was not found or has been removed.';
   }
 
   const response = {

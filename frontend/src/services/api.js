@@ -132,15 +132,30 @@ apiClient.interceptors.response.use(
 );
 
 /**
+ * Detects whether an error originated from an aborted or intentionally canceled request.
+ * Useful to prevent flashing alarming error banners on rapid filter updates or unmounting.
+ *
+ * @param {any} error
+ * @returns {boolean}
+ */
+export function isCancellation(error) {
+  if (!error) return false;
+  return Boolean(
+    error.isCanceled ||
+      error.name === 'CanceledError' ||
+      error.name === 'AbortError' ||
+      error.code === 'ERR_CANCELED' ||
+      error.message === 'canceled' ||
+      error.message === 'Request canceled' ||
+      axios.isCancel(error)
+  );
+}
+
+/**
  * Extracts and formats errors consistently.
  */
 function formatAxiosError(error) {
-  const isCanceled =
-    axios.isCancel(error) ||
-    error?.name === 'CanceledError' ||
-    error?.name === 'AbortError' ||
-    error?.code === 'ERR_CANCELED' ||
-    error?.message === 'canceled';
+  const isCanceled = isCancellation(error);
 
   const data = error.response?.data;
   return {
