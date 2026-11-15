@@ -58,16 +58,16 @@ export function EditNotePage() {
       // 1. Update note details
       await noteService.updateNote(id, payload);
 
-      // 2. If user chose 'Submit for Review', trigger submission endpoint
-      if (action === 'submit') {
-        await noteService.submitForReview(id);
+      // 2. If user chose 'Publish Note', trigger publish endpoint
+      if (action === 'publish' || action === 'submit') {
+        await noteService.publishNote(id);
       }
 
       navigate('/my-notes', {
         state: {
           notice:
-            action === 'submit'
-              ? 'Your revised manuscript was submitted for review.'
+            action === 'publish' || action === 'submit'
+              ? 'Your study note has been updated and published to the academic catalog.'
               : 'Your note changes have been saved.'
         }
       });

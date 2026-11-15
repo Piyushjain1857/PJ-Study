@@ -24,6 +24,15 @@ export class AdminWorkspaceController {
     }
   };
 
+  getNotes = async (req, res, next) => {
+    try {
+      const data = await this.service.getNotes(req.user.id, req.query);
+      return sendSuccess(res, data, 200, 'Admin notes retrieved successfully.');
+    } catch (err) {
+      return next(err);
+    }
+  };
+
   getQueue = async (req, res, next) => {
     try {
       const data = await this.service.getQueue(req.query);

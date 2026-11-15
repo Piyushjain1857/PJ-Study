@@ -16,6 +16,9 @@ router.get('/overview', adminWorkspaceController.getOverview);
 // Scoped Content Analytics
 router.get('/analytics', adminWorkspaceController.getAnalytics);
 
+// Scoped Notes Management (Published / Unpublished / All)
+router.get('/notes', adminWorkspaceController.getNotes);
+
 // Moderation Review Queue
 router.get('/queue', adminWorkspaceController.getQueue);
 

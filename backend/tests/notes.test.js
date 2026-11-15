@@ -320,7 +320,7 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
   });
 
   await t.test(
-    'POST /api/v1/notes should prohibit direct publishing as APPROVED',
+    'POST /api/v1/notes - Admin uploads publish directly and immediately',
     async () => {
       const res = await fetch(`${baseUrl}/api/v1/notes`, {
         method: 'POST',
@@ -329,16 +329,16 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
           Authorization: `Bearer ${moderatorToken}`
         },
         body: JSON.stringify({
-          title: 'Test Note: Illegal Direct Publish',
-          content: 'Trying to bypass review',
-          subjectId: testSubject.id,
-          status: 'APPROVED'
+          title: 'Test Note: Direct Publish',
+          content: 'Published directly without manual approval queue',
+          subjectId: testSubject.id
         })
       });
 
-      assert.equal(res.status, 403);
+      assert.equal(res.status, 201);
       const json = await res.json();
-      assert.equal(json.error.code, 'UNAUTHORIZED_PUBLISH');
+      assert.equal(json.success, true);
+      assert.ok(['PUBLISHED', 'APPROVED'].includes(json.data.status));
     }
   );
 
@@ -546,7 +546,7 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
       });
       assert.equal(res.status, 200);
       const json = await res.json();
-      assert.equal(json.data.status, 'APPROVED');
+      assert.ok(['PUBLISHED', 'APPROVED'].includes(json.data.status));
       assert.ok(json.data.publishedAt);
     }
   );
@@ -563,7 +563,7 @@ test('Notes Management System — Domain, Storage, API & Moderation Tests', asyn
     assert.ok(items.length >= 1);
     const found = items.find((n) => n.id === createdDraftId);
     assert.ok(found);
-    assert.equal(found.status, 'APPROVED');
+    assert.ok(['PUBLISHED', 'APPROVED'].includes(found.status));
   });
 
   await t.test(

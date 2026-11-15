@@ -77,10 +77,10 @@ export class ReviewService {
       throw error;
     }
 
-    // Eligibility Rule: Only APPROVED notes can be reviewed
-    if (note.status !== 'APPROVED') {
+    // Eligibility Rule: Only published notes can be reviewed
+    if (!['PUBLISHED', 'APPROVED'].includes(note.status)) {
       const error = new Error(
-        `Reviews are only permitted on approved manuscripts. This note status is "${note.status}".`
+        `Reviews are only permitted on published manuscripts. This note status is "${note.status}".`
       );
       error.statusCode = 400;
       throw error;

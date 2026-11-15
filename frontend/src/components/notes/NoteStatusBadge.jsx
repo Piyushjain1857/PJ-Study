@@ -13,18 +13,18 @@ export function NoteStatusBadge({ status }) {
   let label = 'Draft';
 
   switch (normalized) {
+    case 'PUBLISHED':
+    case 'APPROVED':
+      variant = 'approved';
+      label = 'Published';
+      break;
+    case 'UNPUBLISHED':
+      variant = 'draft';
+      label = 'Unpublished';
+      break;
     case 'DRAFT':
       variant = 'draft';
       label = 'Draft';
-      break;
-    case 'PENDING':
-    case 'PENDING_REVIEW':
-      variant = 'pending';
-      label = 'Under Review';
-      break;
-    case 'APPROVED':
-      variant = 'approved';
-      label = 'Approved';
       break;
     case 'REJECTED':
       variant = 'rejected';

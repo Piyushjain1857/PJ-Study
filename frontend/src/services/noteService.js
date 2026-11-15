@@ -111,6 +111,28 @@ export const noteService = {
   },
 
   /**
+   * Publishes a note directly, making it live to Scholars.
+   *
+   * @param {string} id
+   * @returns {Promise<any>}
+   */
+  async publishNote(id) {
+    const response = await apiClient.patch(`/notes/${encodeURIComponent(id)}/publish`);
+    return response.data?.data;
+  },
+
+  /**
+   * Unpublishes a note directly, hiding it from Scholars.
+   *
+   * @param {string} id
+   * @returns {Promise<any>}
+   */
+  async unpublishNote(id) {
+    const response = await apiClient.patch(`/notes/${encodeURIComponent(id)}/unpublish`);
+    return response.data?.data;
+  },
+
+  /**
    * Deletes a note (owner of draft/rejected or administrator).
    *
    * @param {string} id

@@ -197,6 +197,16 @@ export const adminService = {
     return response.data?.data;
   },
 
+  async publishNote(id) {
+    const response = await apiClient.patch(`/notes/${id}/publish`);
+    return response.data?.data;
+  },
+
+  async unpublishNote(id) {
+    const response = await apiClient.patch(`/notes/${id}/unpublish`);
+    return response.data?.data;
+  },
+
   async reviewNote(id, decision, rejectionReason = '') {
     const response = await apiClient.post(`/notes/${id}/review`, { decision, rejectionReason });
     return response.data?.data;

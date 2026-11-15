@@ -426,11 +426,8 @@ export class AdminService {
       activeModeratorsCount,
       activeAdminsCount,
       totalNotes,
-      approvedNotes,
-      pendingNotes,
-      pendingReviewNotes,
-      rejectedNotes,
-      draftNotes,
+      publishedNotes,
+      unpublishedNotes,
       totalDownloads,
       openNoteReports,
       openReviewReports
@@ -445,17 +442,17 @@ export class AdminService {
       prisma.user.count({ where: { role: ROLES.MODERATOR, isActive: true } }),
       prisma.user.count({ where: { role: ROLES.ADMIN, isActive: true } }),
       prisma.note.count(),
-      prisma.note.count({ where: { status: 'APPROVED' } }),
-      prisma.note.count({ where: { status: 'PENDING' } }),
-      prisma.note.count({ where: { status: 'PENDING_REVIEW' } }),
-      prisma.note.count({ where: { status: 'REJECTED' } }),
-      prisma.note.count({ where: { status: 'DRAFT' } }),
+      prisma.note.count({ where: { status: { in: ['PUBLISHED', 'APPROVED'] } } }),
+      prisma.note.count({
+        where: {
+          status: { in: ['UNPUBLISHED', 'DRAFT', 'PENDING', 'PENDING_REVIEW', 'REJECTED', 'ARCHIVED'] }
+        }
+      }),
       prisma.downloadHistory.count(),
       prisma.report.count({ where: { status: 'PENDING' } }),
       prisma.reviewReport.count({ where: { status: 'OPEN' } })
     ]);
 
-    const pendingTotal = pendingNotes + pendingReviewNotes;
     const reportedTotal = openNoteReports + openReviewReports;
     const activeAdminsTotal = activeModeratorsCount + activeAdminsCount;
     const consolidatedAdminsCount = moderatorsCount + adminsCount;
@@ -468,10 +465,12 @@ export class AdminService {
       activeModerators: activeAdminsTotal,
       activeAdmins: activeAdminsTotal,
       totalNotes,
-      approvedNotes,
-      pendingModeration: pendingTotal,
-      rejectedNotes,
-      draftNotes,
+      publishedNotes,
+      unpublishedNotes,
+      approvedNotes: publishedNotes,
+      pendingModeration: 0,
+      rejectedNotes: 0,
+      draftNotes: unpublishedNotes,
       totalDownloads,
       reportedContent: reportedTotal,
       openNoteReports,
@@ -684,7 +683,14 @@ export class AdminService {
     }
 
     if (query.status && query.status !== 'ALL') {
-      where.status = query.status;
+      const upper = String(query.status).toUpperCase();
+      if (upper === 'PUBLISHED') {
+        where.status = { in: ['PUBLISHED', 'APPROVED'] };
+      } else if (upper === 'UNPUBLISHED') {
+        where.status = { in: ['UNPUBLISHED', 'DRAFT', 'PENDING', 'PENDING_REVIEW', 'REJECTED', 'ARCHIVED'] };
+      } else {
+        where.status = query.status;
+      }
     }
 
     if (query.courseId) where.courseId = query.courseId;

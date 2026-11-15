@@ -18,7 +18,7 @@ class SeoService {
     // Fetch approved, publicly indexable study notes from MySQL
     const approvedNotes = await prisma.note.findMany({
       where: {
-        status: 'APPROVED'
+        status: { in: ['PUBLISHED', 'APPROVED'] }
       },
       select: {
         id: true,

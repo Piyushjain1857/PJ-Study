@@ -151,7 +151,31 @@ export class NoteController {
   };
 
   /**
-   * Reviews and approves or rejects a note submission (moderator/admin).
+   * Publishes an existing note directly.
+   */
+  publishNote = async (req, res, next) => {
+    try {
+      const updated = await this.service.publishNote(req.params.id, req.user.id);
+      return sendSuccess(res, updated, 200, 'Note published successfully.');
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  /**
+   * Unpublishes a note from Scholar access.
+   */
+  unpublishNote = async (req, res, next) => {
+    try {
+      const updated = await this.service.unpublishNote(req.params.id, req.user.id);
+      return sendSuccess(res, updated, 200, 'Note unpublished successfully.');
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  /**
+   * Reviews and approves or rejects a note submission (legacy compatibility).
    */
   reviewNote = async (req, res, next) => {
     try {

@@ -217,6 +217,14 @@ export const router = createBrowserRouter(
           )
         },
         {
+          path: 'admin-workspace/quality',
+          element: (
+            <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.MODERATOR]}>
+              <AdminWorkspacePage />
+            </ProtectedRoute>
+          )
+        },
+        {
           path: 'admin-workspace/history',
           element: (
             <ProtectedRoute roles={[ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.MODERATOR]}>

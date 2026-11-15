@@ -87,7 +87,7 @@ export class DashboardRepository {
     const seenNoteIds = new Set();
     const unique = [];
     for (const v of views) {
-      if (v.note && v.note.status === 'APPROVED' && !seenNoteIds.has(v.note.id)) {
+      if (v.note && ['PUBLISHED', 'APPROVED'].includes(v.note.status) && !seenNoteIds.has(v.note.id)) {
         seenNoteIds.add(v.note.id);
         unique.push({
           id: v.id,
@@ -235,7 +235,7 @@ export class DashboardRepository {
   async getRecommendedNotes(userId, limit = 4) {
     let notes = await prisma.note.findMany({
       where: {
-        status: 'APPROVED',
+        status: { in: ['PUBLISHED', 'APPROVED'] },
         uploadedById: { not: userId }
       },
       orderBy: [{ downloadCount: 'desc' }, { viewCount: 'desc' }],
@@ -256,7 +256,7 @@ export class DashboardRepository {
 
     if (notes.length < limit) {
       notes = await prisma.note.findMany({
-        where: { status: 'APPROVED' },
+        where: { status: { in: ['PUBLISHED', 'APPROVED'] } },
         orderBy: [{ downloadCount: 'desc' }, { viewCount: 'desc' }],
         take: limit,
         select: {

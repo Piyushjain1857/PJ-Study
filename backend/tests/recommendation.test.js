@@ -317,7 +317,7 @@ test('Smart Notes Recommendation Engine Suite', async (t) => {
       for (const item of body.data.recommendations) {
         assert.ok(typeof item.reason === 'string' && item.reason.length > 0);
         assert.ok(typeof item.score === 'number');
-        assert.strictEqual(item.note.status, 'APPROVED');
+        assert.ok(['PUBLISHED', 'APPROVED'].includes(item.note.status));
       }
     }
   );
@@ -337,7 +337,7 @@ test('Smart Notes Recommendation Engine Suite', async (t) => {
       assert.ok(body.data.recommendations.length > 0);
 
       for (const item of body.data.recommendations) {
-        assert.strictEqual(item.note.status, 'APPROVED');
+        assert.ok(['PUBLISHED', 'APPROVED'].includes(item.note.status));
         assert.ok(typeof item.reason === 'string');
       }
     }
@@ -361,7 +361,7 @@ test('Smart Notes Recommendation Engine Suite', async (t) => {
       );
 
       for (const sim of body.data.similarNotes) {
-        assert.strictEqual(sim.note.status, 'APPROVED');
+        assert.ok(['PUBLISHED', 'APPROVED'].includes(sim.note.status));
         assert.ok(typeof sim.reason === 'string');
         assert.ok(sim.score > 0);
       }

@@ -498,10 +498,10 @@ export function NoteForm({
           <Button
             type="button"
             variant="primary"
-            onClick={() => handleSubmit('submit')}
+            onClick={() => handleSubmit('publish')}
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Submitting...' : 'Submit for Review'}
+            {isSubmitting ? 'Publishing...' : 'Publish Note'}
           </Button>
         </div>
       </div>

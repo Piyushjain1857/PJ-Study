@@ -18,6 +18,30 @@ export const adminWorkspaceService = {
   },
 
   /**
+   * Retrieves notes for the admin workspace with status filtering.
+   */
+  async getNotes(params = {}) {
+    const response = await apiClient.get('/admin-workspace/notes', { params });
+    return response.data?.data;
+  },
+
+  /**
+   * Publishes a note directly, making it available to Scholars.
+   */
+  async publishNote(noteId) {
+    const response = await apiClient.patch(`/notes/${noteId}/publish`);
+    return response.data?.data;
+  },
+
+  /**
+   * Unpublishes a note directly, hiding it from Scholars.
+   */
+  async unpublishNote(noteId) {
+    const response = await apiClient.patch(`/notes/${noteId}/unpublish`);
+    return response.data?.data;
+  },
+
+  /**
    * Retrieves the moderation queue.
    */
   async getQueue(params = {}) {

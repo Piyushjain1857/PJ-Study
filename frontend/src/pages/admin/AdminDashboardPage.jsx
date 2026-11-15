@@ -39,9 +39,6 @@ export function AdminDashboardPage() {
   const [notesSearch, setNotesSearch] = useState('');
   const [notesStatusFilter, setNotesStatusFilter] = useState('ALL');
   const [isLoadingNotes, setIsLoadingNotes] = useState(false);
-  const [rejectModalNote, setRejectModalNote] = useState(null);
-  const [noteRejectionReason, setNoteRejectionReason] = useState('');
-  const [isSubmittingNoteAction, setIsSubmittingNoteAction] = useState(false);
 
   // Live Activity & Audit Stream State
   const [liveActivity, setLiveActivity] = useState([]);
@@ -218,34 +215,27 @@ export function AdminDashboardPage() {
     }
   }, [notesSearch, notesStatusFilter]);
 
-  // Handle Approve Note Submission
-  const handleApproveNote = async (noteId) => {
+  // Handle Direct Publish Note
+  const handlePublishNote = async (noteId) => {
     try {
-      await adminService.reviewNote(noteId, 'APPROVE');
-      setActionNotice({ type: 'success', message: 'Note approved and published to academic catalog.' });
+      await adminService.publishNote(noteId);
+      setActionNotice({ type: 'success', message: 'Note published and live to Scholars immediately.' });
       fetchNotes(notesPagination.page);
       fetchStats();
     } catch (err) {
-      setActionNotice({ type: 'danger', message: err.message || 'Failed to approve note.' });
+      setActionNotice({ type: 'danger', message: err.message || 'Failed to publish note.' });
     }
   };
 
-  // Handle Reject Note Submission
-  const handleRejectNoteSubmit = async (e) => {
-    e.preventDefault();
-    if (!rejectModalNote) return;
-    setIsSubmittingNoteAction(true);
+  // Handle Unpublish Note
+  const handleUnpublishNote = async (noteId) => {
     try {
-      await adminService.reviewNote(rejectModalNote.id, 'REJECT', noteRejectionReason);
-      setActionNotice({ type: 'success', message: 'Note submission rejected with reason logged.' });
-      setRejectModalNote(null);
-      setNoteRejectionReason('');
+      await adminService.unpublishNote(noteId);
+      setActionNotice({ type: 'success', message: 'Note unpublished and hidden from Scholars.' });
       fetchNotes(notesPagination.page);
       fetchStats();
     } catch (err) {
-      setActionNotice({ type: 'danger', message: err.message || 'Failed to reject note.' });
-    } finally {
-      setIsSubmittingNoteAction(false);
+      setActionNotice({ type: 'danger', message: err.message || 'Failed to unpublish note.' });
     }
   };
 
@@ -1377,11 +1367,6 @@ export function AdminDashboardPage() {
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
             Notes & Content
-            {stats?.pendingModeration > 0 && (
-              <span className="admin-tab-count" style={{ backgroundColor: 'rgba(234, 179, 8, 0.25)', color: '#ca8a04' }}>
-                {stats.pendingModeration}
-              </span>
-            )}
           </button>
           <button
             type="button"
@@ -3028,33 +3013,33 @@ export function AdminDashboardPage() {
 
               <div className="admin-metric-card">
                 <div className="admin-metric-card__top">
-                  <span className="admin-metric-card__label">Pending Approvals</span>
-                  <span className="admin-metric-card__icon admin-metric-card__icon--amber">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 14 14" /></svg>
-                  </span>
-                </div>
-                <p className="admin-metric-card__value" style={{ color: (stats?.pendingModeration || 0) > 0 ? '#d97706' : 'inherit' }}>
-                  {stats?.pendingModeration ?? 0}
-                </p>
-                <div className="admin-metric-card__footer">
-                  <span className="admin-metric-card__subtext">Awaiting moderation review</span>
-                  <span className="admin-metric-card__pill admin-metric-card__pill--amber">Review Queue</span>
-                </div>
-              </div>
-
-              <div className="admin-metric-card">
-                <div className="admin-metric-card__top">
-                  <span className="admin-metric-card__label">Approved Notes</span>
+                  <span className="admin-metric-card__label">Published Notes</span>
                   <span className="admin-metric-card__icon admin-metric-card__icon--green">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
                   </span>
                 </div>
                 <p className="admin-metric-card__value" style={{ color: 'var(--color-success)' }}>
-                  {stats?.approvedNotes ?? 0}
+                  {stats?.publishedNotes ?? stats?.approvedNotes ?? 0}
                 </p>
                 <div className="admin-metric-card__footer">
-                  <span className="admin-metric-card__subtext">Published to student library</span>
+                  <span className="admin-metric-card__subtext">Live in academic catalog</span>
                   <span className="admin-metric-card__pill admin-metric-card__pill--green">Live</span>
+                </div>
+              </div>
+
+              <div className="admin-metric-card">
+                <div className="admin-metric-card__top">
+                  <span className="admin-metric-card__label">Unpublished Notes</span>
+                  <span className="admin-metric-card__icon admin-metric-card__icon--amber">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" /></svg>
+                  </span>
+                </div>
+                <p className="admin-metric-card__value" style={{ color: '#d97706' }}>
+                  {stats?.unpublishedNotes ?? stats?.draftNotes ?? 0}
+                </p>
+                <div className="admin-metric-card__footer">
+                  <span className="admin-metric-card__subtext">Private or hidden from catalog</span>
+                  <span className="admin-metric-card__pill admin-metric-card__pill--amber">Private</span>
                 </div>
               </div>
 
@@ -3088,25 +3073,6 @@ export function AdminDashboardPage() {
                 </div>
               </div>
             </div>
-
-            {/* Pending Moderation Alert Banner */}
-            {(stats?.pendingModeration || 0) > 0 && (
-              <div className="admin-alert-banner" style={{ marginTop: '20px' }}>
-                <div className="admin-alert-banner__content">
-                  <span className="admin-alert-banner__badge">Action Required</span>
-                  <span className="admin-alert-banner__text">
-                    There are <strong>{stats.pendingModeration} manuscripts</strong> awaiting academic review in the moderation queue.
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className="btn btn--sm btn--primary"
-                  onClick={() => navigate('/admin/moderation')}
-                >
-                  Open Approval Queue →
-                </button>
-              </div>
-            )}
 
             {/* Operational 2-Column Grid */}
             <div className="admin-operational-grid" style={{ marginTop: '24px' }}>
@@ -3491,11 +3457,9 @@ export function AdminDashboardPage() {
                     fetchNotes(1, { status: e.target.value });
                   }}
                 >
-                  <option value="ALL">All Statuses</option>
-                  <option value="APPROVED">Approved (Live)</option>
-                  <option value="PENDING">Pending Review</option>
-                  <option value="REJECTED">Rejected</option>
-                  <option value="DRAFT">Draft</option>
+                  <option value="ALL">All Notes</option>
+                  <option value="PUBLISHED">Published Notes</option>
+                  <option value="UNPUBLISHED">Unpublished Notes</option>
                 </select>
                 <Button
                   variant="primary"
@@ -3558,44 +3522,36 @@ export function AdminDashboardPage() {
                             <td>
                               <Badge
                                 variant={
-                                  note.status === 'APPROVED'
+                                  ['PUBLISHED', 'APPROVED'].includes(note.status)
                                     ? 'success'
-                                    : note.status === 'PENDING'
-                                      ? 'warning'
-                                      : note.status === 'REJECTED'
-                                        ? 'danger'
-                                        : 'neutral'
+                                    : 'warning'
                                 }
                                 size="sm"
                               >
-                                {note.status}
+                                {['PUBLISHED', 'APPROVED'].includes(note.status) ? 'PUBLISHED' : 'UNPUBLISHED'}
                               </Badge>
                             </td>
                             <td>{note.downloadCount || 0}</td>
                             <td>
                               <div className="d-flex items-center gap-1">
-                                {note.status === 'PENDING' && (
-                                  <>
-                                    <Button
-                                      size="xs"
-                                      variant="primary"
-                                      onClick={() => handleApproveNote(note.id)}
-                                      title="Approve manuscript"
-                                    >
-                                      Approve
-                                    </Button>
-                                    <Button
-                                      size="xs"
-                                      variant="outline"
-                                      onClick={() => {
-                                        setRejectModalNote(note);
-                                        setNoteRejectionReason('');
-                                      }}
-                                      title="Reject manuscript"
-                                    >
-                                      Reject
-                                    </Button>
-                                  </>
+                                {['PUBLISHED', 'APPROVED'].includes(note.status) ? (
+                                  <Button
+                                    size="xs"
+                                    variant="outline"
+                                    onClick={() => handleUnpublishNote(note.id)}
+                                    title="Unpublish note (hide from Scholars)"
+                                  >
+                                    Unpublish
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="xs"
+                                    variant="primary"
+                                    onClick={() => handlePublishNote(note.id)}
+                                    title="Publish note immediately to Scholars"
+                                  >
+                                    Publish
+                                  </Button>
                                 )}
                                 <Link
                                   to={`/notes/${note.id}`}
@@ -4862,42 +4818,7 @@ mysqldump -u root -p pj_study &gt; backup_$(date +%F).sql
               </div>
             </div>
           )}
-        
-        {/* NOTE REJECTION REASON MODAL */}
-        <Modal
-          isOpen={Boolean(rejectModalNote)}
-          onClose={() => setRejectModalNote(null)}
-          title="Reject Study Manuscript"
-        >
-          {rejectModalNote && (
-            <form onSubmit={handleRejectNoteSubmit} className="admin-modal-content">
-              <p style={{ margin: '0 0 16px', color: 'var(--color-text-secondary)' }}>
-                Please specify the academic reason for rejecting "<strong>{rejectModalNote.title}</strong>".
-                This will be logged in the audit trail and sent to the author.
-              </p>
-              <div style={{ marginBottom: '16px' }}>
-                <label className="admin-form-label">Rejection Reason *</label>
-                <textarea
-                  className="input input--textarea w-full"
-                  rows="4"
-                  required
-                  placeholder="e.g. Manuscript missing syllabus mapping or violates academic citation standards."
-                  value={noteRejectionReason}
-                  onChange={(e) => setNoteRejectionReason(e.target.value)}
-                />
-              </div>
-              <div className="d-flex justify-end gap-2">
-                <Button type="button" variant="outline" size="md" onClick={() => setRejectModalNote(null)}>
-                  Cancel
-                </Button>
-                <Button type="submit" variant="danger" size="md" isLoading={isSubmittingNoteAction}>
-                  Confirm Rejection
-                </Button>
-              </div>
-            </form>
-          )}
         </Modal>
-      </Modal>
       </div>
     </div>
   );

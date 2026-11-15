@@ -245,7 +245,7 @@ export function AppLayout() {
       ]
     },
     {
-      label: 'CONTENT MANAGEMENT',
+      label: 'NOTES MANAGEMENT',
       items: [
         {
           to: '/notes/new',
@@ -273,43 +273,43 @@ export function AppLayout() {
           )
         },
         {
-          to: '/admin-workspace/assigned',
-          label: 'Assigned Notes',
-          icon: (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-              <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-            </svg>
-          )
-        },
-        {
           to: '/admin-workspace/notes',
-          label: 'All Authorized Notes',
+          label: 'Manage Notes',
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
             </svg>
           )
-        }
-      ]
-    },
-    {
-      label: 'MODERATION',
-      items: [
+        },
         {
-          to: '/admin-workspace/moderation',
-          label: 'Approval Queue',
+          to: '/admin-workspace/notes?status=PUBLISHED',
+          label: 'Published Notes',
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 11l3 3L22 4" />
-              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
           )
         },
         {
+          to: '/admin-workspace/notes?status=UNPUBLISHED',
+          label: 'Unpublished Notes',
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+            </svg>
+          )
+        }
+      ]
+    },
+    {
+      label: 'CONTENT QUALITY',
+      items: [
+        {
           to: '/admin-workspace/reports',
-          label: 'Content Reports',
+          label: 'Reported Notes',
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
@@ -318,12 +318,11 @@ export function AppLayout() {
           )
         },
         {
-          to: '/admin-workspace/history',
-          label: 'Moderation History',
+          to: '/admin-workspace/quality',
+          label: 'Content Quality',
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
           )
         }
@@ -411,7 +410,7 @@ export function AppLayout() {
       ]
     },
     {
-      label: 'USER & ACCESS CONTROL',
+      label: 'USER MANAGEMENT',
       items: [
         {
           to: '/admin/users',
@@ -446,7 +445,7 @@ export function AppLayout() {
           )
         },
         {
-          to: '/admin/suspended-users',
+          to: '/admin/users?status=suspended',
           label: 'Suspended Accounts',
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -458,7 +457,7 @@ export function AppLayout() {
       ]
     },
     {
-      label: 'ACADEMIC & CONTENT',
+      label: 'ACADEMIC MANAGEMENT',
       items: [
         {
           to: '/admin/academics/universities',
@@ -491,10 +490,16 @@ export function AppLayout() {
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
             </svg>
           )
-        },
+        }
+      ]
+    },
+    {
+      label: 'NOTES MANAGEMENT',
+      items: [
         {
           to: '/admin/notes',
           label: 'All Notes',
+          exact: true,
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -506,48 +511,44 @@ export function AppLayout() {
           )
         },
         {
-          to: '/admin/notes/upload',
-          label: 'Upload & Manage Notes',
-          icon: (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="17 8 12 3 7 8" />
-              <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
-          )
-        }
-      ]
-    },
-    {
-      label: 'MODERATION & QUALITY',
-      items: [
-        {
-          to: '/admin/moderation',
-          label: 'Approval Queue',
+          to: '/notes/new',
+          label: 'Upload Notes',
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 14 14" />
+              <line x1="12" y1="8" x2="12" y2="16" />
+              <line x1="8" y1="12" x2="16" y2="12" />
             </svg>
           )
         },
         {
-          to: '/admin/reports',
-          label: 'Reports & Appeals',
+          to: '/admin/notes?status=PUBLISHED',
+          label: 'Published Notes',
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+          )
+        },
+        {
+          to: '/admin/notes?status=UNPUBLISHED',
+          label: 'Unpublished Notes',
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
             </svg>
           )
         },
         {
           to: '/admin/reviews',
-          label: 'Ratings & Reviews',
+          label: 'Content Reports',
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
           )
         }
@@ -567,7 +568,7 @@ export function AppLayout() {
         },
         {
           to: '/admin/notifications',
-          label: 'Notification Management',
+          label: 'Notifications',
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -577,7 +578,7 @@ export function AppLayout() {
         },
         {
           to: '/admin/storage',
-          label: 'Storage & Files',
+          label: 'Storage Management',
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <ellipse cx="12" cy="5" rx="9" ry="3" />
@@ -601,7 +602,7 @@ export function AppLayout() {
       ]
     },
     {
-      label: 'SYSTEM & SECURITY',
+      label: 'SYSTEM',
       items: [
         {
           to: '/admin/settings',

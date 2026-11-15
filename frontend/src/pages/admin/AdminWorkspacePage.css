@@ -263,12 +263,14 @@
   border-radius: var(--radius-full);
 }
 
-.admin-badge--approved {
+.admin-badge--approved,
+.admin-badge--published {
   background-color: #e6f4ea;
   color: #137333;
 }
 
-.admin-badge--pending {
+.admin-badge--pending,
+.admin-badge--unpublished {
   background-color: #fef7e0;
   color: #b06000;
 }

@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import adminWorkspaceService from '../../services/adminWorkspaceService.js';
-import noteService from '../../services/noteService.js';
 import './AdminWorkspacePage.css';
 
 export default function AdminWorkspacePage() {
@@ -10,57 +9,60 @@ export default function AdminWorkspacePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Tab mapping based on URL
-  const getTabFromPath = (path) => {
-    if (path.includes('/analytics')) return 'analytics';
-    if (path.includes('/assigned')) return 'assigned';
-    if (path.includes('/notes')) return 'notes';
-    if (path.includes('/moderation')) return 'moderation';
-    if (path.includes('/reports')) return 'reports';
-    if (path.includes('/history')) return 'history';
+  const queryParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const statusParam = queryParams.get('status');
+
+  // Tab mapping based on URL path and query
+  const getTabFromLocation = (pathname, status) => {
+    if (pathname.includes('/analytics')) return 'analytics';
+    if (pathname.includes('/reports')) return 'reports';
+    if (pathname.includes('/quality')) return 'quality';
+    if (pathname.includes('/notes')) {
+      if (status === 'PUBLISHED') return 'published';
+      if (status === 'UNPUBLISHED') return 'unpublished';
+      return 'notes';
+    }
     return 'overview';
   };
 
-  const activeTab = getTabFromPath(location.pathname);
+  const activeTab = getTabFromLocation(location.pathname, statusParam);
 
   // States
   const [overview, setOverview] = useState(null);
   const [analytics, setAnalytics] = useState(null);
-  const [queue, setQueue] = useState([]);
+  const [notes, setNotes] = useState([]);
   const [reports, setReports] = useState([]);
-  const [history, setHistory] = useState([]);
-  const [myNotes, setMyNotes] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Action states
-  const [rejectModalNote, setRejectModalNote] = useState(null);
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [previewNote, setPreviewNote] = useState(null);
   const [actionNotice, setActionNotice] = useState('');
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const [overviewData, queueData, reportsData] = await Promise.all([
+      const [overviewData, reportsData] = await Promise.all([
         adminWorkspaceService.getOverview(),
-        adminWorkspaceService.getQueue({ limit: 20 }),
         adminWorkspaceService.getReports({ limit: 20 })
       ]);
       setOverview(overviewData);
-      setQueue(queueData?.notes || []);
       setReports(reportsData?.reports || []);
 
       if (activeTab === 'analytics') {
         const analyticsData = await adminWorkspaceService.getAnalytics();
         setAnalytics(analyticsData);
-      } else if (activeTab === 'history') {
-        const historyData = await adminWorkspaceService.getHistory();
-        setHistory(historyData?.history || []);
-      } else if (activeTab === 'notes' || activeTab === 'assigned') {
-        const notesRes = await noteService.getMyNotes({ limit: 50 });
-        setMyNotes(notesRes?.notes || notesRes || []);
+      } else if (activeTab === 'notes' || activeTab === 'published' || activeTab === 'unpublished') {
+        let filterStatus = undefined;
+        if (activeTab === 'published') filterStatus = 'PUBLISHED';
+        if (activeTab === 'unpublished') filterStatus = 'UNPUBLISHED';
+
+        const notesData = await adminWorkspaceService.getNotes({
+          status: filterStatus,
+          search: searchQuery || undefined,
+          limit: 50
+        });
+        setNotes(notesData?.notes || []);
       }
     } catch (err) {
       console.error('Failed to load admin workspace data:', err);
@@ -68,7 +70,7 @@ export default function AdminWorkspacePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab]);
+  }, [activeTab, searchQuery]);
 
   useEffect(() => {
     loadData();
@@ -76,42 +78,47 @@ export default function AdminWorkspacePage() {
 
   const handleTabChange = (tab) => {
     if (tab === 'overview') navigate('/admin-workspace');
-    else navigate(`/admin-workspace/${tab}`);
+    else if (tab === 'notes') navigate('/admin-workspace/notes');
+    else if (tab === 'published') navigate('/admin-workspace/notes?status=PUBLISHED');
+    else if (tab === 'unpublished') navigate('/admin-workspace/notes?status=UNPUBLISHED');
+    else if (tab === 'reports') navigate('/admin-workspace/reports');
+    else if (tab === 'analytics') navigate('/admin-workspace/analytics');
+    else if (tab === 'quality') navigate('/admin-workspace/quality');
   };
 
-  const handleApprove = async (noteId) => {
+  const handlePublish = async (noteId, noteTitle) => {
+    if (isProcessingAction) return;
+    setIsProcessingAction(true);
+    setError(null);
     try {
-      await adminWorkspaceService.reviewNote(noteId, 'APPROVE');
-      setActionNotice('Manuscript approved and published to academic catalog.');
-      setTimeout(() => setActionNotice(''), 4000);
+      await adminWorkspaceService.publishNote(noteId);
+      setActionNotice(`"${noteTitle || 'Note'}" has been published and is immediately live to Scholars.`);
+      setTimeout(() => setActionNotice(''), 4500);
       loadData();
     } catch (err) {
-      setError(err.response?.data?.error?.message || 'Failed to approve manuscript.');
+      setError(err.response?.data?.error?.message || 'Failed to publish note.');
+    } finally {
+      setIsProcessingAction(false);
     }
   };
 
-  const handleOpenReject = (note) => {
-    setRejectModalNote(note);
-    setRejectionReason('');
-  };
-
-  const handleConfirmReject = async () => {
-    if (!rejectModalNote) return;
-    if (!rejectionReason.trim()) {
-      setError('A constructive rejection reason is required.');
-      return;
-    }
-
+  const handleUnpublish = async (noteId, noteTitle) => {
+    if (isProcessingAction) return;
+    setIsProcessingAction(true);
+    setError(null);
     try {
-      await adminWorkspaceService.reviewNote(rejectModalNote.id, 'REJECT', rejectionReason.trim());
-      setRejectModalNote(null);
-      setActionNotice('Manuscript rejected with revision feedback.');
-      setTimeout(() => setActionNotice(''), 4000);
+      await adminWorkspaceService.unpublishNote(noteId);
+      setActionNotice(`"${noteTitle || 'Note'}" has been unpublished and hidden from Scholar discovery.`);
+      setTimeout(() => setActionNotice(''), 4500);
       loadData();
     } catch (err) {
-      setError(err.response?.data?.error?.message || 'Failed to reject manuscript.');
+      setError(err.response?.data?.error?.message || 'Failed to unpublish note.');
+    } finally {
+      setIsProcessingAction(false);
     }
   };
+
+  const isNotePublished = (status) => ['PUBLISHED', 'APPROVED'].includes(status);
 
   return (
     <div className="admin-workspace">
@@ -124,13 +131,13 @@ export default function AdminWorkspacePage() {
           </div>
           <h1 className="admin-workspace__title">Admin Workspace</h1>
           <p className="admin-workspace__subtitle">
-            Curriculum content authoring, assigned review queues, and scoped moderation controls for {user?.name || 'Administrator'}.
+            Curriculum content authoring, direct publishing management, and content quality controls for {user?.name || 'Administrator'}.
           </p>
         </div>
         <div className="admin-workspace__header-actions">
           <Link to="/notes/new" className="admin-btn admin-btn--primary">
             <span>+</span>
-            <span>Upload Study Note</span>
+            <span>Upload Note</span>
           </Link>
           <button onClick={loadData} className="admin-btn admin-btn--secondary" title="Refresh Workspace">
             <span>↻ Refresh</span>
@@ -156,26 +163,33 @@ export default function AdminWorkspacePage() {
           className={`admin-workspace__tab ${activeTab === 'overview' ? 'admin-workspace__tab--active' : ''}`}
           onClick={() => handleTabChange('overview')}
         >
-          <span>Command Overview</span>
-        </button>
-        <button
-          className={`admin-workspace__tab ${activeTab === 'moderation' ? 'admin-workspace__tab--active' : ''}`}
-          onClick={() => handleTabChange('moderation')}
-        >
-          <span>Approval Queue</span>
-          {queue.length > 0 && <span className="admin-workspace__tab-badge">{queue.length}</span>}
+          <span>Overview</span>
         </button>
         <button
           className={`admin-workspace__tab ${activeTab === 'notes' ? 'admin-workspace__tab--active' : ''}`}
           onClick={() => handleTabChange('notes')}
         >
-          <span>Authorized Notes</span>
+          <span>Manage Notes</span>
+        </button>
+        <button
+          className={`admin-workspace__tab ${activeTab === 'published' ? 'admin-workspace__tab--active' : ''}`}
+          onClick={() => handleTabChange('published')}
+        >
+          <span>Published Notes</span>
+          {overview?.publishedNotes > 0 && <span className="admin-workspace__tab-badge" style={{ backgroundColor: '#e6f4ea', color: '#137333' }}>{overview.publishedNotes}</span>}
+        </button>
+        <button
+          className={`admin-workspace__tab ${activeTab === 'unpublished' ? 'admin-workspace__tab--active' : ''}`}
+          onClick={() => handleTabChange('unpublished')}
+        >
+          <span>Unpublished Notes</span>
+          {overview?.unpublishedNotes > 0 && <span className="admin-workspace__tab-badge" style={{ backgroundColor: '#fef7e0', color: '#b06000' }}>{overview.unpublishedNotes}</span>}
         </button>
         <button
           className={`admin-workspace__tab ${activeTab === 'reports' ? 'admin-workspace__tab--active' : ''}`}
           onClick={() => handleTabChange('reports')}
         >
-          <span>Content Reports</span>
+          <span>Reported Notes</span>
           {reports.length > 0 && <span className="admin-workspace__tab-badge">{reports.length}</span>}
         </button>
         <button
@@ -183,12 +197,6 @@ export default function AdminWorkspacePage() {
           onClick={() => handleTabChange('analytics')}
         >
           <span>Content Analytics</span>
-        </button>
-        <button
-          className={`admin-workspace__tab ${activeTab === 'history' ? 'admin-workspace__tab--active' : ''}`}
-          onClick={() => handleTabChange('history')}
-        >
-          <span>Moderation History</span>
         </button>
       </div>
 
@@ -201,7 +209,7 @@ export default function AdminWorkspacePage() {
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
             <div>
-              {/* Scoped KPI Cards */}
+              {/* Direct Publishing KPI Cards */}
               <div className="admin-workspace__kpis">
                 <div className="admin-workspace__kpi-card">
                   <div className="admin-workspace__kpi-top">
@@ -209,34 +217,25 @@ export default function AdminWorkspacePage() {
                     <div className="admin-workspace__kpi-icon">📝</div>
                   </div>
                   <div className="admin-workspace__kpi-val">{overview?.myUploadedNotes || 0}</div>
-                  <p className="admin-workspace__kpi-caption">Manuscripts authored by you</p>
+                  <p className="admin-workspace__kpi-caption">Total manuscripts authored by you</p>
                 </div>
 
                 <div className="admin-workspace__kpi-card">
                   <div className="admin-workspace__kpi-top">
-                    <span className="admin-workspace__kpi-label">Pending Reviews</span>
-                    <div className="admin-workspace__kpi-icon" style={{ backgroundColor: '#fef7e0', color: '#b06000' }}>⏳</div>
-                  </div>
-                  <div className="admin-workspace__kpi-val">{overview?.pendingReviews || 0}</div>
-                  <p className="admin-workspace__kpi-caption">Awaiting evaluation in queue</p>
-                </div>
-
-                <div className="admin-workspace__kpi-card">
-                  <div className="admin-workspace__kpi-top">
-                    <span className="admin-workspace__kpi-label">Approved Notes</span>
+                    <span className="admin-workspace__kpi-label">Published Notes</span>
                     <div className="admin-workspace__kpi-icon" style={{ backgroundColor: '#e6f4ea', color: '#137333' }}>✓</div>
                   </div>
-                  <div className="admin-workspace__kpi-val">{overview?.approvedNotes || 0}</div>
-                  <p className="admin-workspace__kpi-caption">Live in public catalog</p>
+                  <div className="admin-workspace__kpi-val" style={{ color: '#137333' }}>{overview?.publishedNotes || 0}</div>
+                  <p className="admin-workspace__kpi-caption">Live & downloadable by Scholars</p>
                 </div>
 
                 <div className="admin-workspace__kpi-card">
                   <div className="admin-workspace__kpi-top">
-                    <span className="admin-workspace__kpi-label">Revision Needed</span>
-                    <div className="admin-workspace__kpi-icon" style={{ backgroundColor: '#fce8e6', color: '#c5221f' }}>✕</div>
+                    <span className="admin-workspace__kpi-label">Unpublished Notes</span>
+                    <div className="admin-workspace__kpi-icon" style={{ backgroundColor: '#fef7e0', color: '#b06000' }}>🔒</div>
                   </div>
-                  <div className="admin-workspace__kpi-val">{overview?.rejectedNotes || 0}</div>
-                  <p className="admin-workspace__kpi-caption">Rejected with review feedback</p>
+                  <div className="admin-workspace__kpi-val" style={{ color: '#b06000' }}>{overview?.unpublishedNotes || 0}</div>
+                  <p className="admin-workspace__kpi-caption">Hidden from public catalog</p>
                 </div>
 
                 <div className="admin-workspace__kpi-card">
@@ -250,7 +249,7 @@ export default function AdminWorkspacePage() {
 
                 <div className="admin-workspace__kpi-card">
                   <div className="admin-workspace__kpi-top">
-                    <span className="admin-workspace__kpi-label">Assigned Reports</span>
+                    <span className="admin-workspace__kpi-label">Open Reports</span>
                     <div className="admin-workspace__kpi-icon" style={{ backgroundColor: '#fef7e0', color: '#b06000' }}>🚩</div>
                   </div>
                   <div className="admin-workspace__kpi-val">{overview?.openReportsCount || 0}</div>
@@ -263,10 +262,10 @@ export default function AdminWorkspacePage() {
                 {/* Recent Uploads */}
                 <div className="admin-workspace__panel">
                   <div className="admin-workspace__panel-header">
-                    <h3 className="admin-workspace__panel-title">My Recent Submissions</h3>
-                    <Link to="/my-notes" style={{ fontSize: '13px', color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}>
-                      View All →
-                    </Link>
+                    <h3 className="admin-workspace__panel-title">Recent Uploads</h3>
+                    <button onClick={() => handleTabChange('notes')} style={{ background: 'none', border: 'none', fontSize: '13px', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer' }}>
+                      Manage All →
+                    </button>
                   </div>
                   {overview?.recentUploads?.length > 0 ? (
                     <div className="admin-workspace__table-container">
@@ -277,38 +276,65 @@ export default function AdminWorkspacePage() {
                             <th>Subject</th>
                             <th>Status</th>
                             <th>Downloads</th>
+                            <th>Quick Action</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {overview.recentUploads.map((n) => (
-                            <tr key={n.id}>
-                              <td style={{ fontWeight: 500 }}>{n.title}</td>
-                              <td style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>{n.subjectName}</td>
-                              <td>
-                                <span className={`admin-badge admin-badge--${n.status.toLowerCase()}`}>
-                                  {n.status}
-                                </span>
-                              </td>
-                              <td style={{ fontWeight: 600 }}>{n.downloads}</td>
-                            </tr>
-                          ))}
+                          {overview.recentUploads.map((n) => {
+                            const published = isNotePublished(n.status);
+                            return (
+                              <tr key={n.id}>
+                                <td style={{ fontWeight: 500 }}>
+                                  <Link to={`/notes/${n.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                                    {n.title}
+                                  </Link>
+                                </td>
+                                <td style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>{n.subjectName}</td>
+                                <td>
+                                  <span className={`admin-badge admin-badge--${published ? 'published' : 'unpublished'}`}>
+                                    {published ? 'Published' : 'Unpublished'}
+                                  </span>
+                                </td>
+                                <td style={{ fontWeight: 600 }}>{n.downloads}</td>
+                                <td>
+                                  {published ? (
+                                    <button
+                                      disabled={isProcessingAction}
+                                      onClick={() => handleUnpublish(n.id, n.title)}
+                                      className="admin-btn admin-btn--secondary"
+                                      style={{ padding: '4px 8px', fontSize: '11px' }}
+                                    >
+                                      Unpublish
+                                    </button>
+                                  ) : (
+                                    <button
+                                      disabled={isProcessingAction}
+                                      onClick={() => handlePublish(n.id, n.title)}
+                                      className="admin-btn admin-btn--primary"
+                                      style={{ padding: '4px 8px', fontSize: '11px' }}
+                                    >
+                                      Publish
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
                   ) : (
                     <div style={{ textAlign: 'center', padding: '24px', color: 'var(--color-text-secondary)' }}>
-                      No manuscripts uploaded yet.
+                      No notes uploaded yet. Click "+ Upload Note" to publish your first study resource.
                     </div>
                   )}
                 </div>
 
-                {/* Moderation Stream */}
+                {/* Content Activity Stream */}
                 <div className="admin-workspace__panel">
                   <div className="admin-workspace__panel-header">
-                    <h3 className="admin-workspace__panel-title">Recent Moderation Activity</h3>
-                    <button onClick={() => handleTabChange('history')} style={{ background: 'none', border: 'none', fontSize: '13px', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer' }}>
-                      History →
-                    </button>
+                    <h3 className="admin-workspace__panel-title">Publishing & Management Stream</h3>
+                    <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Live Activity</span>
                   </div>
                   {overview?.recentActivity?.length > 0 ? (
                     <div>
@@ -317,7 +343,7 @@ export default function AdminWorkspacePage() {
                           <div>
                             <span style={{ fontWeight: 600, textTransform: 'capitalize' }}>{a.action.replace(':', ' ')}</span>
                             <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>
-                              Entity: {a.entityType} ({a.entityId.slice(0, 8)}...)
+                              Entity: {a.entityType} ({a.entityId?.slice(0, 8)}...)
                             </div>
                           </div>
                           <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
@@ -336,86 +362,43 @@ export default function AdminWorkspacePage() {
             </div>
           )}
 
-          {/* TAB 2: MODERATION QUEUE */}
-          {activeTab === 'moderation' && (
+          {/* TAB 2, 3, 4: NOTES DIRECTORY (MANAGE NOTES, PUBLISHED, UNPUBLISHED) */}
+          {(activeTab === 'notes' || activeTab === 'published' || activeTab === 'unpublished') && (
             <div className="admin-workspace__panel">
               <div className="admin-workspace__panel-header">
                 <div>
-                  <h3 className="admin-workspace__panel-title">Pending Moderation Queue</h3>
+                  <h3 className="admin-workspace__panel-title">
+                    {activeTab === 'published' ? 'Published Study Notes' : activeTab === 'unpublished' ? 'Unpublished Study Notes' : 'Manage All Authorized Notes'}
+                  </h3>
                   <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-                    Review incoming study manuscripts, evaluate syllabus relevance, and publish approved notes.
+                    {activeTab === 'published'
+                      ? 'Live notes immediately visible and downloadable by Scholars in the academic catalog.'
+                      : activeTab === 'unpublished'
+                      ? 'Private drafts or unpublished notes hidden from Scholars.'
+                      : 'Complete catalog of notes authored or managed by you. Direct publishing is active.'}
                   </p>
                 </div>
-                <span className="admin-badge admin-badge--pending">{queue.length} Pending Manuscripts</span>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    placeholder="Search by title..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                      padding: '8px 12px',
+                      fontSize: '13px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--color-border-subtle)',
+                      outline: 'none'
+                    }}
+                  />
+                  <Link to="/notes/new" className="admin-btn admin-btn--primary">
+                    + Upload Note
+                  </Link>
+                </div>
               </div>
 
-              {queue.length > 0 ? (
-                <div>
-                  {queue.map((note) => (
-                    <div key={note.id} className="admin-queue-card">
-                      <div className="admin-queue-card__info">
-                        <h4 className="admin-queue-card__title">{note.title}</h4>
-                        <div className="admin-queue-card__meta">
-                          <span><strong>Course:</strong> {note.course?.name || 'General'}</span>
-                          <span><strong>Subject:</strong> {note.subject?.name || 'Curriculum'}</span>
-                          <span><strong>Author:</strong> {note.uploadedBy?.name || 'Scholar'}</span>
-                          <span><strong>Submitted:</strong> {new Date(note.createdAt).toLocaleDateString()}</span>
-                        </div>
-                        {note.content && (
-                          <p style={{ margin: '8px 0 0 0', fontSize: '13px', color: 'var(--color-text-secondary)', maxHeight: '40px', overflow: 'hidden' }}>
-                            {note.content}
-                          </p>
-                        )}
-                      </div>
-                      <div className="admin-queue-card__actions">
-                        <button
-                          className="admin-btn admin-btn--secondary"
-                          onClick={() => setPreviewNote(note)}
-                        >
-                          👁 Preview
-                        </button>
-                        <button
-                          className="admin-btn admin-btn--success"
-                          onClick={() => handleApprove(note.id)}
-                        >
-                          ✓ Approve
-                        </button>
-                        <button
-                          className="admin-btn admin-btn--danger"
-                          onClick={() => handleOpenReject(note)}
-                        >
-                          ✕ Reject
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '48px', color: 'var(--color-text-secondary)' }}>
-                  <div style={{ fontSize: '32px', marginBottom: '8px' }}>🎉</div>
-                  <h4 style={{ margin: '0 0 4px 0', color: 'var(--color-text-primary)' }}>Moderation Queue is Clean</h4>
-                  <p style={{ margin: 0, fontSize: '13px' }}>All submitted manuscripts have been reviewed and cataloged.</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB 3: AUTHORIZED NOTES */}
-          {activeTab === 'notes' && (
-            <div className="admin-workspace__panel">
-              <div className="admin-workspace__panel-header">
-                <div>
-                  <h3 className="admin-workspace__panel-title">Authorized Study Manuscripts</h3>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-                    All study notes and course materials within your administrative authoring scope.
-                  </p>
-                </div>
-                <Link to="/notes/new" className="admin-btn admin-btn--primary">
-                  + Upload New
-                </Link>
-              </div>
-
-              {myNotes.length > 0 ? (
+              {notes.length > 0 ? (
                 <div className="admin-workspace__table-container">
                   <table className="admin-workspace__table">
                     <thead>
@@ -424,46 +407,78 @@ export default function AdminWorkspacePage() {
                         <th>Course & Subject</th>
                         <th>Semester</th>
                         <th>Status</th>
-                        <th>Actions</th>
+                        <th>Downloads</th>
+                        <th>Direct Publishing Action</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {myNotes.map((note) => (
-                        <tr key={note.id}>
-                          <td style={{ fontWeight: 600 }}>{note.title}</td>
-                          <td style={{ fontSize: '13px' }}>
-                            {note.course?.name || 'General'} · {note.subject?.name || 'Curriculum'}
-                          </td>
-                          <td>Sem {note.semester || 1}</td>
-                          <td>
-                            <span className={`admin-badge admin-badge--${note.status?.toLowerCase()}`}>
-                              {note.status}
-                            </span>
-                          </td>
-                          <td>
-                            <Link to={`/notes/${note.id}`} className="admin-btn admin-btn--secondary" style={{ textDecoration: 'none', fontSize: '11px' }}>
-                              View
-                            </Link>
-                          </td>
-                        </tr>
-                      ))}
+                      {notes.map((note) => {
+                        const published = isNotePublished(note.status);
+                        return (
+                          <tr key={note.id}>
+                            <td style={{ fontWeight: 600 }}>
+                              <Link to={`/notes/${note.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                                {note.title}
+                              </Link>
+                            </td>
+                            <td style={{ fontSize: '13px' }}>
+                              {note.course?.name || 'General'} · {note.subject?.name || 'Curriculum'}
+                            </td>
+                            <td>Sem {note.semester || 1}</td>
+                            <td>
+                              <span className={`admin-badge admin-badge--${published ? 'published' : 'unpublished'}`}>
+                                {published ? 'Published' : 'Unpublished'}
+                              </span>
+                            </td>
+                            <td style={{ fontWeight: 600 }}>{note._count?.downloadHistory || note.downloadCount || 0}</td>
+                            <td>
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                <Link to={`/notes/${note.id}`} className="admin-btn admin-btn--secondary" style={{ padding: '4px 8px', fontSize: '11px', textDecoration: 'none' }}>
+                                  View
+                                </Link>
+                                {published ? (
+                                  <button
+                                    disabled={isProcessingAction}
+                                    onClick={() => handleUnpublish(note.id, note.title)}
+                                    className="admin-btn admin-btn--secondary"
+                                    style={{ padding: '4px 8px', fontSize: '11px', color: '#b06000' }}
+                                    title="Hide from Scholars"
+                                  >
+                                    Unpublish
+                                  </button>
+                                ) : (
+                                  <button
+                                    disabled={isProcessingAction}
+                                    onClick={() => handlePublish(note.id, note.title)}
+                                    className="admin-btn admin-btn--primary"
+                                    style={{ padding: '4px 8px', fontSize: '11px' }}
+                                    title="Make live to Scholars immediately"
+                                  >
+                                    Publish
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
               ) : (
                 <div style={{ textAlign: 'center', padding: '36px', color: 'var(--color-text-secondary)' }}>
-                  No authorized notes found.
+                  No {activeTab === 'published' ? 'published' : activeTab === 'unpublished' ? 'unpublished' : ''} notes found matching your criteria.
                 </div>
               )}
             </div>
           )}
 
-          {/* TAB 4: CONTENT REPORTS */}
+          {/* TAB 5: CONTENT REPORTS */}
           {activeTab === 'reports' && (
             <div className="admin-workspace__panel">
               <div className="admin-workspace__panel-header">
                 <div>
-                  <h3 className="admin-workspace__panel-title">Content & Community Reports</h3>
+                  <h3 className="admin-workspace__panel-title">Reported Notes & Content Appeals</h3>
                   <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
                     Review flagged content submissions, copyright notices, and community quality reports.
                   </p>
@@ -481,6 +496,7 @@ export default function AdminWorkspacePage() {
                         <th>Reason</th>
                         <th>Date</th>
                         <th>Status</th>
+                        <th>Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -496,6 +512,13 @@ export default function AdminWorkspacePage() {
                           <td>
                             <span className="admin-badge admin-badge--pending">{r.status}</span>
                           </td>
+                          <td>
+                            {r.noteId && (
+                              <Link to={`/notes/${r.noteId}`} className="admin-btn admin-btn--secondary" style={{ padding: '4px 8px', fontSize: '11px', textDecoration: 'none' }}>
+                                Inspect Note
+                              </Link>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -509,37 +532,47 @@ export default function AdminWorkspacePage() {
             </div>
           )}
 
-          {/* TAB 5: ANALYTICS */}
+          {/* TAB 6: ANALYTICS */}
           {activeTab === 'analytics' && (
             <div>
               <div className="admin-workspace__kpis">
                 <div className="admin-workspace__kpi-card">
-                  <span className="admin-workspace__kpi-label">Approval Rate</span>
+                  <span className="admin-workspace__kpi-label">Total Uploaded</span>
+                  <div className="admin-workspace__kpi-val" style={{ color: 'var(--color-primary)' }}>
+                    {analytics?.totalUploaded ?? overview?.myUploadedNotes ?? 0}
+                  </div>
+                  <p className="admin-workspace__kpi-caption">Authored notes catalog</p>
+                </div>
+                <div className="admin-workspace__kpi-card">
+                  <span className="admin-workspace__kpi-label">Published Notes</span>
                   <div className="admin-workspace__kpi-val" style={{ color: '#137333' }}>
-                    {analytics?.approvalRate ?? 100}%
+                    {analytics?.publishedNotes ?? overview?.publishedNotes ?? 0}
                   </div>
-                  <p className="admin-workspace__kpi-caption">Quality score for your contributions</p>
+                  <p className="admin-workspace__kpi-caption">Active in catalog</p>
                 </div>
                 <div className="admin-workspace__kpi-card">
-                  <span className="admin-workspace__kpi-label">Active Published</span>
-                  <div className="admin-workspace__kpi-val">
-                    {analytics?.statusBreakdown?.APPROVED || 0}
-                  </div>
-                  <p className="admin-workspace__kpi-caption">Notes verified and active</p>
-                </div>
-                <div className="admin-workspace__kpi-card">
-                  <span className="admin-workspace__kpi-label">In Review Queue</span>
+                  <span className="admin-workspace__kpi-label">Unpublished Notes</span>
                   <div className="admin-workspace__kpi-val" style={{ color: '#b06000' }}>
-                    {(analytics?.statusBreakdown?.PENDING || 0) + (analytics?.statusBreakdown?.PENDING_REVIEW || 0)}
+                    {analytics?.unpublishedNotes ?? overview?.unpublishedNotes ?? 0}
                   </div>
-                  <p className="admin-workspace__kpi-caption">Submissions awaiting decision</p>
+                  <p className="admin-workspace__kpi-caption">Private or hidden notes</p>
+                </div>
+                <div className="admin-workspace__kpi-card">
+                  <span className="admin-workspace__kpi-label">Total Downloads</span>
+                  <div className="admin-workspace__kpi-val">
+                    {analytics?.totalDownloads ?? overview?.totalDownloads ?? 0}
+                  </div>
+                  <p className="admin-workspace__kpi-caption">Scholar downloads generated</p>
                 </div>
               </div>
 
               <div className="admin-workspace__panel">
                 <h3 className="admin-workspace__panel-title" style={{ marginBottom: '16px' }}>Status Distribution</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {Object.entries(analytics?.statusBreakdown || {}).map(([st, cnt]) => (
+                  {Object.entries(analytics?.statusBreakdown || {
+                    PUBLISHED: analytics?.publishedNotes || 0,
+                    UNPUBLISHED: analytics?.unpublishedNotes || 0
+                  }).map(([st, cnt]) => (
                     <div key={st}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
                         <span style={{ fontWeight: 500 }}>{st}</span>
@@ -550,7 +583,7 @@ export default function AdminWorkspacePage() {
                           style={{
                             height: '100%',
                             width: `${Math.min(100, cnt * 10)}%`,
-                            backgroundColor: st === 'APPROVED' ? '#137333' : st.includes('PENDING') ? '#b06000' : '#c5221f'
+                            backgroundColor: ['PUBLISHED', 'APPROVED'].includes(st) ? '#137333' : '#b06000'
                           }}
                         />
                       </div>
@@ -560,130 +593,7 @@ export default function AdminWorkspacePage() {
               </div>
             </div>
           )}
-
-          {/* TAB 6: HISTORY */}
-          {activeTab === 'history' && (
-            <div className="admin-workspace__panel">
-              <div className="admin-workspace__panel-header">
-                <h3 className="admin-workspace__panel-title">Moderation & Decision History</h3>
-                <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Audit Trail</span>
-              </div>
-              {history.length > 0 ? (
-                <div className="admin-workspace__table-container">
-                  <table className="admin-workspace__table">
-                    <thead>
-                      <tr>
-                        <th>Action</th>
-                        <th>Entity ID</th>
-                        <th>Details</th>
-                        <th>Timestamp</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {history.map((log) => (
-                        <tr key={log.id}>
-                          <td style={{ fontWeight: 600 }}>
-                            <span className={`admin-badge ${log.action.includes('approve') ? 'admin-badge--approved' : 'admin-badge--rejected'}`}>
-                              {log.action}
-                            </span>
-                          </td>
-                          <td style={{ fontSize: '12px', fontFamily: 'monospace' }}>{log.entityId}</td>
-                          <td style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                            {log.metadata ? JSON.stringify(log.metadata) : '—'}
-                          </td>
-                          <td style={{ fontSize: '12px' }}>{new Date(log.createdAt).toLocaleString()}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '36px', color: 'var(--color-text-secondary)' }}>
-                  No moderation decisions recorded yet.
-                </div>
-              )}
-            </div>
-          )}
         </>
-      )}
-
-      {/* REJECT MODAL */}
-      {rejectModalNote && (
-        <div className="admin-modal-backdrop" onClick={() => setRejectModalNote(null)}>
-          <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="admin-modal__header">
-              <h3 className="admin-modal__title">Reject Manuscript</h3>
-              <button
-                onClick={() => setRejectModalNote(null)}
-                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer' }}
-              >
-                ✕
-              </button>
-            </div>
-            <div className="admin-modal__body">
-              <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-                Please specify a constructive reason for rejecting <strong>{rejectModalNote.title}</strong>. This feedback will be sent to the author.
-              </p>
-              <textarea
-                className="admin-textarea"
-                placeholder="e.g. Scanned pages are blurry, missing chapter 3 diagrams, or incomplete syllabus alignment..."
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-              />
-            </div>
-            <div className="admin-modal__footer">
-              <button className="admin-btn admin-btn--secondary" onClick={() => setRejectModalNote(null)}>
-                Cancel
-              </button>
-              <button className="admin-btn admin-btn--danger" onClick={handleConfirmReject}>
-                Confirm Rejection
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* PREVIEW MODAL */}
-      {previewNote && (
-        <div className="admin-modal-backdrop" onClick={() => setPreviewNote(null)}>
-          <div className="admin-modal" style={{ maxWidth: '640px' }} onClick={(e) => e.stopPropagation()}>
-            <div className="admin-modal__header">
-              <h3 className="admin-modal__title">{previewNote.title}</h3>
-              <button
-                onClick={() => setPreviewNote(null)}
-                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer' }}
-              >
-                ✕
-              </button>
-            </div>
-            <div className="admin-modal__body">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px', marginBottom: '16px', background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '6px' }}>
-                <div><strong>Course:</strong> {previewNote.course?.name || 'General'}</div>
-                <div><strong>Subject:</strong> {previewNote.subject?.name || 'Curriculum'}</div>
-                <div><strong>Semester:</strong> Sem {previewNote.semester || 1}</div>
-                <div><strong>Uploaded by:</strong> {previewNote.uploadedBy?.name || 'Scholar'}</div>
-              </div>
-              <h4 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>Manuscript Summary & Abstract:</h4>
-              <div style={{ maxHeight: '200px', overflowY: 'auto', fontSize: '13px', lineHeight: 1.6, color: 'var(--color-text-secondary)', padding: '8px', border: '1px solid var(--color-border-subtle)', borderRadius: '4px' }}>
-                {previewNote.content || 'No text content provided.'}
-              </div>
-            </div>
-            <div className="admin-modal__footer">
-              <button className="admin-btn admin-btn--secondary" onClick={() => setPreviewNote(null)}>
-                Close Preview
-              </button>
-              <button
-                className="admin-btn admin-btn--success"
-                onClick={() => {
-                  handleApprove(previewNote.id);
-                  setPreviewNote(null);
-                }}
-              >
-                ✓ Approve Directly
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

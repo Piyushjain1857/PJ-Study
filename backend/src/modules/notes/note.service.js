@@ -13,7 +13,19 @@ import { getPaginationParams, buildPaginatedResponse } from '../../utils/paginat
 import { assertNoteOwnership } from '../../auth/ownership.js';
 import { ROLES } from '../../auth/rolePermissions.js';
 
+export const PUBLISHED_STATUSES = ['PUBLISHED', 'APPROVED'];
+export const UNPUBLISHED_STATUSES = [
+  'UNPUBLISHED',
+  'DRAFT',
+  'PENDING',
+  'PENDING_REVIEW',
+  'REJECTED',
+  'ARCHIVED'
+];
+
 export const VALID_NOTE_STATUSES = [
+  'PUBLISHED',
+  'UNPUBLISHED',
   'DRAFT',
   'PENDING',
   'PENDING_REVIEW',
@@ -29,7 +41,7 @@ export const VALID_NOTE_STATUSES = [
  * @returns {string}
  */
 export function normalizeStatus(status) {
-  if (!status) return 'DRAFT';
+  if (!status) return 'PUBLISHED';
   const upper = String(status).toUpperCase();
   if (upper === 'PENDING') return 'PENDING_REVIEW';
   return upper;
@@ -83,8 +95,8 @@ export class NoteService {
       throw error;
     }
 
-    // Security check: Private drafts, pending, and rejected notes are accessible ONLY to the author or staff
-    const isPubliclyVisible = note.status === 'APPROVED';
+    // Security check: Unpublished notes are accessible ONLY to the author or staff
+    const isPubliclyVisible = PUBLISHED_STATUSES.includes(note.status);
     if (!isPubliclyVisible) {
       const isOwner = currentUser && note.uploadedById === currentUser.id;
       const isStaff =
@@ -95,7 +107,7 @@ export class NoteService {
 
       if (!isOwner && !isStaff) {
         const error = new Error(
-          'This study note manuscript is private or pending moderation review.'
+          'This study note manuscript is unpublished and not accessible.'
         );
         error.statusCode = 403;
         error.code = 'NOTE_ACCESS_FORBIDDEN';
@@ -158,7 +170,7 @@ export class NoteService {
       academicYear,
       topicId,
       uploadedById,
-      status: requestedStatus = 'DRAFT',
+      status: requestedStatus = 'PUBLISHED',
       fileName,
       storageKey,
       fileSize,
@@ -211,21 +223,15 @@ export class NoteService {
       }
     }
 
-    // 3. Status invariant: Users cannot directly publish as APPROVED
-    const normalized = normalizeStatus(requestedStatus);
-    if (!VALID_NOTE_STATUSES.includes(normalized)) {
-      const error = new Error(`Invalid status "${requestedStatus}". Allowed: DRAFT, PENDING.`);
-      error.statusCode = 400;
-      throw error;
-    }
-
-    if (normalized === 'APPROVED') {
-      const error = new Error(
-        'Notes cannot be published directly. Notes must be saved as DRAFT or submitted for moderator review.'
-      );
-      error.statusCode = 403;
-      error.code = 'UNAUTHORIZED_PUBLISH';
-      throw error;
+    // 3. Direct publishing workflow: authorized Admin & Super Admin uploads publish immediately
+    let targetStatus = 'PUBLISHED';
+    if (requestedStatus) {
+      const norm = normalizeStatus(requestedStatus);
+      if (norm === 'DRAFT') {
+        targetStatus = 'DRAFT';
+      } else if (norm === 'UNPUBLISHED') {
+        targetStatus = 'UNPUBLISHED';
+      }
     }
 
     // 4. Verify relational references
@@ -360,8 +366,8 @@ export class NoteService {
       semester,
       academicYear: academicYear?.trim() || null,
       uploadedById,
-      status: normalized,
-      publishedAt: null
+      status: targetStatus,
+      publishedAt: targetStatus === 'PUBLISHED' ? new Date() : null
     });
 
     return sanitizeNote(note);
@@ -560,7 +566,7 @@ export class NoteService {
 
     assertNoteOwnership(note, userId, userRole);
 
-    if (note.status !== 'APPROVED') {
+    if (!PUBLISHED_STATUSES.includes(note.status)) {
       const error = new Error('Only approved published notes can be archived.');
       error.statusCode = 400;
       throw error;
@@ -574,22 +580,114 @@ export class NoteService {
   }
 
   /**
-   * Reviews and approves or rejects a note (moderator workflow with audit logging).
+   * Publishes a note directly, making it available to Scholars.
    *
    * @param {string} noteId
-   * @param {'APPROVED' | 'REJECTED'} newStatus
+   * @param {string} actorId
+   * @returns {Promise<any>}
+   */
+  async publishNote(noteId, actorId) {
+    const note = await this.repo.findById(noteId);
+    if (!note) {
+      const error = new Error(`Note with ID "${noteId}" was not found.`);
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const updated = await prisma.note.update({
+      where: { id: noteId },
+      data: {
+        status: 'PUBLISHED',
+        publishedAt: new Date(),
+        rejectionReason: null
+      },
+      include: {
+        course: { select: { id: true, name: true, slug: true } },
+        subject: { select: { id: true, name: true, slug: true } },
+        category: { select: { id: true, name: true, slug: true } },
+        uploadedBy: {
+          select: { id: true, name: true, email: true, avatarUrl: true }
+        }
+      }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        actorId,
+        action: 'NOTE_PUBLISHED',
+        entityType: 'Note',
+        entityId: noteId,
+        metadata: {
+          noteTitle: note.title,
+          previousStatus: note.status,
+          newStatus: 'PUBLISHED'
+        }
+      }
+    });
+
+    return sanitizeNote(updated);
+  }
+
+  /**
+   * Unpublishes a note, removing it from Scholar discovery and downloads.
+   *
+   * @param {string} noteId
+   * @param {string} actorId
+   * @returns {Promise<any>}
+   */
+  async unpublishNote(noteId, actorId) {
+    const note = await this.repo.findById(noteId);
+    if (!note) {
+      const error = new Error(`Note with ID "${noteId}" was not found.`);
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const updated = await prisma.note.update({
+      where: { id: noteId },
+      data: {
+        status: 'UNPUBLISHED'
+      },
+      include: {
+        course: { select: { id: true, name: true, slug: true } },
+        subject: { select: { id: true, name: true, slug: true } },
+        category: { select: { id: true, name: true, slug: true } },
+        uploadedBy: {
+          select: { id: true, name: true, email: true, avatarUrl: true }
+        }
+      }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        actorId,
+        action: 'NOTE_UNPUBLISHED',
+        entityType: 'Note',
+        entityId: noteId,
+        metadata: {
+          noteTitle: note.title,
+          previousStatus: note.status,
+          newStatus: 'UNPUBLISHED'
+        }
+      }
+    });
+
+    return sanitizeNote(updated);
+  }
+
+  /**
+   * Reviews and approves or rejects a note (legacy compatibility).
+   *
+   * @param {string} noteId
+   * @param {'APPROVED' | 'REJECTED' | 'PUBLISHED' | 'UNPUBLISHED'} newStatus
    * @param {string} actorId
    * @param {string} [reason]
    * @returns {Promise<any>}
    */
   async reviewNoteSubmission(noteId, newStatus, actorId, reason) {
     const normalized = normalizeStatus(newStatus);
-    if (!['APPROVED', 'REJECTED'].includes(normalized)) {
-      const error = new Error(
-        `Invalid review decision "${newStatus}". Must be "APPROVED" or "REJECTED".`
-      );
-      error.statusCode = 400;
-      throw error;
+    if (['APPROVED', 'PUBLISH', 'PUBLISHED'].includes(normalized)) {
+      return this.publishNote(noteId, actorId);
     }
 
     const note = await this.repo.findById(noteId);
@@ -599,109 +697,38 @@ export class NoteService {
       throw error;
     }
 
-    // Invariant: Note must be pending review
-    if (!['PENDING', 'PENDING_REVIEW'].includes(note.status)) {
-      const error = new Error(
-        `Note is currently "${note.status}" and cannot be reviewed. Only pending notes can be approved or rejected.`
-      );
-      error.statusCode = 400;
-      error.code = 'NOTE_NOT_PENDING';
-      throw error;
-    }
-
-    // Author cannot review their own note
-    if (note.uploadedById === actorId) {
-      const error = new Error('Moderators cannot review their own submitted notes.');
-      error.statusCode = 403;
-      error.code = 'CANNOT_REVIEW_OWN_NOTE';
-      throw error;
-    }
-
-    if (normalized === 'REJECTED' && (!reason || reason.trim().length === 0)) {
-      const error = new Error(
-        'A constructive rejection reason is required to help the student improve their submission.'
-      );
-      error.statusCode = 400;
-      error.code = 'REJECTION_REASON_REQUIRED';
-      throw error;
-    }
-
-    // Perform update and audit log in transaction
-    const result = await prisma.$transaction(async (tx) => {
-      const updated = await tx.note.update({
-        where: { id: noteId },
-        data: {
-          status: normalized,
-          publishedAt: normalized === 'APPROVED' ? new Date() : note.publishedAt,
-          rejectionReason: normalized === 'REJECTED' ? reason.trim() : null
-        },
-        include: {
-          course: { select: { id: true, name: true, slug: true } },
-          subject: { select: { id: true, name: true, slug: true } },
-          category: { select: { id: true, name: true, slug: true } },
-          uploadedBy: {
-            select: { id: true, name: true, email: true, avatarUrl: true }
-          }
+    const updated = await prisma.note.update({
+      where: { id: noteId },
+      data: {
+        status: normalized === 'REJECTED' ? 'REJECTED' : 'UNPUBLISHED',
+        rejectionReason: reason ? reason.trim() : null
+      },
+      include: {
+        course: { select: { id: true, name: true, slug: true } },
+        subject: { select: { id: true, name: true, slug: true } },
+        category: { select: { id: true, name: true, slug: true } },
+        uploadedBy: {
+          select: { id: true, name: true, email: true, avatarUrl: true }
         }
-      });
-
-      await tx.auditLog.create({
-        data: {
-          actorId,
-          action: normalized === 'APPROVED' ? 'NOTE_APPROVED' : 'NOTE_REJECTED',
-          entityType: 'Note',
-          entityId: noteId,
-          metadata: {
-            noteTitle: note.title,
-            previousStatus: note.status,
-            decision: normalized,
-            reason: reason || null
-          }
-        }
-      });
-
-      // Create transactional in-app notification for the author
-      if (normalized === 'APPROVED') {
-        await notificationService.createNotification(
-          {
-            userId: note.uploadedById,
-            type: 'NOTE_APPROVED',
-            category: 'ACADEMIC',
-            title: 'Note Approved',
-            message: `Your manuscript "${note.title}" has been reviewed, approved, and published to the academic catalog.`,
-            targetUrl: `/notes/${noteId}`,
-            eventKey: `note_approved_${noteId}`,
-            metadata: {
-              noteId,
-              noteTitle: note.title
-            }
-          },
-          tx
-        );
-      } else if (normalized === 'REJECTED') {
-        await notificationService.createNotification(
-          {
-            userId: note.uploadedById,
-            type: 'NOTE_REJECTED',
-            category: 'ACADEMIC',
-            title: 'Note Needs Attention',
-            message: `Your uploaded note "${note.title}" requires revisions: ${reason.trim()}`,
-            targetUrl: `/notes/${noteId}/edit`,
-            eventKey: `note_rejected_${noteId}_${Date.now()}`,
-            metadata: {
-              noteId,
-              noteTitle: note.title,
-              rejectionReason: reason.trim()
-            }
-          },
-          tx
-        );
       }
-
-      return updated;
     });
 
-    return sanitizeNote(result);
+    await prisma.auditLog.create({
+      data: {
+        actorId,
+        action: 'NOTE_UNPUBLISHED',
+        entityType: 'Note',
+        entityId: noteId,
+        metadata: {
+          noteTitle: note.title,
+          previousStatus: note.status,
+          newStatus: normalized === 'REJECTED' ? 'REJECTED' : 'UNPUBLISHED',
+          reason: reason || null
+        }
+      }
+    });
+
+    return sanitizeNote(updated);
   }
 
   /**
@@ -746,8 +773,8 @@ export class NoteService {
     const page = Math.max(!isNaN(rawPage) && rawPage > 0 ? rawPage : 1, 1);
     const skip = (page - 1) * limit;
 
-    // Strict visibility invariant: approved notes only
-    const where = { status: 'APPROVED' };
+    // Strict visibility invariant: published notes only
+    const where = { status: { in: PUBLISHED_STATUSES } };
 
     // Academic filters
     if (
@@ -900,7 +927,7 @@ export class NoteService {
         take: 500,
         where: { isActive: true }
       }),
-      this.repo.count({ status: 'APPROVED' })
+      this.repo.count({ status: { in: PUBLISHED_STATUSES } })
     ]);
 
     // Unique active semesters from subjects
@@ -967,9 +994,16 @@ export class NoteService {
     const where = { uploadedById: userId };
 
     if (query.status) {
-      const normalized = normalizeStatus(query.status);
-      if (VALID_NOTE_STATUSES.includes(normalized)) {
-        where.status = normalized;
+      const upper = String(query.status).toUpperCase();
+      if (upper === 'PUBLISHED' || upper === 'APPROVED') {
+        where.status = { in: PUBLISHED_STATUSES };
+      } else if (upper === 'UNPUBLISHED') {
+        where.status = { in: UNPUBLISHED_STATUSES };
+      } else {
+        const normalized = normalizeStatus(query.status);
+        if (VALID_NOTE_STATUSES.includes(normalized)) {
+          where.status = normalized;
+        }
       }
     }
 
@@ -1041,8 +1075,8 @@ export class NoteService {
       throw error;
     }
 
-    // Access check: only approved notes are public; non-approved require owner or staff
-    if (note.status !== 'APPROVED') {
+    // Access check: only published notes are public; unpublished require owner or staff
+    if (!PUBLISHED_STATUSES.includes(note.status)) {
       const isOwner = currentUser && note.uploadedById === currentUser.id;
       const isStaff =
         currentUser &&
@@ -1052,7 +1086,7 @@ export class NoteService {
 
       if (!isOwner && !isStaff) {
         const error = new Error(
-          'File download is restricted while note is in draft or moderation review.'
+          'File download is restricted for unpublished study notes.'
         );
         error.statusCode = 403;
         error.code = 'DOWNLOAD_FORBIDDEN';
@@ -1068,7 +1102,7 @@ export class NoteService {
     }
 
     // Increment download count
-    if (note.status === 'APPROVED') {
+    if (PUBLISHED_STATUSES.includes(note.status)) {
       await this.repo.incrementDownloadCount(noteId).catch(() => {});
     }
 

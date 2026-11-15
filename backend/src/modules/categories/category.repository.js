@@ -7,7 +7,7 @@ export class CategoryRepository {
       orderBy: { name: 'asc' },
       include: {
         _count: {
-          select: { notes: { where: { status: 'APPROVED' } } }
+          select: { notes: { where: { status: { in: ['PUBLISHED', 'APPROVED'] } } } }
         }
       }
     });

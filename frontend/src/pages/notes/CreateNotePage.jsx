@@ -59,8 +59,8 @@ export function CreateNotePage() {
       navigate('/my-notes', {
         state: {
           notice:
-            action === 'submit'
-              ? 'Your study manuscript has been submitted for moderation review.'
+            action === 'publish' || action === 'submit'
+              ? 'Your study note has been published immediately to the academic catalog.'
               : 'Your note draft was saved successfully.'
         }
       });

@@ -3,25 +3,26 @@ import prisma from '../../config/database.js';
 export class AdminWorkspaceService {
   /**
    * Scoped dashboard overview for an Admin.
-   * Calculates metrics strictly scoped to the admin's contributions and moderation workload.
+   * Calculates metrics strictly scoped to the admin's contributions and published materials.
    */
   async getOverview(adminId) {
     const [
       myUploadedNotes,
-      approvedNotes,
-      rejectedNotes,
-      draftNotes,
-      pendingReviews,
+      publishedNotes,
+      unpublishedNotes,
       totalDownloadsAgg,
       recentNotes,
-      recentDecisions,
+      recentActivity,
       openReportsCount
     ] = await Promise.all([
       prisma.note.count({ where: { uploadedById: adminId } }),
-      prisma.note.count({ where: { uploadedById: adminId, status: 'APPROVED' } }),
-      prisma.note.count({ where: { uploadedById: adminId, status: 'REJECTED' } }),
-      prisma.note.count({ where: { uploadedById: adminId, status: 'DRAFT' } }),
-      prisma.note.count({ where: { status: { in: ['PENDING', 'PENDING_REVIEW'] } } }),
+      prisma.note.count({ where: { uploadedById: adminId, status: { in: ['PUBLISHED', 'APPROVED'] } } }),
+      prisma.note.count({
+        where: {
+          uploadedById: adminId,
+          status: { in: ['UNPUBLISHED', 'DRAFT', 'PENDING', 'PENDING_REVIEW', 'REJECTED', 'ARCHIVED'] }
+        }
+      }),
       prisma.downloadHistory.count({
         where: {
           note: { uploadedById: adminId }
@@ -29,7 +30,7 @@ export class AdminWorkspaceService {
       }),
       prisma.note.findMany({
         where: { uploadedById: adminId },
-        take: 5,
+        take: 8,
         orderBy: { updatedAt: 'desc' },
         include: {
           course: { select: { name: true } },
@@ -40,7 +41,7 @@ export class AdminWorkspaceService {
       prisma.auditLog.findMany({
         where: {
           actorId: adminId,
-          action: { in: ['note:approve', 'note:reject', 'note:create', 'note:update'] }
+          action: { in: ['note:create', 'note:update', 'NOTE_PUBLISHED', 'NOTE_UNPUBLISHED'] }
         },
         take: 8,
         orderBy: { createdAt: 'desc' }
@@ -50,23 +51,25 @@ export class AdminWorkspaceService {
 
     return {
       myUploadedNotes,
-      approvedNotes,
-      rejectedNotes,
-      draftNotes,
-      assignedNotes: pendingReviews,
-      pendingReviews,
+      publishedNotes,
+      unpublishedNotes,
+      approvedNotes: publishedNotes,
+      draftNotes: unpublishedNotes,
+      rejectedNotes: 0,
+      assignedNotes: 0,
+      pendingReviews: 0,
       totalDownloads: totalDownloadsAgg,
       openReportsCount,
       recentUploads: recentNotes.map((n) => ({
         id: n.id,
         title: n.title,
-        status: n.status,
+        status: ['PUBLISHED', 'APPROVED'].includes(n.status) ? 'PUBLISHED' : 'UNPUBLISHED',
         courseName: n.course?.name || 'General',
         subjectName: n.subject?.name || 'Curriculum',
         downloads: n._count?.downloadHistory || 0,
         updatedAt: n.updatedAt
       })),
-      recentActivity: recentDecisions.map((d) => ({
+      recentActivity: recentActivity.map((d) => ({
         id: d.id,
         action: d.action,
         entityType: d.entityType,
@@ -81,61 +84,55 @@ export class AdminWorkspaceService {
    * Scoped analytics for Admin.
    */
   async getAnalytics(adminId) {
-    const [statusGroups, recentAudits, totalUploaded, totalApproved] = await Promise.all([
-      prisma.note.groupBy({
-        by: ['status'],
-        where: { uploadedById: adminId },
-        _count: { id: true }
-      }),
-      prisma.auditLog.findMany({
-        where: { actorId: adminId },
-        take: 20,
-        orderBy: { createdAt: 'desc' }
+    const [publishedNotes, unpublishedNotes, totalUploaded, totalDownloads] = await Promise.all([
+      prisma.note.count({ where: { uploadedById: adminId, status: { in: ['PUBLISHED', 'APPROVED'] } } }),
+      prisma.note.count({
+        where: {
+          uploadedById: adminId,
+          status: { in: ['UNPUBLISHED', 'DRAFT', 'PENDING', 'PENDING_REVIEW', 'REJECTED', 'ARCHIVED'] }
+        }
       }),
       prisma.note.count({ where: { uploadedById: adminId } }),
-      prisma.note.count({ where: { uploadedById: adminId, status: 'APPROVED' } })
+      prisma.downloadHistory.count({ where: { note: { uploadedById: adminId } } })
     ]);
 
-    const statusCounts = {
-      APPROVED: 0,
-      PENDING: 0,
-      PENDING_REVIEW: 0,
-      REJECTED: 0,
-      DRAFT: 0
-    };
-    for (const g of statusGroups) {
-      statusCounts[g.status] = g._count.id;
-    }
-
-    const approvalRate = totalUploaded > 0 ? Math.round((totalApproved / totalUploaded) * 100) : 100;
+    const approvalRate = totalUploaded > 0 ? Number(((publishedNotes / totalUploaded) * 100).toFixed(1)) : 100;
 
     return {
+      totalUploaded,
+      publishedNotes,
+      unpublishedNotes,
+      totalDownloads,
       approvalRate,
-      statusBreakdown: statusCounts,
-      recentContentActions: recentAudits
+      statusBreakdown: {
+        PUBLISHED: publishedNotes,
+        UNPUBLISHED: unpublishedNotes,
+        APPROVED: publishedNotes,
+        REJECTED: 0,
+        PENDING: 0
+      },
+      recentContentActions: []
     };
   }
 
   /**
-   * Moderation Queue for review.
+   * Retrieves notes for the admin workspace with published/unpublished filters.
    */
-  async getQueue(query = {}) {
+  async getNotes(adminId, query = {}) {
     const page = Math.max(1, parseInt(query.page, 10) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(query.limit, 10) || 10));
     const skip = (page - 1) * limit;
 
-    const where = {
-      status: { in: ['PENDING', 'PENDING_REVIEW'] }
-    };
+    const where = { uploadedById: adminId };
 
-    if (query.courseId) where.courseId = query.courseId;
-    if (query.subjectId) where.subjectId = query.subjectId;
-    if (query.search && query.search.trim()) {
-      const s = query.search.trim();
-      where.OR = [
-        { title: { contains: s } },
-        { content: { contains: s } }
-      ];
+    if (query.status === 'PUBLISHED') {
+      where.status = { in: ['PUBLISHED', 'APPROVED'] };
+    } else if (query.status === 'UNPUBLISHED') {
+      where.status = { in: ['UNPUBLISHED', 'DRAFT', 'PENDING', 'PENDING_REVIEW', 'REJECTED', 'ARCHIVED'] };
+    }
+
+    if (query.search && query.search.trim().length > 0) {
+      where.title = { contains: query.search.trim() };
     }
 
     const [notes, total] = await Promise.all([
@@ -143,24 +140,45 @@ export class AdminWorkspaceService {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'asc' },
+        orderBy: { updatedAt: 'desc' },
         include: {
-          uploadedBy: { select: { id: true, name: true, email: true, role: true } },
-          course: { select: { id: true, name: true } },
-          subject: { select: { id: true, name: true, semester: true } },
-          category: { select: { id: true, name: true } }
+          course: { select: { id: true, name: true, slug: true } },
+          subject: { select: { id: true, name: true, slug: true } },
+          category: { select: { id: true, name: true, slug: true } },
+          _count: { select: { downloadHistory: true, reviews: true } }
         }
       }),
       prisma.note.count({ where })
     ]);
 
     return {
-      notes,
+      notes: notes.map((n) => ({
+        ...n,
+        fileSize: n.fileSize ? n.fileSize.toString() : null,
+        status: ['PUBLISHED', 'APPROVED'].includes(n.status) ? 'PUBLISHED' : 'UNPUBLISHED',
+        downloads: n._count?.downloadHistory || 0,
+        reviewsCount: n._count?.reviews || 0
+      })),
       pagination: {
         page,
         limit,
         total,
         totalPages: Math.ceil(total / limit)
+      }
+    };
+  }
+
+  /**
+   * Moderation Queue placeholder (returns empty as approval queue is removed).
+   */
+  async getQueue(_query = {}) {
+    return {
+      notes: [],
+      pagination: {
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 0
       }
     };
   }

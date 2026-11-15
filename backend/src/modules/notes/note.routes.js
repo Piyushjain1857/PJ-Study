@@ -86,10 +86,30 @@ router.post(
   noteController.submitNote
 );
 
-// Archive approved note
-router.post('/:id/archive', requireAuth, noteController.archiveNote);
+// Archive note
+router.post(
+  '/:id/archive',
+  requireAuth,
+  requirePermission(PERMISSIONS.NOTES_UPDATE_OWN),
+  noteController.archiveNote
+);
 
-// Moderator review decision (approve or reject)
+// Direct publish & unpublish
+router.patch(
+  '/:id/publish',
+  requireAuth,
+  requirePermission(PERMISSIONS.NOTES_UPDATE_OWN),
+  noteController.publishNote
+);
+
+router.patch(
+  '/:id/unpublish',
+  requireAuth,
+  requirePermission(PERMISSIONS.NOTES_UPDATE_OWN),
+  noteController.unpublishNote
+);
+
+// Review decision (legacy compatibility)
 router.post(
   '/:id/review',
   requireAuth,

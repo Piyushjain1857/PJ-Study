@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import noteService from '../../services/noteService.js';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -36,25 +36,26 @@ export function NoteDetailsPage() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
 
-  useEffect(() => {
-    async function loadNote() {
-      setIsLoading(true);
-      setError('');
-      try {
-        const data = await noteService.getNoteById(id);
-        setNote(data);
-      } catch (err) {
-        setError(
-          err.response?.data?.error?.message ||
-            err.message ||
-            'Unable to access this study note manuscript.'
-        );
-      } finally {
-        setIsLoading(false);
-      }
+  const loadNote = useCallback(async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const data = await noteService.getNoteById(id);
+      setNote(data);
+    } catch (err) {
+      setError(
+        err.response?.data?.error?.message ||
+          err.message ||
+          'Unable to access this study note manuscript.'
+      );
+    } finally {
+      setIsLoading(false);
     }
-    loadNote();
   }, [id]);
+
+  useEffect(() => {
+    loadNote();
+  }, [loadNote]);
 
   const canModerate =
     (isModerator || isAdmin || isSuperAdmin) &&
@@ -152,7 +153,7 @@ export function NoteDetailsPage() {
     );
   }
 
-  const isApproved = note.status === 'APPROVED';
+  const isApproved = ['PUBLISHED', 'APPROVED'].includes(note.status);
   const noteSchema = isApproved
     ? {
         '@context': 'https://schema.org',
@@ -288,7 +289,7 @@ export function NoteDetailsPage() {
                     {note.uploadedBy?.name || 'Academic Scholar'}
                   </span>
                   <span className="note-details__author-date">
-                    {note.status === 'APPROVED' ? 'Published' : 'Uploaded'} on {displayDate}
+                    {isApproved ? 'Published' : 'Uploaded'} on {displayDate}
                   </span>
                 </div>
               </div>
@@ -364,8 +365,8 @@ export function NoteDetailsPage() {
           </article>
         )}
 
-        {/* Owner actions if viewing draft */}
-        {isOwner && note.status === 'DRAFT' && (
+        {/* Owner actions if viewing draft or unpublished note */}
+        {isOwner && ['DRAFT', 'UNPUBLISHED'].includes(note.status) && (
           <div
             style={{
               marginTop: '32px',
@@ -381,7 +382,7 @@ export function NoteDetailsPage() {
             }}
           >
             <div>
-              <strong>This manuscript is saved as a private draft.</strong>
+              <strong>This study note is currently unpublished.</strong>
               <p
                 style={{
                   fontSize: '0.8125rem',
@@ -389,32 +390,33 @@ export function NoteDetailsPage() {
                   margin: '4px 0 0'
                 }}
               >
-                Only you can view this page until you submit it for review.
+                Only administrators can view this note until it is published.
               </p>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <Link to={`/notes/${note.id}/edit`}>
-                <Button variant="outline">Edit Draft</Button>
+                <Button variant="outline">Edit Note</Button>
               </Link>
               <Button
                 variant="primary"
                 onClick={async () => {
-                  await noteService.submitForReview(note.id);
-                  navigate('/my-notes', {
-                    state: {
-                      notice: 'Manuscript submitted for moderation review.'
-                    }
-                  });
+                  try {
+                    await noteService.publishNote(note.id);
+                    setActionNotice('Note published immediately to the academic catalog.');
+                    loadNote();
+                  } catch (err) {
+                    setError(err.response?.data?.error?.message || 'Failed to publish note.');
+                  }
                 }}
               >
-                Submit for Review
+                Publish Immediately
               </Button>
             </div>
           </div>
         )}
 
         {/* Smart Similar Notes Recommendations */}
-        {note?.status === 'APPROVED' && <SimilarNotesSection noteId={note.id} />}
+        {isApproved && <SimilarNotesSection noteId={note.id} />}
 
         {/* Notes Ratings, Reviews & Quality Feedback */}
         {note && (
@@ -422,7 +424,7 @@ export function NoteDetailsPage() {
             noteId={note.id}
             noteTitle={note.title}
             isOwner={isOwner}
-            isApproved={note.status === 'APPROVED'}
+            isApproved={isApproved}
           />
         )}
 

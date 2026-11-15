@@ -304,24 +304,35 @@ export class ProfileService {
    * }>}
    */
   async getOwnStats(userId) {
-    const [totalUploads, approvedNotes, pendingNotes, rejectedNotes, notesAgg, reviewsAgg] =
+    const [totalUploads, publishedNotes, unpublishedNotes, pendingNotes, rejectedNotes, notesAgg, reviewsAgg] =
       await Promise.all([
         prisma.note.count({ where: { uploadedById: userId } }),
-        prisma.note.count({ where: { uploadedById: userId, status: 'APPROVED' } }),
+        prisma.note.count({ where: { uploadedById: userId, status: { in: ['PUBLISHED', 'APPROVED'] } } }),
+        prisma.note.count({
+          where: {
+            uploadedById: userId,
+            status: { in: ['UNPUBLISHED', 'DRAFT', 'PENDING', 'PENDING_REVIEW', 'REJECTED', 'ARCHIVED'] }
+          }
+        }),
         prisma.note.count({
           where: {
             uploadedById: userId,
             status: { in: ['PENDING', 'PENDING_REVIEW'] }
           }
         }),
-        prisma.note.count({ where: { uploadedById: userId, status: 'REJECTED' } }),
+        prisma.note.count({
+          where: {
+            uploadedById: userId,
+            status: 'REJECTED'
+          }
+        }),
         prisma.note.aggregate({
           where: { uploadedById: userId },
           _sum: { downloadCount: true, viewCount: true }
         }),
         prisma.review.aggregate({
           where: {
-            note: { uploadedById: userId, status: 'APPROVED' },
+            note: { uploadedById: userId, status: { in: ['PUBLISHED', 'APPROVED'] } },
             status: 'VISIBLE'
           },
           _avg: { rating: true },
@@ -331,7 +342,9 @@ export class ProfileService {
 
     return {
       totalUploads,
-      approvedNotes,
+      publishedNotes,
+      unpublishedNotes,
+      approvedNotes: publishedNotes,
       pendingNotes,
       rejectedNotes,
       totalDownloads: notesAgg._sum.downloadCount || 0,
@@ -359,7 +372,12 @@ export class ProfileService {
     const where = { uploadedById: userId };
 
     if (query.status && query.status !== 'ALL') {
-      if (query.status === 'PENDING') {
+      const upper = String(query.status).toUpperCase();
+      if (upper === 'PUBLISHED') {
+        where.status = { in: ['PUBLISHED', 'APPROVED'] };
+      } else if (upper === 'UNPUBLISHED') {
+        where.status = { in: ['UNPUBLISHED', 'DRAFT', 'PENDING', 'PENDING_REVIEW', 'REJECTED', 'ARCHIVED'] };
+      } else if (query.status === 'PENDING') {
         where.status = { in: ['PENDING', 'PENDING_REVIEW'] };
       } else {
         where.status = query.status;
@@ -467,18 +485,18 @@ export class ProfileService {
       };
     }
 
-    // Public statistics for approved contributions only
+    // Public statistics for published contributions only
     const [approvedNotesCount, notesAgg, reviewsAgg] = await Promise.all([
       prisma.note.count({
-        where: { uploadedById: contributorId, status: 'APPROVED' }
+        where: { uploadedById: contributorId, status: { in: ['PUBLISHED', 'APPROVED'] } }
       }),
       prisma.note.aggregate({
-        where: { uploadedById: contributorId, status: 'APPROVED' },
+        where: { uploadedById: contributorId, status: { in: ['PUBLISHED', 'APPROVED'] } },
         _sum: { downloadCount: true, viewCount: true }
       }),
       prisma.review.aggregate({
         where: {
-          note: { uploadedById: contributorId, status: 'APPROVED' },
+          note: { uploadedById: contributorId, status: { in: ['PUBLISHED', 'APPROVED'] } },
           status: 'VISIBLE'
         },
         _avg: { rating: true },
@@ -542,7 +560,7 @@ export class ProfileService {
     const pagination = getPaginationParams(query);
     const where = {
       uploadedById: contributorId,
-      status: 'APPROVED'
+      status: { in: ['PUBLISHED', 'APPROVED'] }
     };
 
     let orderBy = { createdAt: 'desc' };

@@ -197,7 +197,7 @@ export class RecommendationRepository {
   async getCandidateNotes(whereClause = {}, limit = 50) {
     const notes = await prisma.note.findMany({
       where: {
-        status: 'APPROVED',
+        status: { in: ['PUBLISHED', 'APPROVED'] },
         ...whereClause
       },
       orderBy: [{ downloadCount: 'desc' }, { publishedAt: 'desc' }],
@@ -235,7 +235,7 @@ export class RecommendationRepository {
 
     const notes = await prisma.note.findMany({
       where: {
-        status: 'APPROVED',
+        status: { in: ['PUBLISHED', 'APPROVED'] },
         id: { not: targetNote.id },
         ...(orConditions.length > 0 ? { OR: orConditions } : {})
       },
@@ -257,7 +257,7 @@ export class RecommendationRepository {
    */
   async getPopularApprovedNotes(limit = 6) {
     const notes = await prisma.note.findMany({
-      where: { status: 'APPROVED' },
+      where: { status: { in: ['PUBLISHED', 'APPROVED'] } },
       orderBy: [{ downloadCount: 'desc' }, { viewCount: 'desc' }],
       take: limit,
       include: {
@@ -276,7 +276,7 @@ export class RecommendationRepository {
    */
   async getRecentlyApprovedNotes(limit = 6) {
     const notes = await prisma.note.findMany({
-      where: { status: 'APPROVED' },
+      where: { status: { in: ['PUBLISHED', 'APPROVED'] } },
       orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
       take: limit,
       include: {
@@ -298,7 +298,7 @@ export class RecommendationRepository {
 
     const notes = await prisma.note.findMany({
       where: {
-        status: 'APPROVED',
+        status: { in: ['PUBLISHED', 'APPROVED'] },
         subjectId: { in: subjectIds }
       },
       orderBy: [{ downloadCount: 'desc' }, { publishedAt: 'desc' }],

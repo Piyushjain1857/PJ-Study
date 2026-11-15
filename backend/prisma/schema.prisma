@@ -28,6 +28,8 @@ enum NoteStatus {
   APPROVED
   REJECTED
   ARCHIVED
+  PUBLISHED
+  UNPUBLISHED
 }
 
 enum ReportStatus {
@@ -270,7 +272,7 @@ model Note {
   academicYear    String?     @map("academic_year") @db.VarChar(20)
   rejectionReason String?     @map("rejection_reason") @db.Text
   uploadedById    String      @map("uploaded_by_id")
-  status          NoteStatus  @default(DRAFT)
+  status          NoteStatus  @default(PUBLISHED)
   downloadCount   Int         @default(0) @map("download_count")
   viewCount       Int         @default(0) @map("view_count")
   createdAt       DateTime    @default(now()) @map("created_at")
