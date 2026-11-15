@@ -84,6 +84,14 @@ export function Navbar() {
                 Dashboard
               </NavLink>
               <NavLink
+                to="/notes/recommended"
+                className={({ isActive }) =>
+                  `navbar-nav__link ${isActive ? 'navbar-nav__link--active' : ''}`
+                }
+              >
+                Recommended
+              </NavLink>
+              <NavLink
                 to="/my-notes"
                 className={({ isActive }) =>
                   `navbar-nav__link ${isActive ? 'navbar-nav__link--active' : ''}`
@@ -237,6 +245,15 @@ export function Navbar() {
                     onClick={closeMobileMenu}
                   >
                     Dashboard
+                  </NavLink>
+                  <NavLink
+                    to="/notes/recommended"
+                    className={({ isActive }) =>
+                      `navbar-mobile-link ${isActive ? 'navbar-mobile-link--active' : ''}`
+                    }
+                    onClick={closeMobileMenu}
+                  >
+                    Recommended
                   </NavLink>
                   <NavLink
                     to="/my-notes"

@@ -20,6 +20,7 @@ import StudentDashboardPage from '../pages/dashboard/StudentDashboardPage.jsx';
 // Notes Pages
 import NotesExplorePage from '../pages/notes/NotesExplorePage.jsx';
 import NoteDetailsPage from '../pages/notes/NoteDetailsPage.jsx';
+import RecommendedNotesPage from '../pages/notes/RecommendedNotesPage.jsx';
 import CreateNotePage from '../pages/notes/CreateNotePage.jsx';
 import EditNotePage from '../pages/notes/EditNotePage.jsx';
 import MyNotesPage from '../pages/notes/MyNotesPage.jsx';
@@ -48,6 +49,14 @@ export const router = createBrowserRouter(
         {
           path: 'notes/explore',
           element: <NotesExplorePage />
+        },
+        {
+          path: 'notes/recommended',
+          element: (
+            <ProtectedRoute>
+              <RecommendedNotesPage />
+            </ProtectedRoute>
+          )
         },
         {
           path: 'notes/new',

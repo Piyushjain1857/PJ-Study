@@ -53,7 +53,14 @@ export function ProfilePage() {
       setPasswordSuccess('Password changed successfully.');
       setPasswordData({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
     } catch (err) {
-      setPasswordError(err.message || 'Failed to update password.');
+      const detailedErrors = err.errors || err.response?.data?.error?.errors;
+      if (Array.isArray(detailedErrors) && detailedErrors.length > 0) {
+        setPasswordError(detailedErrors.join('. '));
+      } else {
+        setPasswordError(
+          err.message || err.response?.data?.error?.message || 'Failed to update password.'
+        );
+      }
     } finally {
       setIsChangingPassword(false);
     }

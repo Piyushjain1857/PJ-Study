@@ -5,6 +5,7 @@ import adminRoutes from '../modules/admin/admin.routes.js';
 import noteRoutes from '../modules/notes/note.routes.js';
 import categoryRoutes from '../modules/categories/category.routes.js';
 import dashboardRoutes from '../modules/dashboard/dashboard.routes.js';
+import recommendationRoutes from '../modules/recommendations/recommendation.routes.js';
 import { requireAuth } from '../auth/requireAuth.js';
 import noteController from '../modules/notes/note.controller.js';
 
@@ -90,6 +91,12 @@ router.use('/notes', noteRoutes);
  * /api/v1/dashboard/...
  */
 router.use('/dashboard', dashboardRoutes);
+
+/**
+ * Smart notes recommendation engine & academic discovery.
+ * /api/v1/recommendations/...
+ */
+router.use('/recommendations', recommendationRoutes);
 
 /**
  * User personal resources shortcut (/api/v1/users/me/notes)

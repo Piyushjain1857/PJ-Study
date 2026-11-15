@@ -352,10 +352,12 @@ PJ Study/
 │   │   └── server.js                           # Server listener & graceful shutdown
 │   └── tests/
 │       ├── auth.test.js                        # Auth unit, invariant, security & API tests (22 tests)
+│       ├── dashboard.test.js                   # Student dashboard & learning analytics tests (8 tests)
 │       ├── discovery.test.js                   # Advanced notes discovery, search, academic filters & download tests (14 tests)
 │       ├── health.test.js                      # API & 404 integration tests (5 tests)
 │       ├── notes.test.js                       # Notes lifecycle, file validation, ownership & moderation tests (27 tests)
 │       ├── rbac.test.js                        # RBAC permissions, hierarchy, session revocation & audit tests (24 tests)
+│       ├── recommendation.test.js              # Smart recommendation scoring, cold-start & diversity tests (8 tests)
 │       └── schema_validation.test.js           # Domain invariants & schema tests (7 tests)
 │
 ├── frontend/
@@ -409,7 +411,7 @@ From the repository root:
 | Command                   | Action                                                                    |
 | :------------------------ | :------------------------------------------------------------------------ |
 | `npm run dev`             | Runs backend and frontend development servers concurrently                |
-| `npm test`                | Runs all backend automated unit, invariant, and API tests (**106 tests**) |
+| `npm test`                | Runs all backend automated unit, invariant, and API tests (**114 tests**) |
 | `npm run check:backend`   | Validates backend configuration and environment variables                 |
 | `npm run lint`            | Runs ESLint on frontend JavaScript and JSX                                |
 | `npm run format:check`    | Verifies Prettier code style across all files                             |

@@ -9,6 +9,7 @@ import NoteStatusBadge from '../../components/notes/NoteStatusBadge.jsx';
 import Container from '../../components/layout/Container.jsx';
 import Skeleton from '../../components/common/Skeleton.jsx';
 import NotePreview from '../../components/notes/NotePreview.jsx';
+import SimilarNotesSection from '../../components/recommendations/SimilarNotesSection.jsx';
 import './NoteDetailsPage.css';
 import '../../styles/notes-discovery.css';
 import '../../styles/notes.css';
@@ -365,6 +366,12 @@ export function NoteDetailsPage() {
             </div>
           </div>
         )}
+
+        {/* Smart Similar Notes Recommendations */}
+        {note?.status === 'APPROVED' && <SimilarNotesSection noteId={note.id} />}
+
+        {/* Smart Similar Notes Recommendations */}
+        {note?.status === 'APPROVED' && <SimilarNotesSection noteId={note.id} />}
 
         {/* Moderation Rejection Modal */}
         {rejectModalOpen && (

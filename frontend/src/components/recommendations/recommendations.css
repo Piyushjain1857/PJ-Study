@@ -1,0 +1,354 @@
+/**
+ * PJ Study - Smart Notes Recommendations & Discovery Styling
+ * Adheres strictly to the PJ Study Design System and Editorial Aesthetic
+ */
+
+/* Main Page Container */
+.rec-page {
+  padding-bottom: 72px;
+}
+
+.rec-header-banner {
+  background: linear-gradient(135deg, #ffffff 0%, var(--color-surface-subtle, #f4f2ed) 100%);
+  border: 1px solid var(--color-border, #e6e3dc);
+  border-radius: var(--radius-lg, 12px);
+  padding: 36px 32px;
+  margin-bottom: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+.rec-header-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-xs, 0.75rem);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--color-primary, #285943);
+}
+
+.rec-header-title {
+  font-family: var(--font-heading, serif);
+  font-size: var(--font-size-3xl, 2.3rem);
+  font-weight: 400;
+  color: var(--color-text-primary, #191b18);
+  line-height: 1.2;
+  margin: 0;
+}
+
+.rec-header-desc {
+  font-size: var(--font-size-base, 1rem);
+  color: var(--color-text-secondary, #74756f);
+  max-width: 680px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Cold Start / Notice Banner */
+.rec-coldstart-banner {
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-left: 4px solid var(--color-primary, #285943);
+  border-radius: var(--radius-md, 8px);
+  padding: 16px 20px;
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.rec-coldstart-text {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: #334155;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Recommendation Sections */
+.rec-section {
+  margin-bottom: 48px;
+}
+
+.rec-section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--color-border, #e6e3dc);
+  padding-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.rec-section-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rec-section-title {
+  font-family: var(--font-heading, serif);
+  font-size: var(--font-size-xl, 1.45rem);
+  color: var(--color-text-primary, #191b18);
+  margin: 0;
+}
+
+.rec-section-subtitle {
+  font-size: var(--font-size-xs, 0.8125rem);
+  color: var(--color-text-secondary, #74756f);
+  margin: 0;
+}
+
+/* Card Grid */
+.rec-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 20px;
+}
+
+@media (min-width: 640px) {
+  .rec-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .rec-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Recommendation Card */
+.rec-card {
+  background-color: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #e6e3dc);
+  border-radius: var(--radius-md, 8px);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+  position: relative;
+}
+
+.rec-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+  border-color: var(--color-primary-light, #c0d8cb);
+}
+
+.rec-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rec-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-grow: 1;
+}
+
+.rec-card-title {
+  font-family: var(--font-heading, serif);
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--color-text-primary, #191b18);
+  margin: 0;
+  line-height: 1.3;
+  text-decoration: none;
+}
+
+.rec-card-title:hover {
+  color: var(--color-primary, #285943);
+  text-decoration: underline;
+}
+
+.rec-card-desc {
+  font-size: var(--font-size-xs, 0.8125rem);
+  color: var(--color-text-secondary, #74756f);
+  margin: 0;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rec-card-academic-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: #555752;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.rec-card-academic-tag {
+  background-color: var(--color-surface-subtle, #f4f2ed);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.rec-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border, #f0ede6);
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #8e908a);
+}
+
+.rec-card-author {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rec-card-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rec-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Explainable Reason Pill */
+.rec-reason-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.rec-reason-pill--subject {
+  background-color: #e8f5e9;
+  color: #1b5e20;
+  border: 1px solid #c8e6c9;
+}
+
+.rec-reason-pill--course {
+  background-color: #e3f2fd;
+  color: #0d47a1;
+  border: 1px solid #bbdefb;
+}
+
+.rec-reason-pill--bookmark {
+  background-color: #fff8e1;
+  color: #b78103;
+  border: 1px solid #ffe082;
+}
+
+.rec-reason-pill--popular {
+  background-color: #f3e5f5;
+  color: #4a148c;
+  border: 1px solid #e1bee7;
+}
+
+.rec-reason-pill--default {
+  background-color: #f5f5f5;
+  color: #424242;
+  border: 1px solid #e0e0e0;
+}
+
+/* Similar Notes Widget for Note Details Page */
+.similar-notes-widget {
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 1px solid var(--color-border, #e6e3dc);
+}
+
+.similar-notes-title {
+  font-family: var(--font-heading, serif);
+  font-size: 1.4rem;
+  color: var(--color-text-primary, #191b18);
+  margin: 0 0 8px 0;
+}
+
+.similar-notes-desc {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary, #74756f);
+  margin: 0 0 20px 0;
+}
+
+.similar-notes-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .similar-notes-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .similar-notes-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.similar-note-card {
+  background-color: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #e6e3dc);
+  border-radius: var(--radius-md, 8px);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.similar-note-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-color: var(--color-primary-light, #c0d8cb);
+}
+
+.similar-note-title {
+  font-family: var(--font-heading, serif);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #191b18);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.similar-note-meta {
+  font-size: 0.72rem;
+  color: var(--color-text-secondary, #74756f);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
