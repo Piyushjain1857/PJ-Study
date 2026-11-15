@@ -143,6 +143,7 @@ export function Navbar() {
           onClick={toggleMobileMenu}
           className="navbar-mobile-toggle"
           aria-expanded={mobileMenuOpen}
+          aria-controls="mobile-navigation-drawer"
           aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
         >
           <span
@@ -159,8 +160,11 @@ export function Navbar() {
 
       {/* Mobile Drawer Menu */}
       <div
+        id="mobile-navigation-drawer"
         className={`navbar-mobile-menu ${mobileMenuOpen ? 'navbar-mobile-menu--open' : ''}`}
         aria-hidden={!mobileMenuOpen}
+        role="region"
+        aria-label="Mobile Navigation Drawer"
       >
         <div className="navbar-mobile-menu__inner">
           <nav className="navbar-mobile-nav" aria-label="Mobile Navigation">

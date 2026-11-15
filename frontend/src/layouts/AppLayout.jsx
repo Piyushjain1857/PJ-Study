@@ -232,6 +232,11 @@ export function AppLayout() {
 
   return (
     <div className={`app-shell ${sidebarCollapsed ? 'app-shell--collapsed' : ''}`}>
+      {/* Skip to Main Content Link for Keyboard and Screen Reader Accessibility */}
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+
       {/* Mobile Backdrop */}
       {mobileSidebarOpen && (
         <div
@@ -473,7 +478,7 @@ export function AppLayout() {
         </header>
 
         {/* Dynamic Content Outlet */}
-        <main className="app-shell__content">
+        <main id="main-content" className="app-shell__content" tabIndex="-1">
           <Outlet />
         </main>
       </div>

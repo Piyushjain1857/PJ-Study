@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { Input } from '../../components/common/Input.jsx';
 import { Button } from '../../components/common/Button.jsx';
+import SEO from '../../components/common/SEO.jsx';
 import './Auth.css';
 
 /**
@@ -68,6 +69,7 @@ export function LoginPage() {
 
   return (
     <div className="auth-wrapper">
+      <SEO title="Sign In to PJ Study" noindex={true} />
       <div className="auth-ambient-orb auth-ambient-orb--top" aria-hidden="true" />
       <div className="auth-ambient-orb auth-ambient-orb--bottom" aria-hidden="true" />
 

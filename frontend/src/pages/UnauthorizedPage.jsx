@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/common/Button.jsx';
+import SEO from '../components/common/SEO.jsx';
 import './auth/Auth.css';
 
 /**
@@ -10,6 +11,7 @@ export function UnauthorizedPage() {
 
   return (
     <div className="auth-wrapper">
+      <SEO title="403 Access Denied" noindex={true} />
       <div className="auth-card" style={{ textAlign: 'center' }}>
         <div className="verify-status">
           <div className="verify-status__icon verify-status__icon--error">🔒</div>

@@ -12,6 +12,7 @@ import { EmptyState } from '../../components/common/EmptyState.jsx';
 import { Skeleton } from '../../components/common/Skeleton.jsx';
 import { AnnouncementModal } from '../../components/notifications/AnnouncementModal.jsx';
 import { formatRelativeTime } from '../../utils/formatTime.js';
+import SEO from '../../components/common/SEO.jsx';
 import './AdminDashboardPage.css';
 import '../auth/Auth.css';
 
@@ -742,6 +743,7 @@ export function AdminDashboardPage() {
 
   return (
     <div className="admin-dashboard">
+      <SEO title="Academic Governance & Administration" noindex={true} />
       <div className="container">
         {/* Header */}
         <header className="admin-header">

@@ -2,8 +2,30 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../components/common/Button.jsx';
 import Container from '../components/layout/Container.jsx';
+import SEO from '../components/common/SEO.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import './HomePage.css';
+
+const HOME_SCHEMA = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      name: 'PJ Study',
+      description: 'Your Entire Study World, One Place. Educational notes and curriculum discovery.',
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: 'https://pjstudy.com/notes/explore?search={search_term_string}',
+        'query-input': 'required name=search_term_string'
+      }
+    },
+    {
+      '@type': 'EducationalOrganization',
+      name: 'PJ Study Academic Library',
+      description: 'Curated university study materials, peer-reviewed notes, and course taxonomies.'
+    }
+  ]
+};
 
 /**
  * World-Class EdTech Landing Page for PJ Study.
@@ -16,6 +38,12 @@ export function HomePage() {
 
   return (
     <div className="home-root">
+      <SEO
+        title="PJ Study | Your Entire Study World, One Place"
+        description="Discover organized academic notes, study resources, and course-wise learning materials with PJ Study."
+        canonical="/"
+        schema={HOME_SCHEMA}
+      />
       {/* =========================================================================
           1. HERO SECTION — Split Layout with High-Fidelity Product Showcase
           ========================================================================= */}

@@ -8,6 +8,7 @@ import { Badge } from '../../components/common/Badge.jsx';
 import { Input } from '../../components/common/Input.jsx';
 import { Button } from '../../components/common/Button.jsx';
 import NoteCard from '../../components/notes/NoteCard.jsx';
+import SEO from '../../components/common/SEO.jsx';
 import './ProfilePage.css';
 import './Auth.css';
 
@@ -426,6 +427,7 @@ export function ProfilePage() {
   if (isLoadingProfile && !currentUser) {
     return (
       <div className="profile-container" style={{ padding: '48px 0', textAlign: 'center' }}>
+        <SEO title="Profile & Security" noindex={true} />
         <div className="spinner" style={{ margin: '0 auto 16px' }} />
         <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
           Loading Profile and academic records...
@@ -436,6 +438,7 @@ export function ProfilePage() {
 
   return (
     <div className="profile-container">
+      <SEO title="Profile & Security" noindex={true} />
       {/* Account Overview Header Card */}
       <div className="profile-header-card">
         <div className="profile-user-info">

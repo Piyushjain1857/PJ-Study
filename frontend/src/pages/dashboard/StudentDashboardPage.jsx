@@ -11,6 +11,7 @@ import DashboardDownloadsHistory from '../../components/dashboard/DashboardDownl
 import DashboardRecommendations from '../../components/dashboard/DashboardRecommendations.jsx';
 import DashboardQuickActions from '../../components/dashboard/DashboardQuickActions.jsx';
 import Button from '../../components/common/Button.jsx';
+import SEO from '../../components/common/SEO.jsx';
 import '../../components/dashboard/dashboard.css';
 
 /**
@@ -71,6 +72,7 @@ export function StudentDashboardPage() {
   if (error && !overview) {
     return (
       <div className="container" style={{ padding: '64px 20px', textAlign: 'center' }}>
+        <SEO title="Student Dashboard" noindex={true} />
         <div className="dash-empty-box">
           <svg
             viewBox="0 0 24 24"
@@ -96,6 +98,7 @@ export function StudentDashboardPage() {
 
   return (
     <div className="container dash-page">
+      <SEO title="Student Dashboard" noindex={true} />
       {/* 1. Personalized Welcome Header */}
       <DashboardWelcome user={user} />
 

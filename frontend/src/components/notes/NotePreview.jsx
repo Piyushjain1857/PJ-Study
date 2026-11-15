@@ -103,6 +103,8 @@ export function NotePreview({ note, onClose = null }) {
             <img
               src={previewUrl}
               alt={fileName || title}
+              loading="lazy"
+              decoding="async"
               className="note-preview-root__image"
               onError={() => setHasPreviewError(true)}
             />

@@ -11,6 +11,7 @@ import Skeleton from '../../components/common/Skeleton.jsx';
 import NotePreview from '../../components/notes/NotePreview.jsx';
 import SimilarNotesSection from '../../components/recommendations/SimilarNotesSection.jsx';
 import NoteReviewsSection from '../../components/reviews/NoteReviewsSection.jsx';
+import SEO from '../../components/common/SEO.jsx';
 import './NoteDetailsPage.css';
 import '../../styles/notes-discovery.css';
 import '../../styles/notes.css';
@@ -123,6 +124,7 @@ export function NoteDetailsPage() {
   if (isLoading) {
     return (
       <div className="notes-page">
+        <SEO title="Loading Study Note..." noindex={true} />
         <Container size="md">
           <Skeleton width="120px" height="24px" style={{ marginBottom: '16px' }} />
           <Skeleton width="80%" height="48px" style={{ marginBottom: '16px' }} />
@@ -135,6 +137,7 @@ export function NoteDetailsPage() {
   if (error || !note) {
     return (
       <div className="notes-page">
+        <SEO title="Study Note Not Found" noindex={true} />
         <Container size="md">
           <div className="note-form__alert note-form__alert--danger" role="alert">
             {error || 'Study note manuscript was not found.'}
@@ -149,6 +152,28 @@ export function NoteDetailsPage() {
     );
   }
 
+  const isApproved = note.status === 'APPROVED';
+  const noteSchema = isApproved
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'LearningResource',
+        name: note.title,
+        description:
+          note.description || `${note.title} study notes for ${note.subject?.name || 'course'}.`,
+        learningResourceType: 'Study Material',
+        educationalLevel: note.course?.degreeLevel || 'Higher Education',
+        about: {
+          '@type': 'Thing',
+          name: note.subject?.name || 'Academic Curriculum'
+        },
+        author: {
+          '@type': 'Person',
+          name: note.uploadedBy?.name || 'Academic Scholar'
+        },
+        datePublished: note.publishedAt || note.createdAt
+      }
+    : null;
+
   const displayDate = new Date(note.publishedAt || note.createdAt).toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
@@ -157,6 +182,17 @@ export function NoteDetailsPage() {
 
   return (
     <div className="notes-page note-details-page">
+      <SEO
+        title={`${note.title}${note.course?.name ? ` | ${note.course.name}` : ''}`}
+        description={
+          note.description ||
+          `Study manuscript for ${note.subject?.name || 'academic curriculum'} on PJ Study.`
+        }
+        canonical={`/notes/${note.id}`}
+        type="article"
+        noindex={!isApproved}
+        schema={noteSchema}
+      />
       <Container size="md">
         {/* Navigation Breadcrumb */}
         <nav className="note-details__breadcrumb">

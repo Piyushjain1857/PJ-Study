@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import env from './config/env.js';
 import v1Routes from './routes/index.js';
+import seoController from './modules/seo/seo.controller.js';
 import notFound from './middleware/notFound.js';
 import errorHandler from './middleware/errorHandler.js';
 
@@ -83,6 +84,24 @@ export function createApp() {
   // Body parsing middleware
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+
+  // Top-level crawler and discovery routes
+  app.get('/sitemap.xml', seoController.getSitemapXml);
+  app.get('/robots.txt', seoController.getRobotsTxt);
+
+  // Top-level health check probe for load balancers and orchestrators
+  app.get('/health', (req, res) => {
+    res.status(200).json({
+      success: true,
+      data: {
+        status: 'healthy',
+        product: 'PJ Study',
+        uptimeSeconds: Math.floor(process.uptime()),
+        timestamp: new Date().toISOString(),
+        environment: env.nodeEnv
+      }
+    });
+  });
 
   // API v1 router
   app.use('/api/v1', v1Routes);

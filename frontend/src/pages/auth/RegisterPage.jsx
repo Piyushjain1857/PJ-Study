@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { Input } from '../../components/common/Input.jsx';
 import { Button } from '../../components/common/Button.jsx';
+import SEO from '../../components/common/SEO.jsx';
 import './Auth.css';
 
 /**
@@ -107,6 +108,7 @@ export function RegisterPage() {
   if (isSubmittedSuccess) {
     return (
       <div className="auth-wrapper">
+        <SEO title="Verify Email" noindex={true} />
         <div className="auth-card auth-card--wide">
           <div className="verify-status">
             <div className="verify-status__icon verify-status__icon--success">✓</div>
@@ -139,6 +141,7 @@ export function RegisterPage() {
 
   return (
     <div className="auth-wrapper">
+      <SEO title="Create Scholar Account" noindex={true} />
       <div className="auth-card auth-card--wide">
         <div className="auth-card__header">
           <span className="auth-card__badge">Join PJ Study</span>

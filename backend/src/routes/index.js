@@ -13,6 +13,7 @@ import reviewRoutes from '../modules/reviews/review.routes.js';
 import profileRoutes from '../modules/profile/profile.routes.js';
 import contributorRoutes from '../modules/profile/contributor.routes.js';
 import notificationRoutes from '../modules/notifications/notification.routes.js';
+import seoRoutes from '../modules/seo/seo.routes.js';
 import { requireAuth } from '../auth/requireAuth.js';
 import noteController from '../modules/notes/note.controller.js';
 
@@ -146,6 +147,12 @@ router.use('/contributors', contributorRoutes);
  * /api/v1/notifications/...
  */
 router.use('/notifications', notificationRoutes);
+
+/**
+ * Technical SEO, dynamic sitemaps & robots routes.
+ * /api/v1/sitemap.xml, /api/v1/robots.txt
+ */
+router.use('/', seoRoutes);
 
 /**
  * User personal resources shortcut (/api/v1/users/me/notes)

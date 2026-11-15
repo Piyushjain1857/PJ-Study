@@ -13,6 +13,7 @@ import NotesResultsGrid from '../../components/notes/NotesResultsGrid.jsx';
 import NotesResultsList from '../../components/notes/NotesResultsList.jsx';
 import NotesPagination from '../../components/notes/NotesPagination.jsx';
 import NotesEmptyState from '../../components/notes/NotesEmptyState.jsx';
+import SEO from '../../components/common/SEO.jsx';
 import '../../styles/notes-discovery.css';
 import '../../styles/notes.css';
 
@@ -245,6 +246,29 @@ export function NotesExplorePage() {
 
   return (
     <div className="notes-discovery-page">
+      <SEO
+        title="Explore Study Notes"
+        description="Find academic notes by university, course, semester, and subject on PJ Study."
+        canonical="/notes/explore"
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            {
+              '@type': 'ListItem',
+              position: 1,
+              name: 'Home',
+              item: 'https://pjstudy.com/'
+            },
+            {
+              '@type': 'ListItem',
+              position: 2,
+              name: 'Explore Notes',
+              item: 'https://pjstudy.com/notes/explore'
+            }
+          ]
+        }}
+      />
       <Container>
         {/* 1. Compact Page Header */}
         <header className="notes-discovery-header">

@@ -9,8 +9,11 @@ import Footer from '../components/layout/Footer.jsx';
 export function PublicLayout() {
   return (
     <div className="d-flex flex-col" style={{ minHeight: '100dvh' }}>
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
       <Navbar />
-      <main id="main-content" className="flex-1 d-flex flex-col">
+      <main id="main-content" className="flex-1 d-flex flex-col" tabIndex="-1">
         <Outlet />
       </main>
       <Footer />

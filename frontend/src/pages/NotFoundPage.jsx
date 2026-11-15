@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Button from '../components/common/Button.jsx';
 import Badge from '../components/common/Badge.jsx';
 import Container from '../components/layout/Container.jsx';
+import SEO from '../components/common/SEO.jsx';
 import './NotFoundPage.css';
 
 /**
@@ -11,6 +12,7 @@ import './NotFoundPage.css';
 export function NotFoundPage() {
   return (
     <div className="not-found-root">
+      <SEO title="Page Not Found" noindex={true} />
       <Container size="narrow">
         <div className="not-found-card card text-center">
           <Badge variant="error" label="404 Error: Folio Missing" dot />

@@ -1,0 +1,33 @@
+# ==============================================================================
+# PJ STUDY ROBOTS CONFIGURATION
+# Production Crawler Directives (Section 8 Standard)
+# ==============================================================================
+
+User-agent: *
+
+# Allow Public Content & Manuscript Exploration
+Allow: /
+Allow: /notes
+Allow: /notes/explore
+Allow: /notes/*
+
+# Disallow Private Learning Portals & Session Workspaces
+Disallow: /dashboard
+Disallow: /app
+Disallow: /profile
+Disallow: /notifications
+Disallow: /admin
+Disallow: /my-notes
+Disallow: /notes/new
+Disallow: /notes/*/edit
+Disallow: /notes/recommended
+Disallow: /login
+Disallow: /register
+Disallow: /verify-email
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /unauthorized
+Disallow: /api/
+
+# Production XML Sitemap Reference
+Sitemap: https://pjstudy.com/sitemap.xml
