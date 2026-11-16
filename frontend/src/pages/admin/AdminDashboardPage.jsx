@@ -4096,7 +4096,7 @@ export function AdminDashboardPage() {
                       <p className="admin-muted-text">No note download statistics available yet.</p>
                     ) : (
                       <div className="admin-top-notes-list">
-                        {analyticsData.topNotes.map((note, idx) => (
+                        {(Array.isArray(analyticsData.topNotes) ? analyticsData.topNotes : []).map((note, idx) => (
                           <div key={note.id} className="admin-top-note-row">
                             <span className="admin-top-note-rank">#{idx + 1}</span>
                             <div className="admin-top-note-info">
@@ -4139,7 +4139,7 @@ export function AdminDashboardPage() {
                       <p className="admin-muted-text">No category distribution data recorded.</p>
                     ) : (
                       <div className="admin-category-bars">
-                        {analyticsData.categories.map((cat) => (
+                        {(Array.isArray(analyticsData.categories) ? analyticsData.categories : []).map((cat) => (
                           <div key={cat.id} className="admin-cat-bar-item">
                             <div className="admin-cat-bar-header">
                               <span className="admin-cat-bar-name">{cat.name}</span>
@@ -5066,7 +5066,7 @@ mysqldump -u root -p pj_study &gt; backup_$(date +%F).sql
             TAB: VISUAL PAGE BUILDER (SCHOLAR, ADMIN, HOMEPAGE)
             ===================================================================== */}
         {(activeTab === 'ui-builder' || activeTab === 'ui-builder-scholar' || activeTab === 'ui-builder-admin' || activeTab === 'ui-builder-homepage' || activeTab === 'widgets') && (
-          <div className="admin-tab-content">
+          <div className="admin-tab-content admin-tab-content--builder" style={{ maxWidth: '100%', width: '100%', padding: 0, margin: 0 }}>
             <VisualBuilderTab
               targetPage={
                 activeTab === 'ui-builder-scholar'
@@ -5527,7 +5527,7 @@ mysqldump -u root -p pj_study &gt; backup_$(date +%F).sql
                         }
                       >
                         <option value="">General / All Schools</option>
-                        {academics.schools.map((s) => (
+                        {(academics.schools || []).map((s) => (
                           <option key={s.id} value={s.id}>
                             {s.name} {s.code ? `(${s.code})` : ''}
                           </option>
@@ -5636,7 +5636,7 @@ mysqldump -u root -p pj_study &gt; backup_$(date +%F).sql
                       required
                     >
                       <option value="">Select Degree Course...</option>
-                      {academics.courses.map((c) => (
+                      {(academics.courses || []).map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.name} ({c.semestersCount || 8} Semesters)
                         </option>

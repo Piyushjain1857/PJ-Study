@@ -95,6 +95,17 @@ export const DEFAULT_PAGE_CONFIGS = Object.freeze({
   },
 
   scholar_dashboard: {
+    section_order: [
+      'welcome_header',
+      'academic_info',
+      'stats_kpi',
+      'activity_chart',
+      'recent_notes',
+      'downloads',
+      'collections',
+      'recommendations',
+      'quick_actions'
+    ],
     welcome_header: {
       title: 'Welcome back, Scholar',
       subtitle: 'Track your study progress, access recently saved notes, and manage your academic library.',
@@ -103,6 +114,12 @@ export const DEFAULT_PAGE_CONFIGS = Object.freeze({
         message: 'Semester examination revision notes and past paper solutions are now live in Explore Notes.',
         variant: 'emerald'
       },
+      isVisible: true
+    },
+    academic_info: {
+      institution: 'K.R. Mangalam University',
+      campusName: 'Main Campus, Sohna Road, Gurugram',
+      schoolLabel: 'School of Engineering & Technology',
       isVisible: true
     },
     stats_kpi: {
@@ -121,6 +138,31 @@ export const DEFAULT_PAGE_CONFIGS = Object.freeze({
       chartType: 'line',
       isVisible: true
     },
+    recent_notes: {
+      title: 'Recently Viewed & Saved',
+      subtitle: 'Jump back into your active reading manuscripts and bookmarked chapters.',
+      maxItems: 4,
+      isVisible: true
+    },
+    downloads: {
+      title: 'Download History',
+      subtitle: 'Offline materials saved to your study device.',
+      isVisible: true
+    },
+    collections: {
+      title: 'My Study Collections',
+      subtitle: 'Organized course binders and revision packets.',
+      isVisible: true
+    },
+    recommendations: {
+      title: 'Recommended For You',
+      subtitle: 'Curriculum-aligned manuscripts curated for your active semester.',
+      isVisible: true
+    },
+    quick_actions: {
+      title: 'Quick Actions',
+      isVisible: true
+    },
     workspace_sections: {
       columns: 2,
       sections: [
@@ -131,10 +173,24 @@ export const DEFAULT_PAGE_CONFIGS = Object.freeze({
         { id: 'quick_actions', title: 'Quick Actions', show: true, order: 5 }
       ],
       isVisible: true
+    },
+    sidebar: {
+      logoText: 'PJ Study',
+      badgeText: 'SCHOLAR DESK',
+      isVisible: true
     }
   },
 
   admin_dashboard: {
+    section_order: [
+      'welcome_header',
+      'stats_kpi',
+      'quick_shortcuts',
+      'recent_notes',
+      'analytics_summary',
+      'announcements',
+      'reports_feed'
+    ],
     welcome_header: {
       title: 'Admin Operations Workspace',
       subtitle: 'Manage verified academic notes, author study materials, and monitor curriculum compliance.',
@@ -155,6 +211,27 @@ export const DEFAULT_PAGE_CONFIGS = Object.freeze({
       ],
       isVisible: true
     },
+    quick_shortcuts: {
+      title: 'Direct Publishing & Management Shortcuts',
+      isVisible: true
+    },
+    recent_notes: {
+      title: 'Recently Uploaded Notes',
+      subtitle: 'Latest study materials uploaded and published to the student catalog.',
+      isVisible: true
+    },
+    analytics_summary: {
+      title: 'Content Analytics & Readership',
+      isVisible: true
+    },
+    announcements: {
+      title: 'Institutional Announcements',
+      isVisible: true
+    },
+    reports_feed: {
+      title: 'Quality & Compliance Reports',
+      isVisible: true
+    },
     workspace_sections: {
       columns: 2,
       sections: [
@@ -162,6 +239,126 @@ export const DEFAULT_PAGE_CONFIGS = Object.freeze({
         { id: 'notes_management', title: 'Curriculum Notes Inventory', show: true, order: 2 },
         { id: 'reports_feed', title: 'Quality & Compliance Reports', show: true, order: 3 }
       ],
+      isVisible: true
+    },
+    sidebar: {
+      logoText: 'PJ Study',
+      badgeText: 'ADMIN WORKSPACE',
+      isVisible: true
+    }
+  },
+
+  scholar_explore: {
+    section_order: ['explore_header', 'search_filters', 'notes_catalog'],
+    explore_header: {
+      title: 'Explore Curated Notes',
+      subtitle: 'Discover syllabus-aligned lecture manuscripts, exam guides, and reference documents.',
+      isVisible: true
+    },
+    search_filters: {
+      enableSchoolFilter: true,
+      enableCourseFilter: true,
+      enableSemesterFilter: true,
+      isVisible: true
+    },
+    notes_catalog: {
+      defaultSort: 'latest',
+      itemsPerPage: 12,
+      isVisible: true
+    }
+  },
+
+  scholar_recommended: {
+    section_order: ['rec_header', 'rec_grid'],
+    rec_header: {
+      title: 'Personalized Study Recommendations',
+      subtitle: 'Hand-picked manuscripts matched to your enrolled school, course, and semester focus.',
+      isVisible: true
+    },
+    rec_grid: {
+      maxItems: 8,
+      isVisible: true
+    }
+  },
+
+  scholar_library: {
+    section_order: ['library_header', 'saved_tabs', 'collections_grid'],
+    library_header: {
+      title: 'My Study Library',
+      subtitle: 'All your bookmarked lecture notes, personal binders, and download archives in one place.',
+      isVisible: true
+    },
+    saved_tabs: {
+      defaultTab: 'bookmarks',
+      isVisible: true
+    },
+    collections_grid: {
+      enableNewFolder: true,
+      isVisible: true
+    }
+  },
+
+  scholar_profile: {
+    section_order: ['profile_header', 'academic_card', 'security_settings'],
+    profile_header: {
+      title: 'Scholar Account & Credentials',
+      subtitle: 'Manage your K.R. Mangalam University profile, enrolled courses, and security preferences.',
+      isVisible: true
+    },
+    academic_card: {
+      showInstitution: true,
+      showSemester: true,
+      isVisible: true
+    },
+    security_settings: {
+      isVisible: true
+    }
+  },
+
+  scholar_notifications: {
+    section_order: ['notifications_header', 'notifications_feed'],
+    notifications_header: {
+      title: 'Notification Center',
+      subtitle: 'Institutional announcements, review feedback, and academic alerts.',
+      isVisible: true
+    },
+    notifications_feed: {
+      isVisible: true
+    }
+  },
+
+  admin_upload: {
+    section_order: ['upload_header', 'file_uploader', 'metadata_form'],
+    upload_header: {
+      title: 'Direct Manuscript Publishing',
+      subtitle: 'Upload and instantly publish verified academic course materials to scholars.',
+      isVisible: true
+    },
+    file_uploader: {
+      allowedTypes: 'application/pdf,image/jpeg,image/png',
+      maxMb: 25,
+      isVisible: true
+    },
+    metadata_form: {
+      requireCourse: true,
+      requireSemester: true,
+      isVisible: true
+    }
+  },
+
+  admin_notes: {
+    section_order: ['notes_header', 'inventory_filters', 'inventory_table'],
+    notes_header: {
+      title: 'Curriculum Notes Inventory',
+      subtitle: 'Audit, manage, unpublish, and inspect all live study manuscripts.',
+      isVisible: true
+    },
+    inventory_filters: {
+      showStatusFilter: true,
+      isVisible: true
+    },
+    inventory_table: {
+      itemsPerPage: 10,
       isVisible: true
     }
   }
@@ -301,7 +498,7 @@ export const DEFAULT_NAVIGATION = Object.freeze({
       items: [
         { to: '/admin/users', label: 'Users', icon: 'users', isVisible: true },
         { to: '/admin/moderators', label: 'Admins', icon: 'shield', isVisible: true },
-        { to: '/admin/academics', label: 'Academic Architecture', icon: 'home', isVisible: true },
+        { to: '/admin/academics', label: 'Academic Architecture (KRMU)', icon: 'home', isVisible: true },
         { to: '/admin/notes', label: 'Notes Management', icon: 'book', isVisible: true },
         { to: '/admin/reports', label: 'Content Reports', icon: 'flag', isVisible: true }
       ]
@@ -309,9 +506,18 @@ export const DEFAULT_NAVIGATION = Object.freeze({
     {
       label: 'OPERATIONS',
       items: [
+        { to: '/admin/announcements', label: 'Announcements', icon: 'message-square', isVisible: true },
         { to: '/admin/notifications', label: 'Notifications', icon: 'bell', isVisible: true },
-        { to: '/admin/audit-logs', label: 'Audit Logs', icon: 'clipboard', isVisible: true },
+        { to: '/admin/storage', label: 'Storage Management', icon: 'database', isVisible: true },
+        { to: '/admin/audit-logs', label: 'Audit Logs', icon: 'clipboard', isVisible: true }
+      ]
+    },
+    {
+      label: 'SYSTEM',
+      items: [
+        { to: '/admin/security', label: 'Security Center', icon: 'lock', isVisible: true },
         { to: '/admin/health', label: 'System Health', icon: 'cpu', isVisible: true },
+        { to: '/admin/backups', label: 'Backup & Recovery', icon: 'database', isVisible: true },
         { to: '/admin/config/history', label: 'Configuration History', icon: 'history', isVisible: true }
       ]
     },

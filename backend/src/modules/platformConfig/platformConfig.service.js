@@ -23,18 +23,26 @@ export class PlatformConfigService {
    */
   async initDefaultConfigurations() {
     // 1. Seed Page Configurations
+    const PAGE_TITLES = {
+      homepage: 'Public Landing Page',
+      scholar_dashboard: 'Scholar Dashboard',
+      scholar_explore: 'Explore Notes Page',
+      scholar_recommended: 'Personalized Recommendations',
+      scholar_library: 'My Study Library',
+      scholar_profile: 'Scholar Profile & Credentials',
+      scholar_notifications: 'Notification Center',
+      admin_dashboard: 'Admin Operations Dashboard',
+      admin_upload: 'Direct Note Upload',
+      admin_notes: 'Curriculum Notes Inventory'
+    };
+
     for (const [pageKey, config] of Object.entries(DEFAULT_PAGE_CONFIGS)) {
       const existing = await prisma.pageConfiguration.findUnique({ where: { pageKey } });
       if (!existing) {
         await prisma.pageConfiguration.create({
           data: {
             pageKey,
-            title:
-              pageKey === 'homepage'
-                ? 'Public Landing Page'
-                : pageKey === 'scholar_dashboard'
-                  ? 'Scholar Dashboard'
-                  : 'Admin Operations Dashboard',
+            title: PAGE_TITLES[pageKey] || pageKey.replace(/_/g, ' ').toUpperCase(),
             draftConfig: config,
             publishedConfig: config,
             version: 1

@@ -216,6 +216,296 @@ export const COMPONENT_REGISTRY = Object.freeze({
       }
       return true;
     }
+  },
+
+  // --- FULL-PAGE EXTENDED VISUAL STUDIO COMPONENTS ---
+  section_order: {
+    name: 'Section Hierarchy & Ordering',
+    allowedProps: [],
+    validate(props) {
+      if (!Array.isArray(props)) {
+        throw new Error('section_order must be an array of section identifiers.');
+      }
+      for (const item of props) {
+        if (typeof item !== 'string') {
+          throw new Error('Each item in section_order must be a string identifier.');
+        }
+      }
+      return true;
+    }
+  },
+
+  academic_info: {
+    name: 'Academic Information & Campus Banner',
+    allowedProps: ['institution', 'campusName', 'schoolLabel', 'isVisible'],
+    validate(props) {
+      if (props.institution) sanitizeString(props.institution, 'Institution name');
+      if (props.campusName) sanitizeString(props.campusName, 'Campus name');
+      if (props.schoolLabel) sanitizeString(props.schoolLabel, 'School label');
+      return true;
+    }
+  },
+
+  recent_notes: {
+    name: 'Recently Added & Saved Notes Section',
+    allowedProps: ['title', 'subtitle', 'maxItems', 'isVisible'],
+    validate(props) {
+      if (props.title) sanitizeString(props.title, 'Recent notes title');
+      if (props.subtitle) sanitizeString(props.subtitle, 'Recent notes subtitle');
+      return true;
+    }
+  },
+
+  downloads: {
+    name: 'Downloads History Section',
+    allowedProps: ['title', 'subtitle', 'isVisible'],
+    validate(props) {
+      if (props.title) sanitizeString(props.title, 'Downloads title');
+      if (props.subtitle) sanitizeString(props.subtitle, 'Downloads subtitle');
+      return true;
+    }
+  },
+
+  collections: {
+    name: 'Personal Study Collections Section',
+    allowedProps: ['title', 'subtitle', 'isVisible'],
+    validate(props) {
+      if (props.title) sanitizeString(props.title, 'Collections title');
+      if (props.subtitle) sanitizeString(props.subtitle, 'Collections subtitle');
+      return true;
+    }
+  },
+
+  recommendations: {
+    name: 'Recommended Manuscripts Section',
+    allowedProps: ['title', 'subtitle', 'isVisible'],
+    validate(props) {
+      if (props.title) sanitizeString(props.title, 'Recommendations title');
+      if (props.subtitle) sanitizeString(props.subtitle, 'Recommendations subtitle');
+      return true;
+    }
+  },
+
+  quick_actions: {
+    name: 'Scholar Quick Actions Block',
+    allowedProps: ['title', 'isVisible'],
+    validate(props) {
+      if (props.title) sanitizeString(props.title, 'Quick actions title');
+      return true;
+    }
+  },
+
+  quick_shortcuts: {
+    name: 'Admin Quick Shortcuts Block',
+    allowedProps: ['title', 'isVisible'],
+    validate(props) {
+      if (props.title) sanitizeString(props.title, 'Quick shortcuts title');
+      return true;
+    }
+  },
+
+  analytics_summary: {
+    name: 'Content Analytics & Readership Section',
+    allowedProps: ['title', 'isVisible'],
+    validate(props) {
+      if (props.title) sanitizeString(props.title, 'Analytics summary title');
+      return true;
+    }
+  },
+
+  announcements: {
+    name: 'Institutional Announcements Block',
+    allowedProps: ['title', 'isVisible'],
+    validate(props) {
+      if (props.title) sanitizeString(props.title, 'Announcements title');
+      return true;
+    }
+  },
+
+  reports_feed: {
+    name: 'Quality & Reports Feed Section',
+    allowedProps: ['title', 'isVisible'],
+    validate(props) {
+      if (props.title) sanitizeString(props.title, 'Reports feed title');
+      return true;
+    }
+  },
+
+  sidebar: {
+    name: 'Sidebar Layout & Branding',
+    allowedProps: ['logoText', 'badgeText', 'isVisible'],
+    validate(props) {
+      if (props.logoText) sanitizeString(props.logoText, 'Logo text');
+      if (props.badgeText) sanitizeString(props.badgeText, 'Badge text');
+      return true;
+    }
+  },
+
+  explore_header: {
+    name: 'Explore Notes Header Section',
+    allowedProps: ['title', 'subtitle', 'isVisible'],
+    validate(props) {
+      if (props.title) sanitizeString(props.title, 'Explore header title');
+      if (props.subtitle) sanitizeString(props.subtitle, 'Explore header subtitle');
+      return true;
+    }
+  },
+
+  search_filters: {
+    name: 'Search & Academic Filters Block',
+    allowedProps: ['enableSchoolFilter', 'enableCourseFilter', 'enableSemesterFilter', 'isVisible'],
+    validate(props) {
+      return true;
+    }
+  },
+
+  notes_catalog: {
+    name: 'Curriculum Notes Catalog Grid',
+    allowedProps: ['defaultSort', 'itemsPerPage', 'isVisible'],
+    validate(props) {
+      return true;
+    }
+  },
+
+  rec_header: {
+    name: 'Recommended Page Header',
+    allowedProps: ['title', 'subtitle', 'isVisible'],
+    validate(props) {
+      if (props.title) sanitizeString(props.title, 'Rec header title');
+      if (props.subtitle) sanitizeString(props.subtitle, 'Rec header subtitle');
+      return true;
+    }
+  },
+
+  rec_grid: {
+    name: 'Recommended Notes Catalog Grid',
+    allowedProps: ['maxItems', 'isVisible'],
+    validate(props) {
+      return true;
+    }
+  },
+
+  library_header: {
+    name: 'Study Library Header Section',
+    allowedProps: ['title', 'subtitle', 'isVisible'],
+    validate(props) {
+      if (props.title) sanitizeString(props.title, 'Library header title');
+      if (props.subtitle) sanitizeString(props.subtitle, 'Library header subtitle');
+      return true;
+    }
+  },
+
+  saved_tabs: {
+    name: 'Library Saved Items & Tabs',
+    allowedProps: ['defaultTab', 'isVisible'],
+    validate(props) {
+      return true;
+    }
+  },
+
+  collections_grid: {
+    name: 'Library Collections Grid',
+    allowedProps: ['enableNewFolder', 'isVisible'],
+    validate(props) {
+      return true;
+    }
+  },
+
+  profile_header: {
+    name: 'Profile & Credentials Header',
+    allowedProps: ['title', 'subtitle', 'isVisible'],
+    validate(props) {
+      if (props.title) sanitizeString(props.title, 'Profile header title');
+      if (props.subtitle) sanitizeString(props.subtitle, 'Profile header subtitle');
+      return true;
+    }
+  },
+
+  academic_card: {
+    name: 'Academic Enrollment Details Card',
+    allowedProps: ['showInstitution', 'showSemester', 'isVisible'],
+    validate(props) {
+      return true;
+    }
+  },
+
+  security_settings: {
+    name: 'Security & Password Settings Block',
+    allowedProps: ['isVisible'],
+    validate(props) {
+      return true;
+    }
+  },
+
+  notifications_header: {
+    name: 'Notifications Center Header',
+    allowedProps: ['title', 'subtitle', 'isVisible'],
+    validate(props) {
+      if (props.title) sanitizeString(props.title, 'Notifications header title');
+      if (props.subtitle) sanitizeString(props.subtitle, 'Notifications header subtitle');
+      return true;
+    }
+  },
+
+  notifications_feed: {
+    name: 'Notifications Activity Feed',
+    allowedProps: ['isVisible'],
+    validate(props) {
+      return true;
+    }
+  },
+
+  upload_header: {
+    name: 'Note Upload Header Section',
+    allowedProps: ['title', 'subtitle', 'isVisible'],
+    validate(props) {
+      if (props.title) sanitizeString(props.title, 'Upload header title');
+      if (props.subtitle) sanitizeString(props.subtitle, 'Upload header subtitle');
+      return true;
+    }
+  },
+
+  file_uploader: {
+    name: 'File Drag & Drop Uploader Block',
+    allowedProps: ['allowedTypes', 'maxMb', 'isVisible'],
+    validate(props) {
+      if (props.allowedTypes) sanitizeString(props.allowedTypes, 'Allowed types');
+      return true;
+    }
+  },
+
+  metadata_form: {
+    name: 'Academic Metadata Form Block',
+    allowedProps: ['requireCourse', 'requireSemester', 'isVisible'],
+    validate(props) {
+      return true;
+    }
+  },
+
+  notes_header: {
+    name: 'Notes Inventory Header Section',
+    allowedProps: ['title', 'subtitle', 'isVisible'],
+    validate(props) {
+      if (props.title) sanitizeString(props.title, 'Notes header title');
+      if (props.subtitle) sanitizeString(props.subtitle, 'Notes header subtitle');
+      return true;
+    }
+  },
+
+  inventory_filters: {
+    name: 'Inventory Status & Filter Controls',
+    allowedProps: ['showStatusFilter', 'isVisible'],
+    validate(props) {
+      return true;
+    }
+  },
+
+  inventory_table: {
+    name: 'Notes Inventory Management Table',
+    allowedProps: ['itemsPerPage', 'isVisible'],
+    validate(props) {
+      return true;
+    }
   }
 });
 
