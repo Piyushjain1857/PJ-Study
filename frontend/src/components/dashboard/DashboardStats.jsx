@@ -1,6 +1,7 @@
 import React from 'react';
 import Skeleton from '../common/Skeleton.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { usePlatformConfig } from '../../context/PlatformConfigContext.jsx';
 
 /**
  * Primary four metric summary cards for the student dashboard.
@@ -19,6 +20,8 @@ import { useAuth } from '../../context/AuthContext.jsx';
  */
 export function DashboardStats({ stats = {}, loading = false }) {
   const { isModerator } = useAuth();
+  const { pageConfig } = usePlatformConfig();
+  const kpiColumns = pageConfig?.stats_kpi?.columns || 4;
 
   const fourthCard = isModerator
     ? {
@@ -129,7 +132,11 @@ export function DashboardStats({ stats = {}, loading = false }) {
   ];
 
   return (
-    <div className="dash-stats-grid" aria-label="Study Activity Statistics">
+    <div
+      className="dash-stats-grid"
+      aria-label="Study Activity Statistics"
+      style={kpiColumns !== 4 ? { gridTemplateColumns: `repeat(${kpiColumns}, minmax(0, 1fr))` } : undefined}
+    >
       {cards.map((card) => (
         <div key={card.id} className="dash-stat-card">
           <div className="dash-stat-header">

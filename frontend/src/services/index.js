@@ -7,3 +7,4 @@ export * from './categoryService.js';
 export * from './dashboardService.js';
 export * from './recommendationService.js';
 export * from './reviewService.js';
+export * from './platformConfigService.js';

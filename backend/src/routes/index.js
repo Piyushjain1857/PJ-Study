@@ -15,6 +15,7 @@ import profileRoutes from '../modules/profile/profile.routes.js';
 import contributorRoutes from '../modules/profile/contributor.routes.js';
 import notificationRoutes from '../modules/notifications/notification.routes.js';
 import seoRoutes from '../modules/seo/seo.routes.js';
+import { publicConfigRouter, adminConfigRouter } from '../modules/platformConfig/platformConfig.routes.js';
 import { requireAuth } from '../auth/requireAuth.js';
 import noteController from '../modules/notes/note.controller.js';
 
@@ -76,6 +77,14 @@ router.get('/config', (req, res) => {
  * /api/v1/auth/...
  */
 router.use('/auth', authRoutes);
+
+/**
+ * Platform Owner Dynamic Visual Configuration Suite (Step 20)
+ * Public delivery: /api/v1/platform/config/public, /workspace
+ * Super Admin control: /api/v1/admin/config/...
+ */
+router.use('/platform/config', publicConfigRouter);
+router.use('/admin/config', adminConfigRouter);
 
 /**
  * Administrative and RBAC governance routes.

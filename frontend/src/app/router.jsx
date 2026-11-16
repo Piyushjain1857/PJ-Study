@@ -385,6 +385,78 @@ export const router = createBrowserRouter(
           )
         },
         {
+          path: 'admin/ui-builder',
+          element: (
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/ui-builder/:target',
+          element: (
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/appearance',
+          element: (
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/navigation',
+          element: (
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/widgets',
+          element: (
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/features',
+          element: (
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/permissions',
+          element: (
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/content',
+          element: (
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/config/history',
+          element: (
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
           path: 'admin/settings',
           element: (
             <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>

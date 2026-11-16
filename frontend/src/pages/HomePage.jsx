@@ -4,6 +4,7 @@ import Button from '../components/common/Button.jsx';
 import Container from '../components/layout/Container.jsx';
 import SEO from '../components/common/SEO.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { usePlatformConfig } from '../context/PlatformConfigContext.jsx';
 import './HomePage.css';
 
 const HOME_SCHEMA = {
@@ -34,13 +35,21 @@ const HOME_SCHEMA = {
  */
 export function HomePage() {
   const { isAuthenticated } = useAuth();
+  const { publicConfig } = usePlatformConfig();
   const [activeShowcaseTab, setActiveShowcaseTab] = useState('catalog');
+
+  const heroConfig = publicConfig?.homepage?.hero;
+  const heroBadge = heroConfig?.badge || 'K.R. Mangalam University — Academic Portal';
+  const heroHeadline = heroConfig?.title || 'Everything You Need to Study Smarter.';
+  const heroDescription = heroConfig?.subtitle ||
+    'Discover syllabus-accurate notes, lecture manuscripts, and curriculum solutions tailored for K.R. Mangalam University.';
+  const heroCtaText = heroConfig?.primaryCtaText || 'Explore Study Notes';
 
   return (
     <div className="home-root">
       <SEO
-        title="PJ Study | Your Entire Study World, One Place"
-        description="Discover organized academic notes, study resources, and course-wise learning materials with PJ Study."
+        title="PJ Study | K.R. Mangalam University Academic Library"
+        description="Discover organized academic notes, study resources, and course-wise learning materials with PJ Study at K.R. Mangalam University."
         canonical="/"
         schema={HOME_SCHEMA}
       />
@@ -54,17 +63,15 @@ export function HomePage() {
             <div className="hero-content">
               <div className="hero-eyebrow-wrap">
                 <span className="hero-eyebrow-dot" aria-hidden="true" />
-                <span className="hero-eyebrow">THE SMARTER WAY TO STUDY</span>
+                <span className="hero-eyebrow">{heroBadge}</span>
               </div>
 
               <h1 className="hero-headline">
-                Everything You Need to <br />
-                <span className="hero-headline-highlight">Study Smarter.</span>
+                {heroHeadline}
               </h1>
 
               <p className="hero-description">
-                Discover organized academic notes, explore subjects effortlessly, and keep your
-                study resources together in one focused learning space.
+                {heroDescription}
               </p>
 
               <div className="hero-actions">
@@ -90,7 +97,7 @@ export function HomePage() {
                     }
                     iconPosition="right"
                   >
-                    Explore Study Notes
+                    {heroCtaText}
                   </Button>
                 </Link>
 

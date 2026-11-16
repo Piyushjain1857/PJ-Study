@@ -78,7 +78,7 @@ export function LoginPage() {
 
   return (
     <div className="auth-wrapper">
-      <SEO title="Sign In to PJ Study" noindex={true} />
+      <SEO title="Sign In | PJ Study — K.R. Mangalam University" noindex={true} />
       <div className="auth-ambient-orb auth-ambient-orb--top" aria-hidden="true" />
       <div className="auth-ambient-orb auth-ambient-orb--bottom" aria-hidden="true" />
 
@@ -88,7 +88,7 @@ export function LoginPage() {
           <div className="auth-showcase__content">
             <div className="auth-showcase__pill">
               <span className="auth-showcase__pill-dot" />
-              <span>The Academic Manuscript Vault</span>
+              <span>K.R. Mangalam University — Academic Manuscript Vault</span>
             </div>
 
             <h2 className="auth-showcase__headline">
@@ -98,7 +98,7 @@ export function LoginPage() {
 
             <p className="auth-showcase__lead">
               Join thousands of university scholars discovering course-mapped lecture notes,
-              curated semester syllabi, and peer-reviewed study materials.
+              curated semester syllabi, and peer-reviewed study materials across all constituent schools.
             </p>
 
             {/* Value Proposition Grid */}
@@ -111,9 +111,9 @@ export function LoginPage() {
                   </svg>
                 </div>
                 <div>
-                  <h4 className="auth-feature-item__title">Course-Mapped Taxonomy</h4>
+                  <h4 className="auth-feature-item__title">KRMU Course Taxonomy</h4>
                   <p className="auth-feature-item__desc">
-                    Notes organized strictly by University, Degree, Semester, and Subject.
+                    Curriculum mapped strictly across KRMU Schools, Degrees, Semesters, and Subjects.
                   </p>
                 </div>
               </div>
@@ -128,7 +128,7 @@ export function LoginPage() {
                 <div>
                   <h4 className="auth-feature-item__title">Verified Academic Quality</h4>
                   <p className="auth-feature-item__desc">
-                    100% of public notes are reviewed and verified by academic administrators.
+                    100% of public notes are reviewed and uploaded directly by academic administrators.
                   </p>
                 </div>
               </div>
@@ -151,13 +151,13 @@ export function LoginPage() {
             {/* Social Proof Quote */}
             <div className="auth-testimonial-card">
               <div className="auth-testimonial-card__quote">
-                “PJ Study completely transformed our semester exam prep. Finding syllabus-accurate notes used to take hours—now it’s instant.”
+                “PJ Study completely transformed our semester exam prep at KRMU. Finding syllabus-accurate notes used to take hours—now it’s instant.”
               </div>
               <div className="auth-testimonial-card__author">
                 <div className="auth-testimonial-card__avatar">CS</div>
                 <div>
-                  <div className="auth-testimonial-card__name">Computer Science Scholar</div>
-                  <div className="auth-testimonial-card__uni">Stanford University · Semester 6</div>
+                  <div className="auth-testimonial-card__name">B.Tech CSE Scholar</div>
+                  <div className="auth-testimonial-card__uni">K.R. Mangalam University · SOET</div>
                 </div>
               </div>
             </div>
@@ -171,12 +171,12 @@ export function LoginPage() {
               <div className="auth-card__badge-row">
                 <span className="auth-card__badge">
                   <span className="auth-card__status-dot" />
-                  Academic Portal
+                  KRMU Academic Portal
                 </span>
               </div>
               <h1 className="auth-card__title">Sign In to PJ Study</h1>
               <p className="auth-card__subtitle">
-                Access your curated manuscripts, personal collections, and verified course notes.
+                Access your curated manuscripts, personal collections, and verified course notes for K.R. Mangalam University.
               </p>
             </div>
 

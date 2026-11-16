@@ -643,3 +643,100 @@ model PlatformSetting {
 
   @@map("platform_settings")
 }
+
+// =============================================================================
+// PLATFORM CONTROL & VISUAL CUSTOMIZATION SUITE
+// =============================================================================
+
+/// PageConfiguration stores schema-driven section layouts and content for supported pages.
+model PageConfiguration {
+  id              String   @id @default(uuid())
+  pageKey         String   @unique @map("page_key") @db.VarChar(100) // 'homepage', 'scholar_dashboard', 'admin_dashboard'
+  title           String   @db.VarChar(200)
+  draftConfig     Json     @map("draft_config")
+  publishedConfig Json     @map("published_config")
+  version         Int      @default(1)
+  updatedById     String?  @map("updated_by_id")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("page_configurations")
+}
+
+/// PlatformTheme stores CSS design token overrides for Public, Scholar, Admin, Super Admin.
+model PlatformTheme {
+  id              String   @id @default(uuid())
+  roleScope       String   @unique @map("role_scope") @db.VarChar(50) // 'PUBLIC', 'SCHOLAR', 'ADMIN', 'SUPER_ADMIN'
+  name            String   @db.VarChar(100)
+  draftConfig     Json     @map("draft_config")
+  publishedConfig Json     @map("published_config")
+  version         Int      @default(1)
+  updatedById     String?  @map("updated_by_id")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("platform_themes")
+}
+
+/// NavigationConfiguration stores customizable role-based sidebar and navbar hierarchy.
+model NavigationConfiguration {
+  id              String   @id @default(uuid())
+  roleScope       String   @unique @map("role_scope") @db.VarChar(50) // 'SCHOLAR', 'ADMIN', 'SUPER_ADMIN'
+  draftConfig     Json     @map("draft_config")
+  publishedConfig Json     @map("published_config")
+  version         Int      @default(1)
+  updatedById     String?  @map("updated_by_id")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("navigation_configurations")
+}
+
+/// FeatureFlag stores database-driven platform feature switches.
+model FeatureFlag {
+  id          String   @id @default(uuid())
+  key         String   @unique @db.VarChar(100)
+  name        String   @db.VarChar(150)
+  description String?  @db.Text
+  category    String   @default("CORE") @db.VarChar(50)
+  isEnabled   Boolean  @default(true) @map("is_enabled")
+  metadata    Json?
+  updatedById String?  @map("updated_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([category, isEnabled])
+  @@map("feature_flags")
+}
+
+/// ContentBlock stores CMS-driven editable texts, announcements, and FAQs.
+model ContentBlock {
+  id          String   @id @default(uuid())
+  key         String   @unique @db.VarChar(100)
+  section     String   @db.VarChar(100)
+  title       String   @db.VarChar(200)
+  content     Json
+  isPublished Boolean  @default(true) @map("is_published")
+  version     Int      @default(1)
+  updatedById String?  @map("updated_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([section, isPublished])
+  @@map("content_blocks")
+}
+
+/// ConfigurationVersion stores audit snapshots of past configurations for rollback.
+model ConfigurationVersion {
+  id            String   @id @default(uuid())
+  entityType    String   @map("entity_type") @db.VarChar(50) // 'PAGE', 'THEME', 'NAVIGATION', 'FEATURE', 'CONTENT'
+  entityKey     String   @map("entity_key") @db.VarChar(100)
+  version       Int
+  snapshot      Json
+  changeSummary String?  @map("change_summary") @db.VarChar(255)
+  createdById   String?  @map("created_by_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityKey, version])
+  @@map("configuration_versions")
+}

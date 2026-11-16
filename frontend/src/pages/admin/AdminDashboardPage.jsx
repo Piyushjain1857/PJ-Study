@@ -16,6 +16,14 @@ import { formatRelativeTime } from '../../utils/formatTime.js';
 import SEO from '../../components/common/SEO.jsx';
 import './AdminDashboardPage.css';
 import '../auth/Auth.css';
+import './components/PlatformControlStyles.css';
+import VisualBuilderTab from './components/VisualBuilderTab.jsx';
+import ThemeStudioTab from './components/ThemeStudioTab.jsx';
+import FeatureControlTab from './components/FeatureControlTab.jsx';
+import NavigationBuilderTab from './components/NavigationBuilderTab.jsx';
+import PermissionsManagerTab from './components/PermissionsManagerTab.jsx';
+import ContentManagerTab from './components/ContentManagerTab.jsx';
+import VersionHistoryTab from './components/VersionHistoryTab.jsx';
 
 /**
  * Editorial Academic Governance & Role Management Dashboard (V3 Production-Grade).
@@ -519,6 +527,28 @@ export function AdminDashboardPage() {
       setActiveTab('analytics');
     } else if (path === '/admin/activity') {
       setActiveTab('activity');
+    } else if (path === '/admin/ui-builder') {
+      setActiveTab('ui-builder');
+    } else if (path === '/admin/ui-builder/scholar') {
+      setActiveTab('ui-builder-scholar');
+    } else if (path === '/admin/ui-builder/admin') {
+      setActiveTab('ui-builder-admin');
+    } else if (path === '/admin/ui-builder/homepage') {
+      setActiveTab('ui-builder-homepage');
+    } else if (path.startsWith('/admin/appearance')) {
+      setActiveTab('appearance');
+    } else if (path.startsWith('/admin/navigation')) {
+      setActiveTab('navigation');
+    } else if (path.startsWith('/admin/widgets')) {
+      setActiveTab('widgets');
+    } else if (path.startsWith('/admin/features')) {
+      setActiveTab('features');
+    } else if (path.startsWith('/admin/permissions')) {
+      setActiveTab('permissions');
+    } else if (path.startsWith('/admin/content')) {
+      setActiveTab('content');
+    } else if (path.startsWith('/admin/config/history')) {
+      setActiveTab('config-history');
     } else if (path === '/admin/users') {
       setActiveTab('users');
       setStatusFilter('');
@@ -1328,8 +1358,85 @@ export function AdminDashboardPage() {
     auditDateFilter !== 'ALL'
   );
 
+  // Active tab belongs to Platform Owner Customization & Visual Builder Suite
+  const isPlatformSuiteTab = [
+    'ui-builder',
+    'ui-builder-scholar',
+    'ui-builder-admin',
+    'ui-builder-homepage',
+    'appearance',
+    'navigation',
+    'widgets',
+    'features',
+    'permissions',
+    'content',
+    'config-history'
+  ].includes(activeTab);
+
   // Dynamic Header Configuration
   const getHeaderInfo = () => {
+    if (activeTab.startsWith('ui-builder') || activeTab === 'widgets') {
+      return {
+        seo: 'Visual Website & Workspace Builder | PJ Study Super Admin',
+        badge: 'Visual Experience Studio',
+        title: activeTab === 'ui-builder-scholar'
+          ? 'Scholar UI Editor'
+          : activeTab === 'ui-builder-admin'
+            ? 'Admin UI Editor'
+            : activeTab === 'ui-builder-homepage'
+              ? 'Homepage Editor'
+              : 'Visual Website Builder',
+        subtitle: 'Customize layout tokens, section order, headlines, KPI card columns, and announcement banners with real-time responsive multi-device preview.'
+      };
+    }
+    if (activeTab === 'appearance') {
+      return {
+        seo: 'Theme & Branding Studio | PJ Study Super Admin',
+        badge: 'Tokenized Design Engine',
+        title: 'Theme & Branding Studio',
+        subtitle: 'Fine-tune brand colors, background surfaces, typography presets, and border radius tokens per workspace scope with accessible contrast validation.'
+      };
+    }
+    if (activeTab === 'navigation') {
+      return {
+        seo: 'Navigation Hierarchy Builder | PJ Study Super Admin',
+        badge: 'Navigation Engine',
+        title: 'Navigation Hierarchy Builder',
+        subtitle: 'Customize role-specific sidebar navigation groups, labels, icons, and visibility toggles without breaking server-side RBAC guards.'
+      };
+    }
+    if (activeTab === 'features') {
+      return {
+        seo: 'Feature Control Center | PJ Study Super Admin',
+        badge: 'Runtime Governance',
+        title: 'Feature Control Center',
+        subtitle: 'Toggle optional platform modules (reviews, collections, public profiles, recommendations) on and off in real time across the database.'
+      };
+    }
+    if (activeTab === 'permissions') {
+      return {
+        seo: 'Admin Permissions Manager | PJ Study Super Admin',
+        badge: 'RBAC Delegation',
+        title: 'Admin Permissions Manager',
+        subtitle: 'Configure granular operational capability scopes for Admin faculty accounts while strictly preventing privilege escalation.'
+      };
+    }
+    if (activeTab === 'content') {
+      return {
+        seo: 'Content Manager CMS | PJ Study Super Admin',
+        badge: 'Headless CMS',
+        title: 'Platform Content & CMS',
+        subtitle: 'Manage structured content blocks, FAQ repositories, institutional banners, and K.R. Mangalam University onboarding messages.'
+      };
+    }
+    if (activeTab === 'config-history') {
+      return {
+        seo: 'Configuration Version History & Rollback | PJ Study Super Admin',
+        badge: 'Forensic Snapshot History',
+        title: 'Configuration History & Rollback',
+        subtitle: 'Audit past configuration releases with 1-click snapshot restore. Revert any page, theme, or navigation change safely without losing user notes.'
+      };
+    }
     if (activeTab === 'audit') {
       return {
         seo: 'Audit Compliance Trail | PJ Study Super Admin',
@@ -1757,8 +1864,75 @@ export function AdminDashboardPage() {
           </div>
         ) : null}
 
-        {/* Tab Navigation */}
-        <nav className="admin-tabs" aria-label="Administrative Views">
+        {/* Tab Navigation: Contextual Tabs for Platform Customization vs Core Operations */}
+        {isPlatformSuiteTab ? (
+          <nav className="admin-tabs" aria-label="Platform Customization Suite">
+            <button
+              ref={activeTab.startsWith('ui-builder') ? activeTabRef : null}
+              type="button"
+              className={`admin-tab-btn ${activeTab.startsWith('ui-builder') ? 'admin-tab-btn--active' : ''}`}
+              onClick={() => navigate('/admin/ui-builder')}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>
+              Visual Builder
+            </button>
+            <button
+              ref={activeTab === 'appearance' ? activeTabRef : null}
+              type="button"
+              className={`admin-tab-btn ${activeTab === 'appearance' ? 'admin-tab-btn--active' : ''}`}
+              onClick={() => navigate('/admin/appearance')}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="13.5" cy="6.5" r=".5" /><circle cx="17.5" cy="10.5" r=".5" /><circle cx="8.5" cy="7.5" r=".5" /><circle cx="6.5" cy="12.5" r=".5" /><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" /></svg>
+              Theme Studio
+            </button>
+            <button
+              ref={activeTab === 'navigation' ? activeTabRef : null}
+              type="button"
+              className={`admin-tab-btn ${activeTab === 'navigation' ? 'admin-tab-btn--active' : ''}`}
+              onClick={() => navigate('/admin/navigation')}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" /></svg>
+              Navigation Builder
+            </button>
+            <button
+              ref={activeTab === 'features' ? activeTabRef : null}
+              type="button"
+              className={`admin-tab-btn ${activeTab === 'features' ? 'admin-tab-btn--active' : ''}`}
+              onClick={() => navigate('/admin/features')}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="5" width="22" height="14" rx="7" ry="7" /><circle cx="16" cy="12" r="3" /></svg>
+              Feature Control
+            </button>
+            <button
+              ref={activeTab === 'permissions' ? activeTabRef : null}
+              type="button"
+              className={`admin-tab-btn ${activeTab === 'permissions' ? 'admin-tab-btn--active' : ''}`}
+              onClick={() => navigate('/admin/permissions')}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 2l-2 2m-1.5 1.5L14 9l-1.5-1.5L11 9l-1.5-1.5L8 9 4.5 5.5a2.121 2.121 0 0 0-3 3L8 15l1.5-1.5L11 15l1.5-1.5L14 15l1.5-1.5 5.5 5.5a2.121 2.121 0 0 0 3-3L22 14.5l-1-1z" /></svg>
+              Permissions Manager
+            </button>
+            <button
+              ref={activeTab === 'content' ? activeTabRef : null}
+              type="button"
+              className={`admin-tab-btn ${activeTab === 'content' ? 'admin-tab-btn--active' : ''}`}
+              onClick={() => navigate('/admin/content')}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
+              Content Blocks CMS
+            </button>
+            <button
+              ref={activeTab === 'config-history' ? activeTabRef : null}
+              type="button"
+              className={`admin-tab-btn ${activeTab === 'config-history' ? 'admin-tab-btn--active' : ''}`}
+              onClick={() => navigate('/admin/config/history')}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 14 14" /><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" /></svg>
+              Version History
+            </button>
+          </nav>
+        ) : (
+          <nav className="admin-tabs" aria-label="Administrative Views">
           <button
             ref={activeTab === 'overview' ? activeTabRef : null}
             type="button"
@@ -1889,6 +2063,7 @@ export function AdminDashboardPage() {
             Diagnostics
           </button>
         </nav>
+        )}
 
         {/* TAB 1: USER DIRECTORY & TAB 2: STAFF */}
         {(activeTab === 'users' || activeTab === 'staff') && (
@@ -2491,7 +2666,7 @@ export function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {auditLogs.map((log) => {
+                    {(Array.isArray(auditLogs) ? auditLogs : []).map((log) => {
                       const actionInfo = normalizeAuditAction(log.action);
                       return (
                         <tr key={log.id}>
@@ -2872,7 +3047,7 @@ export function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {reviewReports.map((report) => {
+                    {(Array.isArray(reviewReports) ? reviewReports : []).map((report) => {
                       const review = report.review;
                       return (
                         <tr key={report.id}>
@@ -3240,7 +3415,7 @@ export function AdminDashboardPage() {
                     className="admin-select"
                   >
                     <option value="">All Degree Courses</option>
-                    {academics.courses.map((c) => (
+                    {(Array.isArray(academics?.courses) ? academics.courses : []).map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
                       </option>
@@ -3293,7 +3468,7 @@ export function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {academics.schools
+                    {(Array.isArray(academics?.schools) ? academics.schools : [])
                       .filter((s) => {
                         if (academicStatusFilter === 'ACTIVE' && !s.isActive) return false;
                         if (academicStatusFilter === 'INACTIVE' && s.isActive) return false;
@@ -3394,7 +3569,7 @@ export function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {academics.courses
+                    {(Array.isArray(academics?.courses) ? academics.courses : [])
                       .filter((c) => {
                         if (academicStatusFilter === 'ACTIVE' && !c.isActive) return false;
                         if (academicStatusFilter === 'INACTIVE' && c.isActive) return false;
@@ -3488,7 +3663,7 @@ export function AdminDashboardPage() {
             {/* SUB-TAB 4: DYNAMIC SEMESTERS VISUAL ARCHITECTURE */}
             {academicSubTab === 'semesters' && (
               <div className="admin-semesters-grid">
-                {academics.courses
+                {(Array.isArray(academics?.courses) ? academics.courses : [])
                   .filter((c) => {
                     if (academicStatusFilter === 'ACTIVE' && !c.isActive) return false;
                     if (academicStatusFilter === 'INACTIVE' && c.isActive) return false;
@@ -3500,7 +3675,7 @@ export function AdminDashboardPage() {
                   })
                   .map((course) => {
                     const totalSem = course.semestersCount || 8;
-                    const courseSubjects = academics.subjects.filter((s) => s.courseId === course.id);
+                    const courseSubjects = (Array.isArray(academics?.subjects) ? academics.subjects : []).filter((s) => s.courseId === course.id);
                     return (
                       <div key={course.id} className="admin-semester-card">
                         <div className="admin-semester-card__header">
@@ -3572,7 +3747,7 @@ export function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {academics.subjects
+                    {(Array.isArray(academics?.subjects) ? academics.subjects : [])
                       .filter((s) => {
                         if (subjectCourseFilter && s.courseId !== subjectCourseFilter) return false;
                         if (academicStatusFilter === 'ACTIVE' && !s.isActive) return false;
@@ -3665,7 +3840,7 @@ export function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {academics.categories
+                    {(Array.isArray(academics?.categories) ? academics.categories : [])
                       .filter((cat) => {
                         if (academicStatusFilter === 'ACTIVE' && !cat.isActive) return false;
                         if (academicStatusFilter === 'INACTIVE' && cat.isActive) return false;
@@ -4178,14 +4353,14 @@ export function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {liveActivity.length === 0 ? (
+                    {(Array.isArray(liveActivity) ? liveActivity : []).length === 0 ? (
                       <tr>
                         <td colSpan="5" style={{ textAlign: 'center', padding: '32px' }}>
                           <p className="admin-muted-text">No live activity events recorded.</p>
                         </td>
                       </tr>
                     ) : (
-                      liveActivity.map((log) => (
+                      (Array.isArray(liveActivity) ? liveActivity : []).map((log) => (
                         <tr key={log.id}>
                           <td>{formatRelativeTime(log.createdAt)}</td>
                           <td>
@@ -4274,14 +4449,14 @@ export function AdminDashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {adminNotes.length === 0 ? (
+                      {(Array.isArray(adminNotes) ? adminNotes : []).length === 0 ? (
                         <tr>
                           <td colSpan="6" style={{ textAlign: 'center', padding: '36px' }}>
                             <p className="admin-muted-text">No notes found matching current filters.</p>
                           </td>
                         </tr>
                       ) : (
-                        adminNotes.map((note) => (
+                        (Array.isArray(adminNotes) ? adminNotes : []).map((note) => (
                           <tr key={note.id}>
                             <td>
                               <Link to={`/notes/${note.id}`} style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
@@ -4405,14 +4580,14 @@ export function AdminDashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {contentReports.length === 0 ? (
+                      {(Array.isArray(contentReports) ? contentReports : []).length === 0 ? (
                         <tr>
                           <td colSpan="6" style={{ textAlign: 'center', padding: '36px' }}>
                             <p className="admin-muted-text">Zero open content reports pending.</p>
                           </td>
                         </tr>
                       ) : (
-                        contentReports.map((rep) => (
+                        (Array.isArray(contentReports) ? contentReports : []).map((rep) => (
                           <tr key={rep.id}>
                             <td>
                               <strong>{rep.targetTitle || rep.note?.title || 'Reported Content'}</strong>
@@ -4884,6 +5059,80 @@ mysqldump -u root -p pj_study &gt; backup_$(date +%F).sql
             ) : (
               <Skeleton count={3} height="60px" />
             )}
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB: VISUAL PAGE BUILDER (SCHOLAR, ADMIN, HOMEPAGE)
+            ===================================================================== */}
+        {(activeTab === 'ui-builder' || activeTab === 'ui-builder-scholar' || activeTab === 'ui-builder-admin' || activeTab === 'ui-builder-homepage' || activeTab === 'widgets') && (
+          <div className="admin-tab-content">
+            <VisualBuilderTab
+              targetPage={
+                activeTab === 'ui-builder-scholar'
+                  ? 'scholar_dashboard'
+                  : activeTab === 'ui-builder-admin'
+                    ? 'admin_dashboard'
+                    : activeTab === 'ui-builder-homepage'
+                      ? 'homepage'
+                      : 'scholar_dashboard'
+              }
+              onNotify={setActionNotice}
+            />
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB: THEME & BRANDING STUDIO
+            ===================================================================== */}
+        {activeTab === 'appearance' && (
+          <div className="admin-tab-content">
+            <ThemeStudioTab onNotify={setActionNotice} />
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB: NAVIGATION HIERARCHY BUILDER
+            ===================================================================== */}
+        {activeTab === 'navigation' && (
+          <div className="admin-tab-content">
+            <NavigationBuilderTab onNotify={setActionNotice} />
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB: FEATURE CONTROL CENTER
+            ===================================================================== */}
+        {activeTab === 'features' && (
+          <div className="admin-tab-content">
+            <FeatureControlTab onNotify={setActionNotice} />
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB: ADMIN PERMISSION SCOPES MANAGER
+            ===================================================================== */}
+        {activeTab === 'permissions' && (
+          <div className="admin-tab-content">
+            <PermissionsManagerTab onNotify={setActionNotice} />
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB: CONTENT MANAGEMENT SYSTEM (CMS)
+            ===================================================================== */}
+        {activeTab === 'content' && (
+          <div className="admin-tab-content">
+            <ContentManagerTab onNotify={setActionNotice} />
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB: CONFIGURATION VERSION HISTORY & ROLLBACK
+            ===================================================================== */}
+        {activeTab === 'config-history' && (
+          <div className="admin-tab-content">
+            <VersionHistoryTab onNotify={setActionNotice} />
           </div>
         )}
 
