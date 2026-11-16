@@ -331,7 +331,7 @@ export function AppLayout() {
     if (path.startsWith('/admin/academics/schools') || path.startsWith('/admin/academics/universities')) return 'Schools & Faculties';
     if (path.startsWith('/admin/academics/courses')) return 'Courses & Semesters';
     if (path.startsWith('/admin/academics/subjects')) return 'Subjects & Categories';
-    if (path.startsWith('/admin/academics')) return 'Academic Architecture — KRMU';
+    if (path.startsWith('/admin/academics')) return 'Academic Architecture';
     if (path === '/admin/ui-builder/scholar') return 'Scholar Workspace UI Editor';
     if (path === '/admin/ui-builder/admin') return 'Admin Workspace UI Editor';
     if (path === '/admin/ui-builder/homepage') return 'Public Homepage Builder';
@@ -830,7 +830,7 @@ export function AppLayout() {
         },
         {
           to: '/admin/academics',
-          label: 'Academic Architecture (KRMU)',
+          label: 'Academic Architecture',
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 21h18" />

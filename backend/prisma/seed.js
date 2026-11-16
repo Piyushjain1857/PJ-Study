@@ -1,629 +1,93 @@
+/**
+ * PJ Study Enterprise Database Seeding Engine
+ * Entry point supporting:
+ * - npm run seed / npx prisma db seed (Full mode)
+ * - npm run seed:core (Core reference data only)
+ * - npm run seed:demo (Core + Demo Scholar/Admin & Curated Notes)
+ * - npm run seed:full (Complete development platform)
+ * - npm run seed:verify (Validates database integrity)
+ * - npm run seed:dry-run (Preview without writes)
+ */
+
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import { runSeeder, formatSeedReport } from './seeds/index.js';
+import { verifySeed } from './seeds/verifier.js';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const passwordHash = await bcrypt.hash('Password123!', 12);
+  const args = process.argv.slice(2);
 
-  // Seed Superadmin
-  const superadmin = await prisma.user.upsert({
-    where: { email: 'superadmin@portal.com' },
-    update: {
-      passwordHash,
-      role: 'SUPER_ADMIN',
-      isEmailVerified: true,
-      isActive: true
-    },
-    create: {
-      name: 'Super Admin',
-      email: 'superadmin@portal.com',
-      passwordHash,
-      role: 'SUPER_ADMIN',
-      isEmailVerified: true,
-      isActive: true
-    }
-  });
+  // Parse CLI flags
+  const isVerifyOnly = args.includes('--verify');
+  const isDryRun = args.includes('--dry-run');
+  const forceProduction = args.includes('--force-production-seed');
 
-  // Seed Admin (formerly Academic Moderator)
-  const moderator = await prisma.user.upsert({
-    where: { email: 'moderator@portal.com' },
-    update: {
-      passwordHash,
-      role: 'ADMIN',
-      name: 'Academic Admin',
-      isEmailVerified: true,
-      isActive: true
-    },
-    create: {
-      name: 'Academic Admin',
-      email: 'moderator@portal.com',
-      passwordHash,
-      role: 'ADMIN',
-      isEmailVerified: true,
-      isActive: true
-    }
-  });
-
-  // Also seed admin@portal.com for direct Admin login
-  await prisma.user.upsert({
-    where: { email: 'admin@portal.com' },
-    update: {
-      passwordHash,
-      role: 'ADMIN',
-      name: 'Platform Admin',
-      isEmailVerified: true,
-      isActive: true
-    },
-    create: {
-      name: 'Platform Admin',
-      email: 'admin@portal.com',
-      passwordHash,
-      role: 'ADMIN',
-      isEmailVerified: true,
-      isActive: true
-    }
-  });
-
-  // Seed standard student scholar
-  const student = await prisma.user.upsert({
-    where: { email: 'student@portal.com' },
-    update: {
-      passwordHash,
-      role: 'STUDENT',
-      isEmailVerified: true,
-      isActive: true
-    },
-    create: {
-      name: 'Scholar Student',
-      email: 'student@portal.com',
-      passwordHash,
-      role: 'STUDENT',
-      isEmailVerified: true,
-      isActive: true
-    }
-  });
-
-  // Seed Default University: K.R. Mangalam University (KRMU)
-  const krmu = await prisma.university.upsert({
-    where: { slug: 'krmu' },
-    update: {
-      name: 'K.R. Mangalam University',
-      shortName: 'KRMU',
-      code: 'KRMU',
-      website: 'https://www.krmangalam.edu.in',
-      description:
-        'K.R. Mangalam University — Premier higher education campus with world-class academic curriculum and research programs in Gurugram, India.',
-      isActive: true
-    },
-    create: {
-      name: 'K.R. Mangalam University',
-      slug: 'krmu',
-      shortName: 'KRMU',
-      code: 'KRMU',
-      website: 'https://www.krmangalam.edu.in',
-      description:
-        'K.R. Mangalam University — Premier higher education campus with world-class academic curriculum and research programs in Gurugram, India.',
-      isActive: true
-    }
-  });
-
-  // Seed Constituent Schools of K.R. Mangalam University
-  const schoolsData = [
-    {
-      name: 'School of Engineering & Technology',
-      code: 'SOET',
-      slug: 'soet',
-      description:
-        'Undergraduate and postgraduate engineering, CSE, AI/ML, and computational technology.'
-    },
-    {
-      name: 'School of Management & Commerce',
-      code: 'SOMC',
-      slug: 'somc',
-      description: 'Business administration, commerce, corporate finance, and executive leadership.'
-    },
-    {
-      name: 'School of Basic & Applied Sciences',
-      code: 'SBAS',
-      slug: 'sbas',
-      description: 'Foundational sciences, applied mathematics, forensic science, and physics.'
-    },
-    {
-      name: 'Zenith School of AI',
-      code: 'ZSAI',
-      slug: 'zenith-ai',
-      description: 'Artificial Intelligence, machine learning applications, and advanced computing.'
-    },
-    {
-      name: 'School of Medical & Allied Sciences',
-      code: 'SMAS',
-      slug: 'smas',
-      description: 'Pharmaceutical sciences, allied health disciplines, and medical technology.'
-    },
-    {
-      name: 'School of Legal Studies',
-      code: 'SOLS',
-      slug: 'sols',
-      description: 'Integrated B.A. LL.B., B.B.A. LL.B., jurisprudence, and corporate law.'
-    },
-    {
-      name: 'School of Architecture & Design',
-      code: 'SOAD',
-      slug: 'soad',
-      description: 'COA-approved architecture, interior architecture, and industrial design.'
-    },
-    {
-      name: 'School of Liberal Arts',
-      code: 'SOLA',
-      slug: 'sola',
-      description: 'Humanities, economics, psychology, literature, and social sciences.'
-    },
-    {
-      name: 'School of Emerging Media & Creator Economy',
-      code: 'SEMCE',
-      slug: 'semce',
-      description: 'Journalism, digital media creation, animation, and audiovisual arts.'
-    },
-    {
-      name: 'School of Agricultural Sciences',
-      code: 'SOAS',
-      slug: 'soas',
-      description: 'Agronomy, sustainable farming, agricultural economics, and biotechnology.'
-    },
-    {
-      name: 'School of Education',
-      code: 'SOE',
-      slug: 'soe',
-      description: 'Pedagogy, educational leadership, and curriculum research.'
-    }
-  ];
-
-  const seededSchools = {};
-  for (const s of schoolsData) {
-    const schoolRecord = await prisma.school.upsert({
-      where: {
-        university_school_slug_unique: {
-          universityId: krmu.id,
-          slug: s.slug
-        }
-      },
-      update: {
-        name: s.name,
-        code: s.code,
-        description: s.description,
-        isActive: true
-      },
-      create: {
-        universityId: krmu.id,
-        name: s.name,
-        slug: s.slug,
-        code: s.code,
-        description: s.description,
-        isActive: true
-      }
-    });
-    seededSchools[s.code] = schoolRecord;
-  }
-
-  // Seed Categories
-  const categories = [
-    {
-      name: 'Lecture Notes',
-      slug: 'lecture-notes',
-      description: 'Comprehensive lecture transcripts and instructor slides.'
-    },
-    {
-      name: 'Exam Prep & Solutions',
-      slug: 'exam-prep',
-      description: 'Past year papers, model solutions, and exam preparation kits.'
-    },
-    {
-      name: 'Lab Manuals',
-      slug: 'lab-manuals',
-      description: 'Practical guides, experimental observations, and lab code.'
-    },
-    {
-      name: 'Cheat Sheets & Summaries',
-      slug: 'cheat-sheets',
-      description: 'Quick reference formulas, key concepts, and exam revision sheets.'
-    },
-    {
-      name: 'Assignments & Projects',
-      slug: 'assignments',
-      description: 'Academic problem sets, project documentation, and case studies.'
-    }
-  ];
-
-  for (const cat of categories) {
-    await prisma.category.upsert({
-      where: { slug: cat.slug },
-      update: { name: cat.name, description: cat.description },
-      create: cat
-    });
-  }
-
-  // Clean up legacy test courses if present
-  const legacySlugs = [
-    'dash-cs-course',
-    'rec-course-cs',
-    'profile-test-course',
-    'rec-course-ee',
-    'rev-test-course'
-  ];
-  const legacyCourses = await prisma.course.findMany({
-    where: { slug: { in: legacySlugs } }
-  });
-  for (const lc of legacyCourses) {
-    await prisma.subject.deleteMany({ where: { courseId: lc.id } });
-    await prisma.course.delete({ where: { id: lc.id } });
-  }
-
-  // Seed Academic Programs: B.Tech, BCA, B.Sc., MCA, M.Tech
-  const academicPrograms = [
-    {
-      name: 'B.Tech',
-      slug: 'b-tech',
-      description:
-        'Bachelor of Technology - Undergraduate 4-year engineering and technology curriculum.',
-      subjects: [
-        {
-          name: 'Probability, Statistics & Linear Algebra',
-          slug: 'probability-statistics-linear-algebra',
-          semester: 1,
-          credits: 4,
-          description: 'Probability, Statistics, Matrices, Linear Algebra, and Data Analysis.'
-        },
-        {
-          name: 'Programming for Problem Solving Using Python',
-          slug: 'programming-python',
-          semester: 1,
-          credits: 4,
-          description:
-            'Python Basics, Variables, Data Types, Loops, Functions, OOP, and Problem Solving.'
-        },
-        {
-          name: 'Web Dev I (HTML, CSS, JS Basics)',
-          slug: 'web-development-1',
-          semester: 1,
-          credits: 3,
-          description:
-            'HTML, CSS, JavaScript Basics, Responsive Web Design, and Web Development Fundamentals.'
-        },
-        {
-          name: 'Basics of Electronics & Digital Logic Design',
-          slug: 'electronics-digital-logic',
-          semester: 1,
-          credits: 3,
-          description:
-            'Electronic Components, Number Systems, Logic Gates, Boolean Algebra, K-Maps, and Digital Circuits.'
-        },
-        {
-          name: 'CS Fundamentals & Career Pathways',
-          slug: 'cs-fundamentals-career-pathways',
-          semester: 1,
-          credits: 2,
-          description:
-            'Computer Science Fundamentals, Computing Technologies, Programming Concepts, and Career Opportunities.'
-        },
-        {
-          name: 'Maker Lab: Tinkering with Technology',
-          slug: 'maker-lab',
-          semester: 1,
-          credits: 2,
-          description:
-            'Hands-on Prototyping, Electronics, Arduino, Sensors, Tinkering, and Technology Projects.'
-        }
-        // Other semesters commented out:
-        // { name: 'Engineering Mathematics II', slug: 'engineering-math-2', semester: 2, description: 'Calculus, Ordinary Differential Equations, Vector Calculus, and Transforms.' },
-        // { name: 'Digital Logic & Circuit Design', slug: 'digital-logic-design', semester: 2, description: 'Combinational and sequential circuits, flip-flops, counters, and registers.' },
-        // { name: 'Data Structures & Algorithms', slug: 'data-structures-and-algorithms', semester: 3, description: 'Arrays, Linked Lists, Stacks, Queues, Trees, Graphs, Sorting, and Searching.' },
-        // { name: 'Computer Organization & Architecture', slug: 'computer-organization-arch', semester: 3, description: 'CPU Architecture, Memory Hierarchy, I/O Interfacing, and Pipelining.' },
-        // { name: 'Database Management Systems', slug: 'database-management-systems', semester: 4, description: 'Relational Model, SQL, Normalization, Transactions, Concurrency, and Indexing.' },
-        // { name: 'Operating Systems', slug: 'operating-systems', semester: 4, description: 'Processes, Threads, CPU Scheduling, Deadlocks, Memory Management, and File Systems.' },
-        // { name: 'Computer Networks', slug: 'computer-networks', semester: 5, description: 'OSI and TCP/IP Models, Routing Algorithms, Transport Layer, and Network Security.' },
-        // { name: 'Theory of Computation', slug: 'theory-of-computation', semester: 5, description: 'Automata Theory, Regular Languages, Context-Free Grammars, and Turing Machines.' },
-        // { name: 'Compiler Design', slug: 'compiler-design', semester: 6, description: 'Lexical Analysis, Parsing Techniques, Syntax-Directed Translation, and Code Generation.' },
-        // { name: 'Software Engineering & Agile Methodologies', slug: 'software-engineering-agile', semester: 6, description: 'SDLC Models, Agile, Scrum, Software Testing, and Design Patterns.' },
-        // { name: 'Artificial Intelligence & Machine Learning', slug: 'ai-and-machine-learning', semester: 7, description: 'Search Algorithms, Knowledge Representation, Supervised & Unsupervised Learning.' },
-        // { name: 'Cloud Computing & Distributed Systems', slug: 'cloud-computing-distributed-systems', semester: 8, description: 'Virtualization, Cloud Architectures, Distributed Algorithms, and Microservices.' }
-      ]
-    },
-    {
-      name: 'BCA',
-      slug: 'bca',
-      description:
-        'Bachelor of Computer Applications - Undergraduate 3-year computational applications curriculum.',
-      subjects: [
-        {
-          name: 'Web Designing Using HTML, CSS, JavaScript & PHP',
-          slug: 'web-designing-html-css-js-php',
-          semester: 1,
-          credits: 4,
-          description: 'HTML, CSS, JavaScript, PHP, Web Design, and Frontend Development.'
-        },
-        {
-          name: 'Basics of Mathematics',
-          slug: 'basics-of-mathematics',
-          semester: 1,
-          credits: 4,
-          description:
-            'Fundamental Mathematics, Algebra, Calculus, Equations, and Mathematical Problem Solving.'
-        },
-        {
-          name: 'Clean Coding with Python',
-          slug: 'clean-coding-python',
-          semester: 1,
-          credits: 4,
-          description:
-            'Python Programming, Clean Code Principles, Functions, Data Structures, and Coding Best Practices.'
-        },
-        {
-          name: 'Essentials of Software Engineering',
-          slug: 'essentials-software-engineering',
-          semester: 1,
-          credits: 3,
-          description:
-            'Software Development Life Cycle, Software Design, Testing, Maintenance, and Engineering Principles.'
-        },
-        {
-          name: 'Environmental Studies & Disaster Management',
-          slug: 'environmental-studies-disaster-management',
-          semester: 1,
-          credits: 2,
-          description:
-            'Environmental Science, Sustainability, Pollution, Natural Disasters, and Disaster Management.'
-        },
-        {
-          name: 'Data Visualization using Power BI',
-          slug: 'data-visualization-power-bi',
-          semester: 1,
-          credits: 3,
-          description:
-            'Power BI, Data Visualization, Interactive Dashboards, Data Analysis, and Business Intelligence.'
-        }
-        // Other semesters commented out:
-        // { name: 'Data Structures using C', slug: 'bca-data-structures', semester: 2, description: 'Arrays, Stacks, Queues, Trees, Graphs in C.' },
-        // { name: 'Object-Oriented Programming with C++', slug: 'bca-oop-cpp', semester: 2, description: 'Classes, Objects, Inheritance, Polymorphism in C++.' },
-        // { name: 'Computer System Architecture', slug: 'bca-csa', semester: 3, description: 'Digital logic, CPU organization, memory hierarchy.' },
-        // { name: 'Relational Database Management Systems', slug: 'bca-rdbms', semester: 3, description: 'SQL, normalization, relational algebra.' },
-        // { name: 'Java Programming & Application Development', slug: 'bca-java', semester: 4, description: 'Java core, multithreading, GUI, JDBC.' },
-        // { name: 'Operating System Principles', slug: 'bca-os', semester: 4, description: 'Process management, memory management, file systems.' },
-        // { name: 'Software Engineering Practices', slug: 'bca-software-eng', semester: 5, description: 'SDLC, Agile methodology, testing.' },
-        // { name: 'Web Technologies & Frameworks', slug: 'bca-web-tech', semester: 5, description: 'Full stack development, APIs, modern web frameworks.' },
-        // { name: 'Network Security & Cyber Forensics', slug: 'bca-cyber-security', semester: 6, description: 'Cryptography, cyber laws, threat analysis.' }
-      ]
-    },
-    {
-      name: 'B.Sc.',
-      slug: 'b-sc',
-      description:
-        'Bachelor of Science - Undergraduate 3-year foundational and applied scientific curriculum.',
-      subjects: [
-        // { name: 'Calculus & Analytical Geometry', slug: 'bsc-calculus', semester: 1, description: 'Limits, continuity, differentiation, 2D/3D coordinate systems.' },
-        // { name: 'Mechanics & General Physics', slug: 'bsc-mechanics', semester: 1, description: 'Newtonian dynamics, rotational motion, conservation laws.' },
-        // { name: 'Differential Equations & Vector Calculus', slug: 'bsc-diff-equations', semester: 2, description: 'First/second order ODEs, gradient, divergence, curl theorems.' },
-        // { name: 'Thermal Physics & Electricity', slug: 'bsc-thermal-physics', semester: 2, description: 'Laws of thermodynamics, kinetic theory, electrostatics, Gauss theorem.' },
-        // { name: 'Probability & Applied Statistics', slug: 'bsc-probability-stats', semester: 3, description: 'Random variables, distributions, hypothesis testing, regression.' },
-        // { name: 'Computational Physics & Modeling', slug: 'bsc-computational-physics', semester: 3, description: 'Simulations, numerical integration, Monte Carlo algorithms.' },
-        // { name: 'Linear Algebra & Discrete Structures', slug: 'bsc-linear-algebra', semester: 4, description: 'Vector spaces, eigenvalues, eigenvectors, matrix decompositions.' },
-        // { name: 'Optics & Electromagnetic Waves', slug: 'bsc-optics', semester: 4, description: 'Interference, diffraction, polarization, Maxwell equations.' },
-        // { name: 'Scientific Data Analysis & Python', slug: 'bsc-data-analysis', semester: 5, description: 'SciPy, Matplotlib, curve fitting, statistical inference.' },
-        // { name: 'Quantum Mechanics & Modern Physics', slug: 'bsc-quantum-mechanics', semester: 5, description: 'Wave-particle duality, Schrodinger equation, quantum states.' },
-        // { name: 'Numerical Analysis & Scientific Computing', slug: 'bsc-numerical-methods', semester: 6, description: 'Root finding, interpolation, finite differences, ODE solvers.' },
-        // { name: 'Research Project & Advanced Seminar', slug: 'bsc-research-project', semester: 6, description: 'Capstone scientific research manuscript, experiment, defense.' }
-      ]
-    },
-    {
-      name: 'MCA',
-      slug: 'mca',
-      description:
-        'Master of Computer Applications - Postgraduate 2-year advanced enterprise computing curriculum.',
-      subjects: [
-        // { name: 'Advanced Data Structures & Analysis', slug: 'mca-adv-dsa', semester: 1, description: 'Amortized analysis, B-trees, binomial heaps, randomized algorithms.' },
-        // { name: 'Mathematical Foundations of Computer Science', slug: 'mca-math-foundations', semester: 1, description: 'Combinatorics, graph algorithms, algebraic structures.' },
-        // { name: 'Advanced Database Systems & NoSQL', slug: 'mca-adv-databases', semester: 1, description: 'Query optimization, indexing, distributed transactions, MongoDB.' },
-        // { name: 'Full-Stack Web Engineering', slug: 'mca-full-stack', semester: 2, description: 'REST APIs, GraphQL, React, state management, secure auth.' },
-        // { name: 'Cloud Computing & Microservices Architecture', slug: 'mca-cloud-microservices', semester: 2, description: 'Containerization, Docker, API gateways, serverless computing.' },
-        // { name: 'Object-Oriented Software Engineering', slug: 'mca-oose', semester: 2, description: 'Clean architecture, SOLID principles, domain-driven design.' },
-        // { name: 'Machine Learning & Deep Learning', slug: 'mca-ml-deep-learning', semester: 3, description: 'Gradient descent, CNNs, RNNs, transformers, PyTorch.' },
-        // { name: 'Information Security & Blockchain Technologies', slug: 'mca-security-blockchain', semester: 3, description: 'Public key infrastructure, smart contracts, threat modeling.' },
-        // { name: 'Mobile Application Architecture & Design', slug: 'mca-mobile-architecture', semester: 3, description: 'Cross-platform app development, offline persistence, native APIs.' },
-        // { name: 'Enterprise Systems & Research Capstone', slug: 'mca-capstone-project', semester: 4, description: 'Full enterprise software delivery, deployment, and evaluation.' }
-      ]
-    },
-    {
-      name: 'M.Tech',
-      slug: 'm-tech',
-      description:
-        'Master of Technology - Postgraduate 2-year advanced technology research and engineering curriculum.',
-      subjects: [
-        // { name: 'Advanced Computer Architecture', slug: 'mtech-adv-arch', semester: 1, description: 'Superscalar pipelines, branch prediction, multicore and GPU architectures.' },
-        // { name: 'Mathematical Foundations for Computing', slug: 'mtech-math-computing', semester: 1, description: 'Stochastic processes, convex optimization, linear algebra for ML.' },
-        // { name: 'Advanced Algorithm Design & Complexity', slug: 'mtech-adv-algorithms', semester: 2, description: 'Approximation algorithms, NP-completeness, streaming algorithms.' },
-        // { name: 'High-Performance & Distributed Computing', slug: 'mtech-hpc', semester: 2, description: 'MPI, OpenMP, CUDA programming, distributed consensus.' },
-        // { name: 'Deep Learning & Neural Network Architectures', slug: 'mtech-deep-learning', semester: 3, description: 'Generative models, attention mechanisms, transfer learning, LLMs.' },
-        // { name: 'Research Methodology, IPR & Technical Writing', slug: 'mtech-research-methodology', semester: 3, description: 'Research design, literature reviews, patent law, IEEE manuscript writing.' },
-        // { name: 'Master’s Thesis & Dissertation', slug: 'mtech-masters-thesis', semester: 4, description: 'Original research investigation, experimental verification, thesis defense.' }
-      ]
-    }
-  ];
-
-  let totalSubjectsSeeded = 0;
-
-  for (const prog of academicPrograms) {
-    const schoolCode = prog.name === 'B.Sc.' ? 'SBAS' : 'SOET';
-    const schoolId = seededSchools[schoolCode]?.id || null;
-
-    const courseRecord = await prisma.course.upsert({
-      where: { slug: prog.slug },
-      update: {
-        name: prog.name,
-        description: prog.description,
-        universityId: krmu.id,
-        schoolId
-      },
-      create: {
-        name: prog.name,
-        slug: prog.slug,
-        description: prog.description,
-        universityId: krmu.id,
-        schoolId
-      }
-    });
-
-    // 1. Seed active semester 1 subjects
-    for (const subj of prog.subjects) {
-      await prisma.subject.upsert({
-        where: {
-          course_subject_slug_unique: {
-            courseId: courseRecord.id,
-            slug: subj.slug
-          }
-        },
-        update: {
-          name: subj.name,
-          semester: subj.semester,
-          credits: subj.credits !== undefined ? subj.credits : 3,
-          description: subj.description,
-          isActive: true
-        },
-        create: {
-          courseId: courseRecord.id,
-          name: subj.name,
-          slug: subj.slug,
-          semester: subj.semester,
-          credits: subj.credits !== undefined ? subj.credits : 3,
-          description: subj.description,
-          isActive: true
-        }
-      });
-      totalSubjectsSeeded++;
-    }
-
-    // 2. Remove all unseeded/obsolete subjects for this course so only Sem 1 subjects exist
-    const allowedSlugs = prog.subjects.map((s) => s.slug);
-    const obsoleteSubjects = await prisma.subject.findMany({
-      where: {
-        courseId: courseRecord.id,
-        ...(allowedSlugs.length > 0 ? { slug: { notIn: allowedSlugs } } : {})
-      }
-    });
-
-    if (obsoleteSubjects.length > 0) {
-      let fallbackSubject = null;
-      if (allowedSlugs.length > 0) {
-        fallbackSubject = await prisma.subject.findFirst({
-          where: { courseId: courseRecord.id, slug: allowedSlugs[0] }
-        });
-      } else {
-        fallbackSubject = await prisma.subject.findFirst({
-          where: { slug: 'probability-statistics-linear-algebra' }
-        });
-      }
-
-      for (const oldSubj of obsoleteSubjects) {
-        if (fallbackSubject) {
-          await prisma.note.updateMany({
-            where: { subjectId: oldSubj.id },
-            data: {
-              subjectId: fallbackSubject.id,
-              courseId: fallbackSubject.courseId,
-              semester: fallbackSubject.semester
-            }
-          });
-        }
-        await prisma.topic.deleteMany({ where: { subjectId: oldSubj.id } });
-        await prisma.subject.delete({ where: { id: oldSubj.id } });
+  let mode = 'core'; // Default to clean core start (starts completely from scratch)
+  for (const arg of args) {
+    if (arg.startsWith('--mode=')) {
+      const parsedMode = arg.split('=')[1].toLowerCase();
+      if (['core', 'demo', 'full'].includes(parsedMode)) {
+        mode = parsedMode;
       }
     }
   }
 
-  // 3. Remove any remaining obsolete, test, or stray subjects outside the approved catalog
-  const allAllowedSubjectSlugs = academicPrograms.flatMap((p) => p.subjects.map((s) => s.slug));
-  const explicitForbiddenNames = [
-    'Clean Coding with Python Lab',
-    'Essentials of Software Engineering Lab',
-    'Web Design Lab',
-    'Direct Publishing Subject',
-    'Data Structures & Algorithms'
-  ];
-  const straySubjects = await prisma.subject.findMany({
-    where: {
-      OR: [
-        { name: { in: explicitForbiddenNames } },
-        { slug: { in: ['clean-coding-python-lab', 'software-engineering-lab', 'web-design-lab', 'pub-sub101', 'lib-dsa'] } },
-        { slug: { notIn: allAllowedSubjectSlugs } }
-      ]
-    }
-  });
+  // 1. Standalone Verification Mode
+  if (isVerifyOnly) {
+    // eslint-disable-next-line no-console
+    console.log('Running PJ Study Database Integrity Verification...\n');
+    const ver = await verifySeed(prisma);
 
-  if (straySubjects.length > 0) {
-    const fallbackSubject = await prisma.subject.findFirst({
-      where: { slug: 'probability-statistics-linear-algebra' }
-    });
-
-    for (const oldSubj of straySubjects) {
-      if (fallbackSubject) {
-        await prisma.note.updateMany({
-          where: { subjectId: oldSubj.id },
-          data: {
-            subjectId: fallbackSubject.id,
-            courseId: fallbackSubject.courseId,
-            semester: fallbackSubject.semester
-          }
-        });
-      }
-      await prisma.topic.deleteMany({ where: { subjectId: oldSubj.id } });
-      await prisma.subject.delete({ where: { id: oldSubj.id } });
+    for (const check of ver.checks) {
+      const mark = check.passed ? '✓ [PASS]' : '✗ [FAIL]';
+      // eslint-disable-next-line no-console
+      console.log(`  ${mark.padEnd(9)} ${check.name.padEnd(28)} : ${check.details}`);
     }
+
+    if (!ver.isValid) {
+      // eslint-disable-next-line no-console
+      console.error('\nVerification failed. One or more database integrity checks did not pass.');
+      process.exit(1);
+    }
+
+    // eslint-disable-next-line no-console
+    console.log('\n✓ Database integrity verified successfully.');
+    return;
   }
 
-  // 4. Clean up any unseeded test courses that have no remaining subjects or notes
-  const allowedCourseSlugs = academicPrograms.map((p) => p.slug);
-  await prisma.course.deleteMany({
-    where: {
-      slug: { notIn: allowedCourseSlugs },
-      notes: { none: {} },
-      subjects: { none: {} }
+  // 2. Run Seeder
+  const report = await runSeeder(prisma, {
+    mode,
+    dryRun: isDryRun,
+    forceProduction
+  });
+
+  // eslint-disable-next-line no-console
+  console.log(formatSeedReport(report));
+
+  // 3. Post-Seed Verification (unless dry-run)
+  if (!isDryRun) {
+    const postVerify = await verifySeed(prisma);
+    if (!postVerify.isValid) {
+      // eslint-disable-next-line no-console
+      console.warn('Notice: Some verification checks flagged notes:');
+      for (const c of postVerify.checks.filter((chk) => !chk.passed)) {
+        // eslint-disable-next-line no-console
+        console.warn(`  - ${c.name}: ${c.details}`);
+      }
+    } else {
+      // eslint-disable-next-line no-console
+      console.log('✓ Post-seeding integrity verification: 100% passed.');
     }
-  });
-
-  // Set default university for users if unassigned
-  await prisma.user.updateMany({
-    where: { university: null },
-    data: { university: 'K.R. Mangalam University', universityId: krmu.id }
-  });
-
-  // eslint-disable-next-line no-console
-  console.log('✓ Seeding complete:');
-  // eslint-disable-next-line no-console
-  console.log(`  Default University: ${krmu.name} (${krmu.code})`);
-  // eslint-disable-next-line no-console
-  console.log(
-    `  Schools:     ${schoolsData.length} seeded (${schoolsData.map((s) => s.code).join(', ')})`
-  );
-  // eslint-disable-next-line no-console
-  console.log(`  Super Admin: ${superadmin.email} (password: Password123!)`);
-  // eslint-disable-next-line no-console
-  console.log(`  Moderator:   ${moderator.email} (password: Password123!)`);
-  // eslint-disable-next-line no-console
-  console.log(`  Student:     ${student.email} (password: Password123!)`);
-  // eslint-disable-next-line no-console
-  console.log(`  Categories:  ${categories.length} seeded`);
-  // eslint-disable-next-line no-console
-  console.log(
-    `  Courses:     ${academicPrograms.length} seeded (${academicPrograms.map((p) => p.name).join(', ')})`
-  );
-  // eslint-disable-next-line no-console
-  console.log(`  Subjects:    ${totalSubjectsSeeded} seeded across all semesters`);
+  }
 }
 
 main()
   .catch((e) => {
     // eslint-disable-next-line no-console
-    console.error(e);
+    console.error('Fatal Seeding Error:', e);
     process.exit(1);
   })
   .finally(async () => {

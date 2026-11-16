@@ -419,3 +419,32 @@ From the repository root:
 | `npm run format`          | Auto-formats code using Prettier                                          |
 | `npm run build:frontend`  | Compiles production frontend bundle with Vite                             |
 | `npm run prisma:generate` | Generates Prisma Client based on `schema.prisma`                          |
+| `npm run seed`            | Seeds full development database (Mode C: Full Platform)                  |
+| `npm run seed:core`       | Seeds only core reference data (University, Schools, Courses, Categories) |
+| `npm run seed:demo`       | Seeds core reference data plus demo Scholar, Admin, and curated notes     |
+| `npm run seed:full`       | Seeds complete development platform with 100% subject note coverage       |
+| `npm run seed:verify`     | Runs comprehensive 10-point relational database integrity validation      |
+| `npm run seed:dry-run`    | Previews planned seed mutations without writing to MySQL or disk storage  |
+
+---
+
+## 10. Database Seeding Engine Architecture
+
+PJ Study incorporates an enterprise-grade, modular, idempotent database seeding system engineered to initialize fresh development environments with a single command.
+
+### Seeding Modes
+
+| Mode | Command | Scope & Entities Seeded |
+| :--- | :------ | :---------------------- |
+| **Mode A: Core** | `npm run seed:core` | **Essential Reference Data Only:** University (`KRMU`), 11 Constituent Schools, 5 Degree Programs, 76 Accredited Subjects with Credits, 5 Note Categories, Platform Settings, Feature Flags, Navigation Configurations ("Academic Architecture"), and Platform Theme Studio defaults. **Zero demo scholars or sample notes created.** |
+| **Mode B: Demo** | `npm run seed:demo` | **Core Reference Data + Key Demo Fixtures:** Demo Scholar (`student@portal.com`), Demo Admin (`admin@portal.com`), Super Admin (`superadmin@portal.com`), curated B.Tech/BCA notes with real downloadable files, demo study collections, bookmarks, announcements, and notifications. |
+| **Mode C: Full (Default)** | `npm run seed` or `npm run seed:full` | **Complete Operational Development Platform:** All Core data + 54 Scholars (including 2 suspended accounts), 22 Staff & Faculty members (Deans, HODs, Professors), notes covering **100% of curriculum subjects** (zero subjects with 0 notes), 300+ study downloads distributed over 30 days for operational analytics, note view history, verified student reviews, note & review moderation queues, campus announcements, and live audit events. |
+
+### Key Architectural Invariants & Safety
+
+1. **Non-Destructive & Idempotent:** Repeated seed runs create zero duplicates and never overwrite user-generated content or custom administrator configurations.
+2. **Physical Storage Integration:** Every downloadable note references an authentic, RFC-compliant sample document stored in `uploads/notes/`. No fake Google Drive links or non-existent file references are generated.
+3. **Forbidden Subjects Protection:** The 5 obsolete test subjects (`Clean Coding with Python Lab`, `Essentials of Software Engineering Lab`, `Web Design Lab`, `Direct Publishing Subject`, `Data Structures & Algorithms`) are permanently guarded and purged.
+4. **Clean Navigation Labels:** Navigation configuration strictly sets `"Academic Architecture"` without legacy KRMU parenthetical suffixes.
+5. **Production Safety Guards:** Seeding modes `demo` and `full` are strictly blocked in production environments (`NODE_ENV === 'production'` or remote RDS/CloudSQL hosts). Core seeding requires an explicit `--force-production-seed` override.
+6. **Integrity Verifier:** Run `npm run seed:verify` at any time to execute the 10-point automated database integrity test suite.

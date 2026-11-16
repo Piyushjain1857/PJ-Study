@@ -10,6 +10,14 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:seed": "node prisma/seed.js",
+    "seed": "node prisma/seed.js",
+    "seed:core": "node prisma/seed.js --mode=core",
+    "seed:fresh": "node prisma/seed.js --mode=core",
+    "seed:reset": "node prisma/seed.js --mode=core",
+    "seed:demo": "node prisma/seed.js --mode=demo",
+    "seed:full": "node prisma/seed.js --mode=full",
+    "seed:verify": "node prisma/seed.js --verify",
+    "seed:dry-run": "node prisma/seed.js --dry-run",
     "test": "node --test --test-concurrency=1 tests/**/*.test.js"
   },
   "prisma": {

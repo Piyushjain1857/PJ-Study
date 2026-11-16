@@ -312,7 +312,7 @@ test('Advanced Notes Discovery, Search, Filtering & Student Library Suite', asyn
 
   await t.test('6. Sorting allowlist: newest, oldest, title_asc, downloads', async () => {
     // Downloads sorting: approvedNote1 (42 downloads) should be before approvedNote2 (12 downloads)
-    const downRes = await fetch(`${baseUrl}/notes/explore?sort=downloads`);
+    const downRes = await fetch(`${baseUrl}/notes/explore?sort=downloads&courseId=${testCourse1.id}`);
     assert.strictEqual(downRes.status, 200);
     const downBody = await downRes.json();
     const notes = downBody.data.notes.filter(
@@ -322,7 +322,7 @@ test('Advanced Notes Discovery, Search, Filtering & Student Library Suite', asyn
     assert.strictEqual(notes[1].id, approvedNote2.id);
 
     // Title A-Z sorting: "Complete..." comes before "Database..."
-    const alphaRes = await fetch(`${baseUrl}/notes/explore?sort=title_asc`);
+    const alphaRes = await fetch(`${baseUrl}/notes/explore?sort=title_asc&courseId=${testCourse1.id}`);
     assert.strictEqual(alphaRes.status, 200);
     const alphaBody = await alphaRes.json();
     const alphaNotes = alphaBody.data.notes.filter(

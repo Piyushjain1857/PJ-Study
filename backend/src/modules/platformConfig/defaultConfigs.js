@@ -514,7 +514,7 @@ export const DEFAULT_NAVIGATION = Object.freeze({
       items: [
         { to: '/admin/users', label: 'Users', icon: 'users', isVisible: true },
         { to: '/admin/moderators', label: 'Admins', icon: 'shield', isVisible: true },
-        { to: '/admin/academics', label: 'Academic Architecture (KRMU)', icon: 'home', isVisible: true },
+        { to: '/admin/academics', label: 'Academic Architecture', icon: 'home', isVisible: true },
         { to: '/admin/notes', label: 'Notes Management', icon: 'book', isVisible: true },
         { to: '/admin/reports', label: 'Content Reports', icon: 'flag', isVisible: true }
       ]

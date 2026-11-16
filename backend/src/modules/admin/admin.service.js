@@ -258,6 +258,17 @@ export class AdminService {
 
     // Invariant 1: No user can modify their own role
     if (targetId === actor.id) {
+      if (targetUser.role === ROLES.SUPER_ADMIN && requestedRole && requestedRole.toUpperCase().trim() !== ROLES.SUPER_ADMIN) {
+        const activeSuperAdminCount = await prisma.user.count({
+          where: { role: ROLES.SUPER_ADMIN, isActive: true }
+        });
+        if (activeSuperAdminCount <= 1) {
+          const error = new Error('Cannot demote or remove the last active Super Administrator. Assign another Super Admin first.');
+          error.statusCode = 400;
+          error.code = 'LAST_SUPER_ADMIN_PROTECTED';
+          throw error;
+        }
+      }
       const error = new Error('Users are not permitted to modify their own role.');
       error.statusCode = 400;
       error.code = 'CANNOT_MODIFY_OWN_ROLE';
@@ -396,16 +407,15 @@ export class AdminService {
         prisma.user.count({ where: { role: ROLES.SUPER_ADMIN } })
       ]);
 
-    const consolidatedAdminsCount = moderatorsCount + adminsCount;
-
     return {
       totalUsers,
       activeUsers,
+      totalScholars: studentsCount,
       suspendedUsers: totalUsers - activeUsers,
       roles: {
         [ROLES.STUDENT]: studentsCount,
-        [ROLES.MODERATOR]: consolidatedAdminsCount,
-        [ROLES.ADMIN]: consolidatedAdminsCount,
+        [ROLES.MODERATOR]: moderatorsCount,
+        [ROLES.ADMIN]: adminsCount,
         [ROLES.SUPER_ADMIN]: superAdminsCount
       }
     };
@@ -428,6 +438,9 @@ export class AdminService {
       totalNotes,
       publishedNotes,
       unpublishedNotes,
+      pendingModeration,
+      rejectedNotes,
+      draftNotes,
       totalDownloads,
       openNoteReports,
       openReviewReports
@@ -448,6 +461,9 @@ export class AdminService {
           status: { in: ['UNPUBLISHED', 'DRAFT', 'PENDING', 'PENDING_REVIEW', 'REJECTED', 'ARCHIVED'] }
         }
       }),
+      prisma.note.count({ where: { status: { in: ['PENDING', 'PENDING_REVIEW'] } } }),
+      prisma.note.count({ where: { status: 'REJECTED' } }),
+      prisma.note.count({ where: { status: { in: ['DRAFT', 'UNPUBLISHED'] } } }),
       prisma.downloadHistory.count(),
       prisma.report.count({ where: { status: 'PENDING' } }),
       prisma.reviewReport.count({ where: { status: 'OPEN' } })
@@ -460,25 +476,26 @@ export class AdminService {
     return {
       totalUsers,
       activeUsers,
+      totalScholars: studentsCount,
       suspendedUsers: totalUsers - activeUsers,
       activeScholars,
-      activeModerators: activeAdminsTotal,
-      activeAdmins: activeAdminsTotal,
+      activeModerators: activeModeratorsCount,
+      activeAdmins: activeAdminsCount,
       totalNotes,
       publishedNotes,
       unpublishedNotes,
       approvedNotes: publishedNotes,
-      pendingModeration: 0,
-      rejectedNotes: 0,
-      draftNotes: unpublishedNotes,
+      pendingModeration,
+      rejectedNotes,
+      draftNotes,
       totalDownloads,
       reportedContent: reportedTotal,
       openNoteReports,
       openReviewReports,
       roles: {
         [ROLES.STUDENT]: studentsCount,
-        [ROLES.MODERATOR]: consolidatedAdminsCount,
-        [ROLES.ADMIN]: consolidatedAdminsCount,
+        [ROLES.MODERATOR]: moderatorsCount,
+        [ROLES.ADMIN]: adminsCount,
         [ROLES.SUPER_ADMIN]: superAdminsCount
       }
     };
@@ -519,7 +536,7 @@ export class AdminService {
         GROUP BY DATE_FORMAT(downloaded_at, '%Y-%m-%d')
       `,
       prisma.note.findMany({
-        where: { status: 'APPROVED' },
+        where: { status: { in: ['APPROVED', 'PUBLISHED'] } },
         orderBy: [{ downloadCount: 'desc' }, { viewCount: 'desc' }],
         take: 5,
         select: {
