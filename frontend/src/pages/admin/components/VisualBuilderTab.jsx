@@ -31,6 +31,7 @@ const DEVICE_VIEWPORTS = {
 // Approved Component Registry with metadata & default schemas
 const COMPONENT_METADATA = {
   welcome_header: { label: 'Welcome & Institutional Announcement', icon: '👋', category: 'Scholar' },
+  quick_search: { label: 'Smart Notes Search Bar', icon: '🔍', category: 'Scholar' },
   academic_info: { label: 'KRMU Academic Enrollment Badge', icon: '🏛️', category: 'Scholar' },
   stats_kpi: { label: 'KPI Metric Progress Cards', icon: '📈', category: 'General' },
   activity_chart: { label: 'Weekly Study Trends Chart', icon: '📊', category: 'Scholar' },
@@ -38,6 +39,8 @@ const COMPONENT_METADATA = {
   downloads: { label: 'Study Downloads & History', icon: '📥', category: 'Scholar' },
   collections: { label: 'Study Binders & Collections', icon: '📁', category: 'Scholar' },
   recommendations: { label: 'Curated Faculty Recommendations', icon: '⭐', category: 'Scholar' },
+  library_preview: { label: 'My Library Preview', icon: '🔖', category: 'Scholar' },
+  bottom_split: { label: 'Library & Announcements Split', icon: '📑', category: 'Scholar' },
   quick_actions: { label: 'Quick Action Shortcuts', icon: '⚡', category: 'Scholar' },
 
   explore_header: { label: 'Catalog Header & Search Summary', icon: '🔍', category: 'Scholar' },
@@ -1778,6 +1781,27 @@ function renderRealCanvasSection(sectionKey, config, _selectedPage) {
         </div>
       );
 
+    case 'quick_search':
+      return (
+        <div style={containerStyle}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px 14px' }}>
+            <span style={{ fontSize: '16px', color: '#64748b' }}>🔍</span>
+            <span style={{ fontSize: '13px', color: '#94a3b8', flex: 1 }}>{config.placeholder || 'Search notes, subjects, courses, or professors...'}</span>
+            <span style={{ background: '#0f766e', color: '#fff', padding: '6px 14px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
+              Search Catalog
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Quick Filters:</span>
+            {['All Notes', 'Operating Systems', 'DBMS', 'Networks', 'Discrete Math'].map((t, idx) => (
+              <span key={idx} style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '4px', background: '#f1f5f9', color: '#334155', fontWeight: 600 }}>
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+      );
+
     case 'academic_info':
       return (
         <div style={{ ...containerStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1971,6 +1995,51 @@ function renderRealCanvasSection(sectionKey, config, _selectedPage) {
               </div>
             ))}
           </div>
+        </div>
+      );
+
+    case 'bottom_split':
+      return (
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '16px' }}>
+          <div style={containerStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '13px', color: textColor }}>My Library Preview</strong>
+              <span style={{ fontSize: '11px', color: '#0f766e', fontWeight: 700 }}>Go to Library →</span>
+            </div>
+            {['Operating Systems — Deadlock Solutions', 'DBMS — BCNF Normalization'].map((title, i) => (
+              <div key={i} style={{ padding: '8px 10px', borderRadius: '6px', background: '#f8fafc', border: '1px solid #f1f5f9', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#0f172a' }}>🔖 {title}</span>
+                <span style={{ fontSize: '10px', color: '#0f766e', fontWeight: 700 }}>Open</span>
+              </div>
+            ))}
+          </div>
+          <div style={containerStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '13px', color: textColor }}>Campus Announcements</strong>
+              <span style={{ fontSize: '14px' }}>📢</span>
+            </div>
+            <div style={{ padding: '8px 10px', borderRadius: '6px', background: '#fcfbf9', border: '1px solid #e2e8f0' }}>
+              <span style={{ fontSize: '9px', fontWeight: 800, padding: '2px 5px', borderRadius: '3px', background: '#ecfdf5', color: '#047857' }}>EXAM</span>
+              <p style={{ margin: '4px 0 2px', fontSize: '11px', fontWeight: 700, color: '#0f172a' }}>End-Term Revision Packets Uploaded</p>
+              <span style={{ fontSize: '10px', color: '#64748b' }}>Today · School of Engineering</span>
+            </div>
+          </div>
+        </div>
+      );
+
+    case 'library_preview':
+      return (
+        <div style={containerStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <strong style={{ fontSize: '13px', color: textColor }}>{config.title || 'My Library Preview'}</strong>
+            <span style={{ fontSize: '11px', color: '#0f766e', fontWeight: 700 }}>Go to Library →</span>
+          </div>
+          {['Operating Systems — Deadlock Solutions', 'DBMS — BCNF Normalization'].map((title, i) => (
+            <div key={i} style={{ padding: '8px 10px', borderRadius: '6px', background: '#f8fafc', border: '1px solid #f1f5f9', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#0f172a' }}>🔖 {title}</span>
+              <span style={{ fontSize: '10px', color: '#0f766e', fontWeight: 700 }}>Open</span>
+            </div>
+          ))}
         </div>
       );
 

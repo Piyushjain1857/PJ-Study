@@ -25,7 +25,9 @@ export class DashboardService {
       recentViews,
       recentCollections,
       recentDownloads,
-      recommendedNotes
+      recommendedNotes,
+      recentPublishedNotes,
+      announcements
     ] = await Promise.all([
       this.repo.getStudentCounts(userId),
       this.repo.getRecentBookmarks(userId, 5),
@@ -33,7 +35,9 @@ export class DashboardService {
       this.repo.getRecentViews(userId, 5),
       this.repo.getRecentCollections(userId, 4),
       this.repo.getRecentDownloads(userId, 5),
-      this.repo.getRecommendedNotes(userId, 4)
+      this.repo.getRecommendedNotes(userId, 4),
+      this.repo.getRecentPublishedNotes(6),
+      this.repo.getRecentAnnouncements(4)
     ]);
 
     return {
@@ -43,14 +47,17 @@ export class DashboardService {
         downloads: stats.downloadsCount,
         uniqueNotesDownloaded: stats.uniqueNotesDownloaded,
         uploads: stats.uploadsCount,
-        recentlyViewed: stats.recentlyViewedCount
+        recentlyViewed: stats.recentlyViewedCount,
+        availableSemesterNotes: stats.availableSemesterNotes
       },
       recentBookmarks,
       recentUploads,
       recentViews,
       recentCollections,
       recentDownloads,
-      recommendedNotes
+      recommendedNotes,
+      recentPublishedNotes,
+      announcements
     };
   }
 

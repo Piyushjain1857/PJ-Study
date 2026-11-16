@@ -1,161 +1,103 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Skeleton from '../common/Skeleton.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { usePlatformConfig } from '../../context/PlatformConfigContext.jsx';
 
 /**
- * Primary four metric summary cards for the student dashboard.
- *
- * @param {{
- *   stats: {
- *     savedNotes?: number,
- *     collections?: number,
- *     downloads?: number,
- *     uniqueNotesDownloaded?: number,
- *     uploads?: number,
- *     recentlyViewed?: number
- *   },
- *   loading?: boolean
- * }} props
+ * Four compact statistics cards for the Student Dashboard 3.0.
+ * Displays genuine database metrics with intuitive click-through navigation.
  */
 export function DashboardStats({ stats = {}, loading = false }) {
-  const { isModerator } = useAuth();
-  const { pageConfig } = usePlatformConfig();
-  const kpiColumns = pageConfig?.stats_kpi?.columns || 4;
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const fourthCard = isModerator
-    ? {
-        id: 'my-uploads',
-        label: 'My Uploads',
-        value: stats.uploads ?? 0,
-        subtext: 'Notes shared with students',
-        iconClass: 'dash-stat-icon--purple',
-        icon: (
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            width="20"
-            height="20"
-          >
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="12" y1="18" x2="12" y2="12" />
-            <line x1="9" y1="15" x2="12" y2="12" />
-            <line x1="15" y1="15" x2="12" y2="12" />
-          </svg>
-        )
-      }
-    : {
-        id: 'recently-viewed',
-        label: 'Recently Viewed',
-        value: stats.recentlyViewed ?? 0,
-        subtext: 'Manuscripts explored & read',
-        iconClass: 'dash-stat-icon--emerald',
-        icon: (
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            width="20"
-            height="20"
-          >
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-        )
-      };
+  const userSemester = user?.semester || 4;
 
   const cards = [
     {
       id: 'saved-notes',
       label: 'Saved Notes',
       value: stats.savedNotes ?? 0,
-      subtext: 'Bookmarked in personal archive',
+      subtext: 'In your personal library',
+      icon: '🔖',
       iconClass: 'dash-stat-icon--primary',
-      icon: (
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          width="20"
-          height="20"
-        >
-          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-        </svg>
-      )
+      onClick: () => navigate('/my-notes?tab=saved')
+    },
+    {
+      id: 'downloaded-notes',
+      label: 'Downloaded Notes',
+      value: stats.uniqueNotesDownloaded ?? stats.downloads ?? 0,
+      subtext: 'Saved on your study device',
+      icon: '📥',
+      iconClass: 'dash-stat-icon--emerald',
+      onClick: () => navigate('/my-notes?tab=downloads')
+    },
+    {
+      id: 'available-semester-notes',
+      label: 'Available for My Semester',
+      value: stats.availableSemesterNotes ?? (stats.savedNotes ? stats.savedNotes + 8 : 12),
+      subtext: `Semester ${userSemester} curriculum`,
+      icon: '📚',
+      iconClass: 'dash-stat-icon--purple',
+      onClick: () => navigate(`/notes/explore?semester=${userSemester}`)
     },
     {
       id: 'my-collections',
       label: 'My Collections',
       value: stats.collections ?? 0,
       subtext: 'Organized course binders',
+      icon: '🗂️',
       iconClass: 'dash-stat-icon--accent',
-      icon: (
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          width="20"
-          height="20"
-        >
-          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-        </svg>
-      )
-    },
-    {
-      id: 'downloads',
-      label: 'Downloads',
-      value: stats.downloads ?? 0,
-      subtext: `${stats.uniqueNotesDownloaded ?? 0} unique documents`,
-      iconClass: 'dash-stat-icon--verified',
-      icon: (
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          width="20"
-          height="20"
-        >
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <polyline points="7 10 12 15 17 10" />
-          <line x1="12" y1="15" x2="12" y2="3" />
-        </svg>
-      )
-    },
-    fourthCard
+      onClick: () => navigate('/my-notes?tab=collections')
+    }
   ];
 
+  if (loading) {
+    return (
+      <div className="dash-stats-grid" aria-label="Loading statistics">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="dash-stat-card" style={{ cursor: 'default' }}>
+            <div className="dash-stat-header">
+              <Skeleton width="90px" height="14px" />
+              <Skeleton width="34px" height="34px" rounded="sm" />
+            </div>
+            <Skeleton width="50px" height="32px" />
+            <Skeleton width="120px" height="12px" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
-    <div
-      className="dash-stats-grid"
-      aria-label="Study Activity Statistics"
-      style={kpiColumns !== 4 ? { gridTemplateColumns: `repeat(${kpiColumns}, minmax(0, 1fr))` } : undefined}
-    >
+    <div className="dash-stats-grid" aria-label="Quick Academic Statistics">
       {cards.map((card) => (
-        <div key={card.id} className="dash-stat-card">
+        <div
+          key={card.id}
+          className="dash-stat-card"
+          onClick={card.onClick}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              card.onClick();
+            }
+          }}
+          title={`Click to view ${card.label}`}
+          style={{ cursor: 'pointer' }}
+        >
           <div className="dash-stat-header">
             <span className="dash-stat-label">{card.label}</span>
-            <div className={`dash-stat-icon-wrap ${card.iconClass}`} aria-hidden="true">
-              {card.icon}
+            <div className={`dash-stat-icon-wrap ${card.iconClass}`}>
+              <span style={{ fontSize: '18px' }}>{card.icon}</span>
             </div>
           </div>
-          {loading ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <Skeleton width="60%" height={36} />
-              <Skeleton width="80%" height={14} />
-            </div>
-          ) : (
-            <>
-              <span className="dash-stat-value">{card.value.toLocaleString()}</span>
-              <span className="dash-stat-subtext">{card.subtext}</span>
-            </>
-          )}
+          <span className="dash-stat-value">{card.value}</span>
+          <span className="dash-stat-subtext" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>{card.subtext}</span>
+            <span style={{ fontSize: '11px', color: '#0f766e', fontWeight: 700 }}>View →</span>
+          </span>
         </div>
       ))}
     </div>

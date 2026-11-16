@@ -331,6 +331,35 @@ export const COMPONENT_REGISTRY = Object.freeze({
     }
   },
 
+  quick_search: {
+    name: 'Smart Notes Search Bar',
+    allowedProps: ['title', 'placeholder', 'isVisible', 'appearance'],
+    validate(props) {
+      if (props.title) sanitizeString(props.title, 'Search title');
+      if (props.placeholder) sanitizeString(props.placeholder, 'Search placeholder');
+      return true;
+    }
+  },
+
+  library_preview: {
+    name: 'My Library Preview Section',
+    allowedProps: ['title', 'subtitle', 'isVisible', 'appearance'],
+    validate(props) {
+      if (props.title) sanitizeString(props.title, 'Library preview title');
+      if (props.subtitle) sanitizeString(props.subtitle, 'Library preview subtitle');
+      return true;
+    }
+  },
+
+  bottom_split: {
+    name: 'Library & Announcements Split Section',
+    allowedProps: ['title', 'isVisible', 'appearance'],
+    validate(props) {
+      if (props.title) sanitizeString(props.title, 'Split title');
+      return true;
+    }
+  },
+
   sidebar: {
     name: 'Sidebar Layout & Branding',
     allowedProps: ['logoText', 'badgeText', 'isVisible'],

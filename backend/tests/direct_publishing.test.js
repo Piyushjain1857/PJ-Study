@@ -71,12 +71,13 @@ test('PJ Study Direct Publishing & Workflow Removal Suite', async (t) => {
 
     testCourse = await prisma.course.upsert({
       where: { slug: 'pub-cs101' },
-      update: { semestersCount: 6 },
+      update: { semestersCount: 6, isActive: true },
       create: {
         name: 'Direct Publishing Course',
         code: 'PUB-CS101',
         slug: 'pub-cs101',
-        semestersCount: 6
+        semestersCount: 6,
+        isActive: true
       }
     });
 

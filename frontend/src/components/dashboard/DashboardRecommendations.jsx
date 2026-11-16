@@ -2,19 +2,22 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Skeleton from '../common/Skeleton.jsx';
 import recommendationService from '../../services/recommendationService.js';
-import RecommendationReason from '../recommendations/RecommendationReason.jsx';
+import noteService from '../../services/noteService.js';
 
 /**
- * Top recommended peer notes based on personal curriculum signals and popularity.
- *
- * @param {{
- *   recommendedNotes?: Array<any>,
- *   loading?: boolean
- * }} props
+ * Curated faculty & curriculum recommendations for the student.
  */
-export function DashboardRecommendations({ recommendedNotes = [], loading = false }) {
+export function DashboardRecommendations({
+  recommendedNotes = [],
+  loading = false,
+  title,
+  subtitle,
+  onPreviewNote = null
+}) {
   const [smartRecs, setSmartRecs] = useState([]);
   const [isSmartLoading, setIsSmartLoading] = useState(false);
+  const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
+  const [downloadingId, setDownloadingId] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -40,94 +43,169 @@ export function DashboardRecommendations({ recommendedNotes = [], loading = fals
     };
   }, []);
 
+  const handleDownload = async (e, note) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      setDownloadingId(note.id);
+      await noteService.downloadFile(note.id, note.fileName || `${note.slug || 'study-note'}.pdf`);
+    } catch (err) {
+      console.error('Download error:', err);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handleToggleBookmark = async (e, noteId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const isBookmarked = bookmarkedIds.has(noteId);
+      if (isBookmarked) {
+        await noteService.removeBookmark(noteId);
+        setBookmarkedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(noteId);
+          return next;
+        });
+      } else {
+        await noteService.bookmarkNote(noteId);
+        setBookmarkedIds((prev) => {
+          const next = new Set(prev);
+          next.add(noteId);
+          return next;
+        });
+      }
+    } catch (err) {
+      console.error('Bookmark error:', err);
+    }
+  };
+
   const isLoading = loading || isSmartLoading;
   const displayItems =
     smartRecs.length > 0 ? smartRecs : recommendedNotes.map((n) => ({ note: n }));
 
   return (
-    <div className="dash-section-card">
+    <section style={{ marginBottom: '28px' }} aria-labelledby="recommendations-heading">
       <div className="dash-section-header">
         <div>
-          <h3 className="dash-section-title">Recommended for You</h3>
-          <p
-            style={{
-              margin: '2px 0 0',
-              fontSize: '0.75rem',
-              color: 'var(--color-text-secondary, #74756f)'
-            }}
-          >
-            Curated from your active courses and study signals
+          <h2 id="recommendations-heading" className="dash-section-header__title">
+            {title || 'Recommended for You'}
+          </h2>
+          <p className="dash-section-header__sub">
+            {subtitle || 'Hand-picked manuscripts aligned to your enrolled curriculum and active semester'}
           </p>
         </div>
-        <Link
-          to="/notes/recommended"
-          style={{
-            fontSize: '0.78rem',
-            color: 'var(--color-primary, #285943)',
-            fontWeight: 600,
-            textDecoration: 'none'
-          }}
-        >
-          View All →
+        <Link to="/notes/recommended" className="dash-section-header__link">
+          Explore All Recommendations →
         </Link>
       </div>
 
       {isLoading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <Skeleton height={52} count={3} />
+        <div className="dash-notes-grid">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="dash-note-card">
+              <Skeleton width="100px" height="18px" />
+              <div style={{ marginTop: '10px' }}>
+                <Skeleton width="100%" height="20px" />
+                <Skeleton width="70%" height="20px" />
+              </div>
+              <div style={{ marginTop: '14px' }}>
+                <Skeleton width="100%" height="32px" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : displayItems.length === 0 ? (
-        <div className="dash-empty-box" style={{ padding: '20px 8px' }}>
-          <p style={{ fontSize: '0.8rem' }}>Check back soon for curated peer recommendations.</p>
+        <div className="dash-empty-box" style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+          <span style={{ fontSize: '30px' }}>⭐</span>
+          <h3 className="dash-empty-title">Recommendations In Progress</h3>
+          <p className="dash-empty-desc">
+            As faculty publish notes for your course and semester, personalized recommendations will appear here.
+          </p>
+          <Link to="/notes/explore" className="btn btn--primary btn--sm" style={{ marginTop: '8px' }}>
+            Browse Full Catalog
+          </Link>
         </div>
       ) : (
-        <div className="dash-resource-list">
-          {displayItems.map((item, idx) => {
+        <div className="dash-notes-grid">
+          {displayItems.slice(0, 3).map((item, idx) => {
             const note = item.note || item;
-            const reason = item.reason;
-            const score = item.score;
+            const isSaved = bookmarkedIds.has(note.id);
 
             return (
-              <Link
-                key={note.id || `dash-rec-${idx}`}
-                to={`/notes/${note.id}`}
-                className="dash-resource-item"
-                style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    width: '100%'
-                  }}
-                >
-                  {reason && <RecommendationReason reason={reason} score={score} />}
-                  <span
-                    style={{
-                      color: 'var(--color-primary, #285943)',
-                      fontWeight: 600,
-                      fontSize: '0.85rem'
-                    }}
+              <article key={note.id || idx} className="dash-note-card">
+                <div className="dash-note-card__top">
+                  <div className="dash-note-card__tags">
+                    <span className="dash-note-card__tag dash-note-card__tag--subject">
+                      ⭐ Recommended
+                    </span>
+                    {note.subject?.name && (
+                      <span className="dash-note-card__tag">
+                        {note.subject.name}
+                      </span>
+                    )}
+                    {note.semester && (
+                      <span className="dash-note-card__tag">
+                        Sem {note.semester}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className={`dash-note-card__bookmark-btn ${isSaved ? 'dash-note-card__bookmark-btn--active' : ''}`}
+                    onClick={(e) => handleToggleBookmark(e, note.id)}
+                    title={isSaved ? 'Remove bookmark' : 'Bookmark this note'}
+                    aria-label={isSaved ? 'Remove bookmark' : 'Bookmark this note'}
                   >
-                    →
+                    {isSaved ? '🔖' : '🤍'}
+                  </button>
+                </div>
+
+                <Link to={`/notes/${note.id}`} className="dash-note-card__title">
+                  {note.title}
+                </Link>
+
+                <p className="dash-note-card__desc">
+                  {note.description || 'Highly rated curriculum manuscript for course revision and exam preparation.'}
+                </p>
+
+                <div className="dash-note-card__meta-row">
+                  <span>👁️ {note.viewCount || 0} reads</span>
+                  <span style={{ color: '#0f766e', fontWeight: 700 }}>
+                    📥 {note.downloadCount || 0} downloads
                   </span>
                 </div>
 
-                <div className="dash-resource-info">
-                  <span className="dash-resource-title">{note.title}</span>
-                  <div className="dash-resource-meta">
-                    {note.subject?.name && <span>{note.subject.name}</span>}
-                    {note.semester && <span>• Sem {note.semester}</span>}
-                    <span>• {note.downloadCount || 0} downloads</span>
-                  </div>
+                <div className="dash-note-card__actions">
+                  <button
+                    type="button"
+                    className="dash-note-card__btn dash-note-card__btn--preview"
+                    onClick={() => {
+                      if (onPreviewNote) {
+                        onPreviewNote(note);
+                      } else {
+                        window.location.href = `/notes/${note.id}`;
+                      }
+                    }}
+                  >
+                    👁️ Preview
+                  </button>
+                  <button
+                    type="button"
+                    className="dash-note-card__btn dash-note-card__btn--download"
+                    onClick={(e) => handleDownload(e, note)}
+                    disabled={downloadingId === note.id}
+                  >
+                    {downloadingId === note.id ? 'Saving...' : '📥 Download'}
+                  </button>
                 </div>
-              </Link>
+              </article>
             );
           })}
         </div>
       )}
-    </div>
+    </section>
   );
 }
 

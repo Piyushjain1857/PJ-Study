@@ -97,23 +97,25 @@ export const DEFAULT_PAGE_CONFIGS = Object.freeze({
   scholar_dashboard: {
     section_order: [
       'welcome_header',
-      'academic_info',
+      'quick_search',
       'stats_kpi',
-      'activity_chart',
       'recent_notes',
-      'downloads',
-      'collections',
       'recommendations',
-      'quick_actions'
+      'bottom_split'
     ],
     welcome_header: {
       title: 'Welcome back, Scholar',
-      subtitle: 'Track your study progress, access recently saved notes, and manage your academic library.',
+      subtitle: 'Everything you need for your semester, in one focused learning space.',
       bannerAlert: {
         show: true,
         message: 'Semester examination revision notes and past paper solutions are now live in Explore Notes.',
         variant: 'emerald'
       },
+      isVisible: true
+    },
+    quick_search: {
+      title: 'Smart Notes Search',
+      placeholder: 'Search notes, subjects, courses...',
       isVisible: true
     },
     academic_info: {
@@ -126,9 +128,9 @@ export const DEFAULT_PAGE_CONFIGS = Object.freeze({
       columns: 4,
       cards: [
         { id: 'saved', label: 'Saved Notes', show: true },
-        { id: 'downloads', label: 'Total Downloads', show: true },
-        { id: 'collections', label: 'Collections', show: true },
-        { id: 'views', label: 'View History', show: true }
+        { id: 'downloads', label: 'Downloaded Notes', show: true },
+        { id: 'available_semester', label: 'Available for My Semester', show: true },
+        { id: 'collections', label: 'My Collections', show: true }
       ],
       isVisible: true
     },
@@ -139,9 +141,9 @@ export const DEFAULT_PAGE_CONFIGS = Object.freeze({
       isVisible: true
     },
     recent_notes: {
-      title: 'Recently Viewed & Saved',
-      subtitle: 'Jump back into your active reading manuscripts and bookmarked chapters.',
-      maxItems: 4,
+      title: 'Recently Added Notes',
+      subtitle: 'Latest curriculum manuscripts uploaded and published to the catalog',
+      maxItems: 6,
       isVisible: true
     },
     downloads: {
@@ -155,8 +157,22 @@ export const DEFAULT_PAGE_CONFIGS = Object.freeze({
       isVisible: true
     },
     recommendations: {
-      title: 'Recommended For You',
+      title: 'Recommended for You',
       subtitle: 'Curriculum-aligned manuscripts curated for your active semester.',
+      isVisible: true
+    },
+    bottom_split: {
+      title: 'My Library & Campus Announcements',
+      isVisible: true
+    },
+    library_preview: {
+      title: 'My Library Preview',
+      subtitle: 'Your saved manuscripts & course revision binders',
+      isVisible: true
+    },
+    announcements: {
+      title: 'Campus Announcements',
+      subtitle: 'Verified updates from K.R. Mangalam University administration',
       isVisible: true
     },
     quick_actions: {

@@ -3,33 +3,39 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { usePlatformConfig } from '../../context/PlatformConfigContext.jsx';
 import dashboardService from '../../services/dashboardService.js';
 import { isCancellation } from '../../services/api.js';
+
 import DashboardWelcome from '../../components/dashboard/DashboardWelcome.jsx';
+import DashboardSmartSearch from '../../components/dashboard/DashboardSmartSearch.jsx';
 import DashboardStats from '../../components/dashboard/DashboardStats.jsx';
-import DashboardActivityChart from '../../components/dashboard/DashboardActivityChart.jsx';
-import DashboardRecentNotes from '../../components/dashboard/DashboardRecentNotes.jsx';
-import DashboardCollections from '../../components/dashboard/DashboardCollections.jsx';
-import DashboardDownloadsHistory from '../../components/dashboard/DashboardDownloadsHistory.jsx';
+import DashboardRecentPublishedNotes from '../../components/dashboard/DashboardRecentPublishedNotes.jsx';
 import DashboardRecommendations from '../../components/dashboard/DashboardRecommendations.jsx';
+import DashboardLibraryPreview from '../../components/dashboard/DashboardLibraryPreview.jsx';
+import DashboardAnnouncements from '../../components/dashboard/DashboardAnnouncements.jsx';
+import DashboardActivityChart from '../../components/dashboard/DashboardActivityChart.jsx';
+import DashboardDownloadsHistory from '../../components/dashboard/DashboardDownloadsHistory.jsx';
+import DashboardCollections from '../../components/dashboard/DashboardCollections.jsx';
 import DashboardQuickActions from '../../components/dashboard/DashboardQuickActions.jsx';
+
+import Modal from '../../components/common/Modal.jsx';
+import NotePreview from '../../components/notes/NotePreview.jsx';
 import Button from '../../components/common/Button.jsx';
 import SEO from '../../components/common/SEO.jsx';
 import '../../components/dashboard/dashboard.css';
 
 const DEFAULT_SECTION_ORDER = [
   'welcome_header',
-  'academic_info',
+  'quick_search',
   'stats_kpi',
-  'activity_chart',
   'recent_notes',
-  'downloads',
-  'collections',
   'recommendations',
-  'quick_actions'
+  'bottom_split'
 ];
 
 /**
- * Premium Student Dashboard & Personalized Learning Analytics Page.
- * Dynamic Visual Builder Release: Orders sections dynamically according to Super Admin database configuration.
+ * Premium Student Dashboard 3.0.
+ * Refined EdTech SaaS experience for K.R. Mangalam University scholars.
+ * Seamlessly integrates real database analytics, smart notes search, curated recommendations,
+ * and dynamic Super Admin Visual Website Builder configurations.
  */
 export function StudentDashboardPage() {
   const { user } = useAuth();
@@ -40,8 +46,11 @@ export function StudentDashboardPage() {
   const [activeRange, setActiveRange] = useState('7d');
 
   const [loadingOverview, setLoadingOverview] = useState(true);
-  const [loadingAnalytics, setLoadingAnalytics] = useState(true);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [error, setError] = useState(null);
+
+  // Note preview modal state
+  const [previewNote, setPreviewNote] = useState(null);
 
   const fetchOverview = useCallback(async () => {
     try {
@@ -52,7 +61,7 @@ export function StudentDashboardPage() {
     } catch (err) {
       if (!isCancellation(err)) {
         setError(
-          err.response?.data?.error?.message || err.message || 'Failed to load dashboard overview.'
+          err.response?.data?.error?.message || err.message || 'Failed to load student dashboard.'
         );
       }
     } finally {
@@ -63,7 +72,7 @@ export function StudentDashboardPage() {
   const fetchAnalytics = useCallback(async (range) => {
     try {
       setLoadingAnalytics(true);
-      const data = await dashboardService.getAnalytics({ range });
+      const data = await dashboardService.getAnalytics(range);
       setAnalytics(data);
     } catch (err) {
       if (!isCancellation(err)) {
@@ -78,21 +87,14 @@ export function StudentDashboardPage() {
     fetchOverview();
   }, [fetchOverview]);
 
-  useEffect(() => {
-    fetchAnalytics(activeRange);
-  }, [fetchAnalytics, activeRange]);
-
-  const handleRangeChange = (range) => {
-    setActiveRange(range);
-  };
-
   // Derive dynamic section order and visibility from platform config
   const activeSections = useMemo(() => {
-    const order = Array.isArray(pageConfig?.section_order) && pageConfig.section_order.length > 0
+    const rawOrder = Array.isArray(pageConfig?.section_order) && pageConfig.section_order.length > 0
       ? pageConfig.section_order
       : DEFAULT_SECTION_ORDER;
 
-    return order.filter((key) => {
+    // Normalize: if order contains legacy keys or standard 3.0 keys
+    return rawOrder.filter((key) => {
       const sec = pageConfig?.[key];
       return sec ? sec.isVisible !== false : true;
     });
@@ -101,23 +103,16 @@ export function StudentDashboardPage() {
   if (error && !overview) {
     return (
       <div className="container dash-page">
-        <div className="dash-error-state" role="alert">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            width="48"
-            height="48"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          <h2>Unable to Load Student Dashboard</h2>
-          <p>{error}</p>
+        <div className="dash-error-state" role="alert" style={{ background: '#ffffff', borderRadius: '12px', padding: '36px', textAlign: 'center', border: '1px solid #e2e8f0', marginTop: '24px' }}>
+          <span style={{ fontSize: '36px' }}>⚠️</span>
+          <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', margin: '12px 0 6px' }}>
+            Unable to Load Student Dashboard
+          </h2>
+          <p style={{ color: '#64748b', fontSize: '13px', margin: '0 auto 16px', maxWidth: '420px' }}>
+            {error}
+          </p>
           <Button variant="primary" onClick={fetchOverview}>
-            Retry
+            Retry Connection
           </Button>
         </div>
       </div>
@@ -132,48 +127,16 @@ export function StudentDashboardPage() {
           <DashboardWelcome
             key="welcome_header"
             user={user}
-            config={pageConfig?.welcome_header}
           />
         );
 
-      case 'academic_info':
+      case 'quick_search':
         return (
-          <div
-            key="academic_info"
-            className="card"
-            style={{
-              padding: '16px 20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '24px',
-              borderLeft: '4px solid var(--color-primary, #0f766e)'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <span style={{ fontSize: '26px' }}>🏛️</span>
-              <div>
-                <strong style={{ fontSize: '14px', color: 'var(--color-text-primary)' }}>
-                  K.R. Mangalam University — Academic Portal
-                </strong>
-                <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                  {user?.school?.name || 'School of Computer Science & Engineering'} · Semester {user?.semester || 4}
-                </p>
-              </div>
-            </div>
-            <span
-              style={{
-                fontSize: '11px',
-                fontWeight: 700,
-                color: 'var(--color-primary, #0f766e)',
-                backgroundColor: 'rgba(15, 118, 110, 0.1)',
-                padding: '4px 10px',
-                borderRadius: '12px'
-              }}
-            >
-              Enrolled Scholar
-            </span>
-          </div>
+          <DashboardSmartSearch
+            key="quick_search"
+            userCourseName={user?.course?.name}
+            userSemester={user?.semester}
+          />
         );
 
       case 'stats_kpi':
@@ -182,31 +145,78 @@ export function StudentDashboardPage() {
             key="stats_kpi"
             stats={overview?.stats}
             loading={loadingOverview}
-            config={pageConfig?.stats_kpi}
           />
         );
 
+      case 'recent_notes':
+        return (
+          <DashboardRecentPublishedNotes
+            key="recent_notes"
+            notes={overview?.recentPublishedNotes || overview?.recentBookmarks?.map((b) => b.note) || []}
+            loading={loadingOverview}
+            title={pageConfig?.recent_notes?.title}
+            subtitle={pageConfig?.recent_notes?.subtitle}
+            onPreviewNote={(note) => setPreviewNote(note)}
+            onBookmarkChanged={fetchOverview}
+          />
+        );
+
+      case 'recommendations':
+        return (
+          <DashboardRecommendations
+            key="recommendations"
+            recommendedNotes={overview?.recommendedNotes}
+            loading={loadingOverview}
+            title={pageConfig?.recommendations?.title}
+            subtitle={pageConfig?.recommendations?.subtitle}
+            onPreviewNote={(note) => setPreviewNote(note)}
+          />
+        );
+
+      case 'bottom_split':
+      case 'library_preview':
+        return (
+          <div key="bottom_split" className="dash-row-split">
+            <DashboardLibraryPreview
+              bookmarks={overview?.recentBookmarks || []}
+              collections={overview?.recentCollections || []}
+              loading={loadingOverview}
+              title={pageConfig?.library_preview?.title}
+            />
+            <DashboardAnnouncements
+              announcements={overview?.announcements || []}
+              loading={loadingOverview}
+              title={pageConfig?.announcements?.title}
+            />
+          </div>
+        );
+
+      case 'announcements':
+        // If rendered separately from split
+        if (activeSections.includes('bottom_split') || activeSections.includes('library_preview')) {
+          return null;
+        }
+        return (
+          <DashboardAnnouncements
+            key="announcements"
+            announcements={overview?.announcements || []}
+            loading={loadingOverview}
+            title={pageConfig?.announcements?.title}
+          />
+        );
+
+      // Backwards compatibility handlers for legacy platform configurations
       case 'activity_chart':
         return (
           <DashboardActivityChart
             key="activity_chart"
             analytics={analytics}
             activeRange={activeRange}
-            onRangeChange={handleRangeChange}
+            onRangeChange={(range) => {
+              setActiveRange(range);
+              fetchAnalytics(range);
+            }}
             loading={loadingAnalytics}
-          />
-        );
-
-      case 'recent_notes':
-        return (
-          <DashboardRecentNotes
-            key="recent_notes"
-            recentBookmarks={overview?.recentBookmarks}
-            recentUploads={overview?.recentUploads}
-            recentViews={overview?.recentViews}
-            loading={loadingOverview}
-            title={pageConfig?.recent_notes?.title}
-            subtitle={pageConfig?.recent_notes?.subtitle}
           />
         );
 
@@ -232,17 +242,6 @@ export function StudentDashboardPage() {
           />
         );
 
-      case 'recommendations':
-        return (
-          <DashboardRecommendations
-            key="recommendations"
-            recommendedNotes={overview?.recommendedNotes}
-            loading={loadingOverview}
-            title={pageConfig?.recommendations?.title}
-            subtitle={pageConfig?.recommendations?.subtitle}
-          />
-        );
-
       case 'quick_actions':
         return <DashboardQuickActions key="quick_actions" />;
 
@@ -253,8 +252,33 @@ export function StudentDashboardPage() {
 
   return (
     <div className="container dash-page">
-      <SEO title="Student Dashboard" noindex={true} />
+      <SEO title="Scholar Dashboard · PJ Study" noindex={true} />
+
+      {/* Render dynamically ordered sections */}
       {activeSections.map((sectionKey) => renderSection(sectionKey))}
+
+      {/* Ensure quick search and bottom split always display if not specified in legacy order */}
+      {!activeSections.includes('quick_search') && (
+        <DashboardSmartSearch
+          userCourseName={user?.course?.name}
+          userSemester={user?.semester}
+        />
+      )}
+
+      {/* Note Document Preview Modal */}
+      {previewNote && (
+        <Modal
+          isOpen={Boolean(previewNote)}
+          onClose={() => setPreviewNote(null)}
+          title={`Document Preview: ${previewNote.title}`}
+          maxWidth="760px"
+        >
+          <NotePreview
+            note={previewNote}
+            onClose={() => setPreviewNote(null)}
+          />
+        </Modal>
+      )}
     </div>
   );
 }

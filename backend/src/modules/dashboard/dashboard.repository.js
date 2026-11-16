@@ -25,7 +25,18 @@ export class DashboardRepository {
    * }>}
    */
   async getStudentCounts(userId) {
-    const [savedNotesCount, collectionsCount, downloadsCount, uniqueNotes, uploadsCount, uniqueViews] =
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { courseId: true, semester: true }
+    });
+
+    const semesterFilter = {
+      status: { in: ['PUBLISHED', 'APPROVED'] },
+      ...(user?.courseId ? { courseId: user.courseId } : {}),
+      ...(user?.semester ? { semester: user.semester } : {})
+    };
+
+    const [savedNotesCount, collectionsCount, downloadsCount, uniqueNotes, uploadsCount, uniqueViews, availableSemesterNotes] =
       await Promise.all([
         prisma.bookmark.count({ where: { userId } }),
         prisma.studyCollection.count({ where: { userId } }),
@@ -40,7 +51,8 @@ export class DashboardRepository {
           where: { userId },
           distinct: ['noteId'],
           select: { noteId: true }
-        })
+        }),
+        prisma.note.count({ where: semesterFilter })
       ]);
 
     return {
@@ -49,8 +61,61 @@ export class DashboardRepository {
       downloadsCount,
       uniqueNotesDownloaded: uniqueNotes.length,
       uploadsCount,
-      recentlyViewedCount: uniqueViews.length
+      recentlyViewedCount: uniqueViews.length,
+      availableSemesterNotes
     };
+  }
+
+  /**
+   * Retrieves latest published notes across the catalog for student discovery.
+   *
+   * @param {number} limit
+   */
+  async getRecentPublishedNotes(limit = 6) {
+    const notes = await prisma.note.findMany({
+      where: { status: { in: ['PUBLISHED', 'APPROVED'] } },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        fileName: true,
+        fileSize: true,
+        mimeType: true,
+        downloadCount: true,
+        viewCount: true,
+        semester: true,
+        createdAt: true,
+        subject: { select: { id: true, name: true, code: true, slug: true } },
+        course: { select: { id: true, name: true, slug: true } },
+        category: { select: { id: true, name: true, slug: true } },
+        uploadedBy: { select: { id: true, name: true } }
+      }
+    });
+    return notes.map(sanitizeNoteFile);
+  }
+
+  /**
+   * Retrieves active platform announcements visible to students/scholars.
+   *
+   * @param {number} limit
+   */
+  async getRecentAnnouncements(limit = 4) {
+    return prisma.announcement.findMany({
+      where: { targetAudience: { in: ['ALL', 'STUDENT', 'SCHOLAR'] } },
+      orderBy: { publishedAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        title: true,
+        message: true,
+        targetUrl: true,
+        priority: true,
+        publishedAt: true
+      }
+    });
   }
 
   /**

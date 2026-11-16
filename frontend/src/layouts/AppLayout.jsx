@@ -387,9 +387,8 @@ export function AppLayout() {
     : isAdminRole
       ? [
           { label: 'Admin Dashboard', onClick: () => navigate('/admin-workspace') },
-          { label: 'Upload Note', onClick: () => navigate('/notes/new') },
-          { label: 'My Notes', onClick: () => navigate('/my-notes') },
-          { label: 'Moderation Queue', onClick: () => navigate('/admin-workspace/moderation') },
+          { label: 'Direct Upload Note', onClick: () => navigate('/notes/new') },
+          { label: 'My Published Notes', onClick: () => navigate('/my-notes') },
           { label: 'Notifications', onClick: () => navigate('/notifications') },
           { label: 'Profile', onClick: () => navigate('/profile') },
           { divider: true },
@@ -409,7 +408,7 @@ export function AppLayout() {
   // =============================================================================
   const scholarNavGroups = [
     {
-      label: 'Workspace',
+      label: 'MAIN',
       items: [
         {
           to: '/dashboard',
@@ -457,18 +456,8 @@ export function AppLayout() {
       ]
     },
     {
-      label: 'System',
+      label: 'ACCOUNT',
       items: [
-        {
-          to: '/profile',
-          label: 'Profile',
-          icon: (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-          )
-        },
         {
           to: '/notifications',
           label: 'Notifications',
@@ -476,6 +465,16 @@ export function AppLayout() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+          )
+        },
+        {
+          to: '/profile',
+          label: 'Profile',
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
             </svg>
           )
         }
