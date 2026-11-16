@@ -35,6 +35,13 @@ export const VALID_NOTE_STATUSES = [
 ];
 
 /**
+ * In-memory debounce cache to prevent duplicate view increments from
+ * rapid duplicate requests, double-clicks, or React development double-mounts.
+ */
+const recentViewsCache = new Map();
+const VIEW_DEBOUNCE_MS = 2500;
+
+/**
  * Normalizes input status strings so 'PENDING' and 'PENDING_REVIEW' are handled interchangeably.
  *
  * @param {string} status
@@ -78,9 +85,10 @@ export class NoteService {
    * @param {string} id
    * @param {object|null} currentUser
    * @param {boolean} [trackView=false]
+   * @param {string|null} [clientIp=null]
    * @returns {Promise<any>}
    */
-  async getNoteById(id, currentUser = null, trackView = false) {
+  async getNoteById(id, currentUser = null, trackView = false, clientIp = null) {
     if (!id) {
       const error = new Error('Note ID is required.');
       error.statusCode = 400;
@@ -115,20 +123,40 @@ export class NoteService {
       }
     }
 
+    let hasIncremented = false;
     if (trackView && isPubliclyVisible) {
-      this.repo.incrementViewCount(id).catch((err) => {
-        // eslint-disable-next-line no-console
-        console.error('Failed to increment note view count:', err.message);
-      });
+      const cacheKey = currentUser?.id
+        ? `user:${currentUser.id}:${id}`
+        : `ip:${clientIp || 'unknown'}:${id}`;
+      const now = Date.now();
+      const lastViewTime = recentViewsCache.get(cacheKey);
 
-      if (currentUser && currentUser.id) {
-        this.repo.recordViewHistory(currentUser.id, id).catch(() => {});
+      if (!lastViewTime || now - lastViewTime > VIEW_DEBOUNCE_MS) {
+        recentViewsCache.set(cacheKey, now);
+        hasIncremented = true;
+
+        if (recentViewsCache.size > 2000) {
+          const threshold = now - 10000;
+          for (const [k, v] of recentViewsCache.entries()) {
+            if (v < threshold) recentViewsCache.delete(k);
+          }
+        }
+
+        this.repo.incrementViewCount(id).catch((err) => {
+          // eslint-disable-next-line no-console
+          console.error('Failed to increment note view count:', err.message);
+        });
+
+        if (currentUser && currentUser.id) {
+          this.repo.recordViewHistory(currentUser.id, id).catch(() => {});
+        }
       }
     }
 
     const ratingInfo = await this.repo.getAverageRating(id);
     return sanitizeNote({
       ...note,
+      viewCount: hasIncremented ? note.viewCount + 1 : note.viewCount,
       averageRating: ratingInfo.averageRating,
       totalReviews: ratingInfo.totalReviews
     });
@@ -1160,7 +1188,7 @@ export class NoteService {
     ]);
 
     const items = (bookmarks || []).map((b) => ({
-      ...b.note,
+      ...sanitizeNote(b.note),
       bookmarkId: b.id,
       bookmarkedAt: b.createdAt
     }));

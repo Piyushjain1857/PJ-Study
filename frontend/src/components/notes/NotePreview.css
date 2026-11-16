@@ -1,0 +1,223 @@
+/**
+ * NotePreview - Editorial Minimalist Document Viewer
+ * Styles for PDF iframe viewer, Image viewer, Text transcript, and Format Fallback
+ */
+
+.note-preview-root {
+  background-color: var(--color-bg-surface, #ffffff);
+  border: 1px solid var(--color-border, #d7d9d3);
+  border-radius: var(--radius-lg, 12px);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease-in-out;
+}
+
+.note-preview-root--fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  border-radius: 0;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  background-color: #1e221f;
+}
+
+.note-preview-root--seamless {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+/* Header bar */
+.note-preview-root__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background-color: var(--color-bg-subtle, #f9f9f7);
+  border-bottom: 1px solid var(--color-border, #d7d9d3);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.note-preview-root--fullscreen .note-preview-root__header {
+  background-color: #272d28;
+  border-bottom: 1px solid #3b423c;
+  color: #ffffff;
+}
+
+.note-preview-root__title-col {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.note-preview-root__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid currentColor;
+  flex-shrink: 0;
+}
+
+.note-preview-root__title-wrap {
+  min-width: 0;
+}
+
+.note-preview-root__title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #202620);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.note-preview-root--fullscreen .note-preview-root__title {
+  color: #ffffff;
+}
+
+.note-preview-root__meta {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #5c665c);
+  margin-top: 2px;
+  display: block;
+}
+
+.note-preview-root--fullscreen .note-preview-root__meta {
+  color: #a0aba0;
+}
+
+.note-preview-root__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Viewport Area */
+.note-preview-root__viewport {
+  position: relative;
+  width: 100%;
+  min-height: 480px;
+  background-color: #f5f4f0;
+  display: flex;
+  flex-direction: column;
+}
+
+.note-preview-root--fullscreen .note-preview-root__viewport {
+  flex: 1;
+  min-height: 0;
+  background-color: #171a17;
+}
+
+/* Iframe PDF Viewer */
+.note-preview-root__iframe {
+  width: 100%;
+  height: 680px;
+  border: none;
+  display: block;
+  background-color: #525659;
+}
+
+.note-preview-root--fullscreen .note-preview-root__iframe {
+  height: 100%;
+  flex: 1;
+}
+
+/* Image Viewer */
+.note-preview-root__image-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  min-height: 480px;
+  background-color: #f0eee6;
+  overflow: auto;
+}
+
+.note-preview-root__image {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background-color: #ffffff;
+}
+
+/* Text Viewer */
+.note-preview-root__text-view {
+  padding: 28px 32px;
+  background-color: #ffffff;
+  color: #202620;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.875rem;
+  line-height: 1.7;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 600px;
+}
+
+/* Fallback Card (When inline preview is not available or error occurs) */
+.note-preview-root__fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 24px;
+  background-color: var(--color-bg-surface, #ffffff);
+  border-radius: var(--radius-lg, 12px);
+  min-height: 320px;
+}
+
+.note-preview-root__fallback-icon-wrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  margin-bottom: 20px;
+  border: 1px solid currentColor;
+}
+
+.note-preview-root__fallback-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #202620);
+  margin: 0 0 8px 0;
+}
+
+.note-preview-root__fallback-desc {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary, #5c665c);
+  max-width: 440px;
+  margin: 0 0 24px 0;
+}
+
+.note-preview-root__fallback-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background-color: var(--color-bg-subtle, #f5f4f0);
+  border: 1px solid var(--color-border, #d7d9d3);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary, #5c665c);
+  margin-bottom: 24px;
+}

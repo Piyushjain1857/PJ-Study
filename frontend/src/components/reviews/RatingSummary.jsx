@@ -38,22 +38,16 @@ export function RatingSummary({
             <span className="rating-score-number">{averageRating.toFixed(1)}</span>
             <StarRating value={Math.round(averageRating)} readOnly size="md" />
             <span className="rating-score-total">
-              Based on {totalRatings} {totalRatings === 1 ? 'review' : 'reviews'}
+              Based on {totalRatings} {totalRatings === 1 ? 'peer review' : 'peer reviews'}
             </span>
           </>
         ) : (
           <>
-            <span
-              style={{
-                fontSize: '1.25rem',
-                fontFamily: 'var(--font-heading, serif)',
-                color: 'var(--color-text-secondary, #74756f)'
-              }}
-            >
+            <span className="rating-score-empty-title">
               No reviews yet
             </span>
             <StarRating value={0} readOnly size="md" />
-            <span className="rating-score-total">Be the first to rate this manuscript</span>
+            <span className="rating-score-total">Be the first scholar to review this manuscript</span>
           </>
         )}
 

@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 
 /**
- * StarRating component supporting both interactive input and read-only display.
+ * High-fidelity StarRating component using crisp SVG vectors.
+ * Supports interactive radiogroup inputs with tactile hover/focus states,
+ * as well as read-only rating display badges.
  *
  * @param {{
  *   value: number,
  *   onChange?: (rating: number) => void,
  *   readOnly?: boolean,
- *   size?: 'sm' | 'md' | 'lg',
+ *   size?: 'sm' | 'md' | 'lg' | 'xl',
  *   label?: string
  * }} props
  */
@@ -23,11 +25,14 @@ export function StarRating({
   const activeValue = hoverValue > 0 ? hoverValue : value;
   const isInteractive = !readOnly && typeof onChange === 'function';
 
-  const sizeStyles = {
-    sm: { fontSize: '0.85rem' },
-    md: { fontSize: '1.25rem' },
-    lg: { fontSize: '1.75rem' }
+  const pixelSizes = {
+    sm: 16,
+    md: 20,
+    lg: 26,
+    xl: 34
   };
+
+  const starPx = pixelSizes[size] || 20;
 
   const handleKeyDown = (e, star) => {
     if (!isInteractive) return;
@@ -45,7 +50,9 @@ export function StarRating({
 
   return (
     <div
-      className={`star-rating ${isInteractive ? 'star-rating--interactive' : ''}`}
+      className={`star-rating star-rating--${size} ${
+        isInteractive ? 'star-rating--interactive' : 'star-rating--readonly'
+      }`}
       role={isInteractive ? 'radiogroup' : 'img'}
       aria-label={label ? `${label}: ${value} out of 5 stars` : `${value} out of 5 stars`}
       onMouseLeave={() => isInteractive && setHoverValue(0)}
@@ -61,13 +68,24 @@ export function StarRating({
               role="radio"
               aria-checked={star === value}
               aria-label={`${star} star${star > 1 ? 's' : ''}`}
-              className={`star-btn ${isFilled ? 'star-btn--filled' : ''}`}
-              style={sizeStyles[size]}
+              className={`star-btn star-btn--${size} ${isFilled ? 'star-btn--filled' : ''}`}
               onClick={() => onChange(star)}
               onMouseEnter={() => setHoverValue(star)}
               onKeyDown={(e) => handleKeyDown(e, star)}
             >
-              ★
+              <svg
+                width={starPx}
+                height={starPx}
+                viewBox="0 0 24 24"
+                fill={isFilled ? '#F59E0B' : '#E5E7EB'}
+                stroke={isFilled ? '#D97706' : '#9CA3AF'}
+                strokeWidth={isFilled ? '1' : '1.5'}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="star-svg"
+              >
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
             </button>
           );
         }
@@ -77,9 +95,20 @@ export function StarRating({
             key={star}
             aria-hidden="true"
             className={`star-display-icon ${isFilled ? 'star-display-icon--filled' : ''}`}
-            style={sizeStyles[size]}
           >
-            ★
+            <svg
+              width={starPx}
+              height={starPx}
+              viewBox="0 0 24 24"
+              fill={isFilled ? '#F59E0B' : '#E5E7EB'}
+              stroke={isFilled ? '#D97706' : '#D1D5DB'}
+              strokeWidth={isFilled ? '1' : '1.2'}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="star-svg"
+            >
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
           </span>
         );
       })}

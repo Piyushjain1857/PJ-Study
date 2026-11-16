@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
 import noteService from '../../services/noteService.js';
 import Button from '../common/Button.jsx';
-import '../../styles/notes-discovery.css';
+import { formatBytes, getFileFormatInfo } from '../../utils/fileUtils.js';
+import './NotePreview.css';
 
 /**
  * Secure document preview viewer for PDFs, images, and text manuscripts.
+ * Supports standalone mode (with header/fullscreen) or embedded mode (hideHeader=true).
+ *
+ * @param {{
+ *   note: object,
+ *   onClose?: () => void,
+ *   hideHeader?: boolean
+ * }} props
  */
-export function NotePreview({ note, onClose = null }) {
+export function NotePreview({ note, onClose = null, hideHeader = false }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasPreviewError, setHasPreviewError] = useState(false);
 
@@ -14,91 +22,104 @@ export function NotePreview({ note, onClose = null }) {
 
   const { id, title, fileName, mimeType, fileSize, content } = note;
   const previewUrl = noteService.getFilePreviewUrl(id);
-  const isPdf = mimeType === 'application/pdf' || (fileName && fileName.endsWith('.pdf'));
-  const isImage =
-    mimeType?.startsWith('image/') || (fileName && /\.(png|jpe?g|webp|gif)$/i.test(fileName));
-  const isText =
-    mimeType === 'text/plain' || mimeType === 'text/markdown' || (!fileName && Boolean(content));
-
-  function formatBytes(bytes) {
-    if (!bytes) return '';
-    const num = Number(bytes);
-    if (isNaN(num) || num <= 0) return '';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(num) / Math.log(k));
-    return `${parseFloat((num / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
-  }
-
+  const formatInfo = getFileFormatInfo(fileName, mimeType);
   const formattedSize = formatBytes(fileSize);
 
+  const isPdf = formatInfo.ext === 'PDF';
+  const isImage = formatInfo.iconType === 'image';
+  const isText = formatInfo.iconType === 'text' || (!fileName && Boolean(content));
+  const canPreview = formatInfo.canPreviewInline;
+
   async function handleDownload() {
-    await noteService.downloadFile(id, fileName || `${title}.pdf`);
+    await noteService.downloadFile(id, fileName || `${title}.${formatInfo.ext.toLowerCase()}`);
   }
 
   return (
-    <div className={`note-preview-root ${isFullscreen ? 'note-preview-root--fullscreen' : ''}`}>
-      {/* Viewer Header */}
-      <div className="note-preview-root__header">
-        <div className="note-preview-root__title-col">
-          <span className="note-preview-root__doc-icon">📑</span>
-          <div>
-            <h4 className="note-preview-root__title">{fileName || title}</h4>
-            <span className="note-preview-root__meta">
-              {mimeType || 'Document'} {formattedSize && `• ${formattedSize}`}
+    <div
+      className={`note-preview-root ${isFullscreen ? 'note-preview-root--fullscreen' : ''} ${
+        hideHeader ? 'note-preview-root--seamless' : ''
+      }`}
+    >
+      {/* Viewer Header (Omitted when hideHeader is true) */}
+      {!hideHeader && (
+        <div className="note-preview-root__header">
+          <div className="note-preview-root__title-col">
+            <span
+              className="note-preview-root__badge"
+              style={{
+                color: formatInfo.color,
+                backgroundColor: formatInfo.bgColor,
+                borderColor: formatInfo.borderColor
+              }}
+            >
+              {formatInfo.badgeText}
             </span>
+            <div className="note-preview-root__title-wrap">
+              <h4 className="note-preview-root__title">{fileName || title}</h4>
+              <span className="note-preview-root__meta">
+                {formatInfo.friendlyType} {formattedSize && `• ${formattedSize}`}
+              </span>
+            </div>
+          </div>
+
+          <div className="note-preview-root__actions">
+            <Button variant="primary" size="sm" onClick={handleDownload}>
+              📥 Download File
+            </Button>
+
+            {(isPdf || isImage) && (
+              <button
+                type="button"
+                className="btn btn--outline btn--sm"
+                onClick={() => setIsFullscreen((prev) => !prev)}
+                title={isFullscreen ? 'Exit full screen' : 'Expand full screen'}
+                aria-label={isFullscreen ? 'Exit full screen' : 'Expand full screen'}
+              >
+                {isFullscreen ? '⤓ Collapse' : '⤢ Expand'}
+              </button>
+            )}
+
+            {onClose && (
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm"
+                onClick={onClose}
+                aria-label="Close preview"
+              >
+                ✕
+              </button>
+            )}
           </div>
         </div>
+      )}
 
-        <div className="note-preview-root__actions">
-          <Button variant="primary" size="sm" onClick={handleDownload}>
-            📥 Download File
-          </Button>
-
-          {(isPdf || isImage) && (
-            <button
-              type="button"
-              className="btn btn--outline btn--sm"
-              onClick={() => setIsFullscreen((prev) => !prev)}
-              title={isFullscreen ? 'Exit full screen' : 'Expand full screen'}
-              aria-label={isFullscreen ? 'Exit full screen' : 'Expand full screen'}
-            >
-              {isFullscreen ? '⤓ Collapse' : '⤢ Expand'}
-            </button>
-          )}
-
-          {onClose && (
-            <button
-              type="button"
-              className="btn btn--ghost btn--sm"
-              onClick={onClose}
-              aria-label="Close preview"
-            >
-              ✕
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Viewer Body */}
+      {/* Viewer Viewport */}
       <div className="note-preview-root__viewport">
         {hasPreviewError ? (
           <div className="note-preview-root__fallback">
-            <span className="note-preview-root__fallback-icon">⚠️</span>
-            <h4>Unable to render inline preview</h4>
-            <p>Please download the document directly to view it on your device.</p>
-            <Button variant="primary" onClick={handleDownload} style={{ marginTop: '16px' }}>
-              Download Now
+            <div
+              className="note-preview-root__fallback-icon-wrap"
+              style={{ color: '#DC2626', backgroundColor: '#FEF2F2', borderColor: '#FECACA' }}
+            >
+              ⚠️
+            </div>
+            <h4 className="note-preview-root__fallback-title">Unable to render inline preview</h4>
+            <p className="note-preview-root__fallback-desc">
+              The browser was unable to display this document inline. You can download the file
+              directly to review it with your local software.
+            </p>
+            <Button variant="primary" onClick={handleDownload}>
+              📥 Download Manuscript ({formattedSize || formatInfo.ext})
             </Button>
           </div>
-        ) : isPdf ? (
+        ) : isPdf && canPreview ? (
           <iframe
             src={previewUrl}
             title={`Document preview: ${fileName || title}`}
             className="note-preview-root__iframe"
             onError={() => setHasPreviewError(true)}
           />
-        ) : isImage ? (
+        ) : isImage && canPreview ? (
           <div className="note-preview-root__image-wrapper">
             <img
               src={previewUrl}
@@ -114,15 +135,31 @@ export function NotePreview({ note, onClose = null }) {
             <pre>{content}</pre>
           </div>
         ) : (
+          /* Non-previewable formats: clean fallback hero */
           <div className="note-preview-root__fallback">
-            <span className="note-preview-root__fallback-icon">📄</span>
-            <h4>Inline preview not available for this format</h4>
-            <p>
-              This study document ({fileName?.split('.').pop()?.toUpperCase() || 'format'}) is safe
-              to download and open in your local academic application.
+            <div
+              className="note-preview-root__fallback-icon-wrap"
+              style={{
+                color: formatInfo.color,
+                backgroundColor: formatInfo.bgColor,
+                borderColor: formatInfo.borderColor
+              }}
+            >
+              📄
+            </div>
+            <h4 className="note-preview-root__fallback-title">
+              {formatInfo.friendlyType} Attachment
+            </h4>
+            <p className="note-preview-root__fallback-desc">
+              {formatInfo.appHint}. Download this study document to inspect the complete manuscript.
             </p>
-            <Button variant="primary" onClick={handleDownload} style={{ marginTop: '16px' }}>
-              📥 Download {fileName || 'Document'}
+            <div className="note-preview-root__fallback-badge">
+              <span>🔒 Verified Clean Academic Document</span>
+              <span>•</span>
+              <span>{formattedSize || 'Standard file'}</span>
+            </div>
+            <Button variant="primary" onClick={handleDownload}>
+              📥 Download {fileName || 'Manuscript'}
             </Button>
           </div>
         )}

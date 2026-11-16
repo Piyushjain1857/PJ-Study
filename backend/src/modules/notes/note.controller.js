@@ -52,7 +52,8 @@ export class NoteController {
    */
   getNoteById = async (req, res, next) => {
     try {
-      const note = await this.service.getNoteById(req.params.id, req.user || null, true);
+      const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress;
+      const note = await this.service.getNoteById(req.params.id, req.user || null, true, clientIp);
       return sendSuccess(res, note);
     } catch (err) {
       return next(err);

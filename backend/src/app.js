@@ -9,6 +9,13 @@ import seoController from './modules/seo/seo.controller.js';
 import notFound from './middleware/notFound.js';
 import errorHandler from './middleware/errorHandler.js';
 
+// Ensure BigInt values serialize cleanly to JSON across all API endpoints
+if (!BigInt.prototype.toJSON) {
+  BigInt.prototype.toJSON = function () {
+    return this.toString();
+  };
+}
+
 /**
  * Creates and configures the Express application.
  * Separation of app configuration from server listening allows easy testing.

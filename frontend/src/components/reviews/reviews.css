@@ -91,6 +91,12 @@
   line-height: 1;
 }
 
+.rating-score-empty-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #202620);
+}
+
 .rating-score-total {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
@@ -147,49 +153,58 @@
 }
 
 /* =============================================================================
-   STAR RATING WIDGET
+   STAR RATING WIDGET (SVG VECTOR BASED)
    ============================================================================= */
 .star-rating {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
 }
 
 .star-rating--interactive {
   cursor: pointer;
 }
 
+.star-rating--xl {
+  gap: 8px;
+}
+
 .star-btn {
   background: none;
   border: none;
-  padding: 1px;
-  font-size: 1.5rem;
-  color: #d1d5db;
+  padding: 2px;
   cursor: pointer;
   line-height: 1;
-  transition:
-    transform var(--transition-fast),
-    color var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.15s ease;
 }
 
 .star-btn:hover,
 .star-btn:focus-visible {
-  transform: scale(1.15);
+  transform: scale(1.18);
   outline: none;
 }
 
-.star-btn--filled {
-  color: #eab308;
+.star-btn:active {
+  transform: scale(0.95);
+}
+
+.star-btn--filled .star-svg {
+  filter: drop-shadow(0 2px 5px rgba(245, 158, 11, 0.4));
 }
 
 .star-display-icon {
-  color: #d1d5db;
-  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
 }
 
-.star-display-icon--filled {
-  color: #eab308;
+.star-display-icon--filled .star-svg {
+  filter: drop-shadow(0 1px 3px rgba(245, 158, 11, 0.3));
 }
 
 /* =============================================================================
@@ -351,4 +366,264 @@
 .review-card-action-btn--danger:hover {
   color: var(--color-danger);
   background-color: var(--color-danger-subtle);
+}
+
+/* =============================================================================
+   REVIEW FORM DIALOG (NOTION & LINEAR GRADE ACADEMIC EVALUATION)
+   ============================================================================= */
+.review-dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Context Banner */
+.review-dialog-context {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background-color: var(--color-bg-subtle, #f5f4f0);
+  border: 1px solid var(--color-border, #d7d9d3);
+  border-radius: 10px;
+}
+
+.review-dialog-context__icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.review-dialog-context__info {
+  min-width: 0;
+  flex: 1;
+}
+
+.review-dialog-context__label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-primary, #245c46);
+  margin-bottom: 2px;
+}
+
+.review-dialog-context__title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #202620);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Alert */
+.review-dialog-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #b91c1c;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.review-dialog-alert__icon {
+  flex-shrink: 0;
+}
+
+/* Interactive Rating Card */
+.review-dialog-rating-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  background-color: var(--color-bg-surface, #ffffff);
+  border: 1px solid var(--color-border, #d7d9d3);
+  border-radius: 12px;
+  gap: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.review-dialog-rating-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.review-dialog-rating-card__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #202620);
+}
+
+.review-dialog-rating-card__req {
+  color: #dc2626;
+}
+
+.review-dialog-rating-card__hint {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary, #5c665c);
+}
+
+.review-dialog-stars-wrap {
+  padding: 6px 0;
+}
+
+/* Live Rating Tier Badge */
+.review-dialog-tier-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid currentColor;
+  font-size: 0.8125rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.review-dialog-tier-badge__score {
+  font-size: 0.9375rem;
+  font-weight: 800;
+  line-height: 1;
+  padding-right: 8px;
+  border-right: 1px solid currentColor;
+}
+
+.review-dialog-tier-badge__text {
+  flex: 1;
+}
+
+.review-dialog-tier-badge--empty {
+  color: var(--color-text-tertiary, #9ca3af);
+  background-color: var(--color-bg-subtle, #f9f9f8);
+  border: 1px dashed var(--color-border, #d7d9d3);
+  justify-content: center;
+  font-size: 0.75rem;
+}
+
+/* Quick Tags Section */
+.review-dialog-tags-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.review-dialog-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #202620);
+}
+
+.review-dialog-label-opt {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--color-text-secondary, #5c665c);
+}
+
+.review-dialog-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.review-dialog-tag-chip {
+  background: var(--color-bg-surface, #ffffff);
+  border: 1px solid var(--color-border, #d7d9d3);
+  color: var(--color-text-secondary, #5c665c);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.review-dialog-tag-chip:hover {
+  background-color: var(--color-bg-subtle, #f5f4f0);
+  border-color: #b5b8b0;
+  color: var(--color-text-primary, #202620);
+}
+
+.review-dialog-tag-chip--active {
+  background-color: #edf5f0;
+  border-color: #a8d5be;
+  color: var(--color-primary, #245c46);
+  font-weight: 600;
+}
+
+/* Textarea Field */
+.review-dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.review-dialog-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.review-dialog-counter {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #5c665c);
+  font-variant-numeric: tabular-nums;
+}
+
+.review-dialog-counter--danger {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.review-dialog-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--color-text-primary, #202620);
+  background-color: var(--color-bg-surface, #ffffff);
+  border: 1px solid var(--color-border, #d7d9d3);
+  border-radius: 8px;
+  resize: vertical;
+  min-height: 100px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.review-dialog-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary, #245c46);
+  box-shadow: 0 0 0 3px rgba(36, 92, 70, 0.12);
+}
+
+.review-dialog-textarea::placeholder {
+  color: #9ca3af;
+}
+
+/* Actions Footer */
+.review-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.review-dialog-cancel-btn {
+  padding: 8px 16px;
+}
+
+.review-dialog-submit-btn {
+  padding: 8px 18px;
+  font-weight: 600;
 }

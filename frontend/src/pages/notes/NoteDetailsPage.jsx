@@ -12,6 +12,7 @@ import NotePreview from '../../components/notes/NotePreview.jsx';
 import SimilarNotesSection from '../../components/recommendations/SimilarNotesSection.jsx';
 import NoteReviewsSection from '../../components/reviews/NoteReviewsSection.jsx';
 import SEO from '../../components/common/SEO.jsx';
+import { formatBytes, getFileFormatInfo } from '../../utils/fileUtils.js';
 import './NoteDetailsPage.css';
 import '../../styles/notes-discovery.css';
 import '../../styles/notes.css';
@@ -36,6 +37,11 @@ export function NoteDetailsPage() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
 
+  // Bookmark & Share interaction states
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isBookmarkLoading, setIsBookmarkLoading] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
   const loadNote = useCallback(async () => {
     setIsLoading(true);
     setError('');
@@ -57,12 +63,29 @@ export function NoteDetailsPage() {
     loadNote();
   }, [loadNote]);
 
+  // Check initial bookmark status for authenticated scholars
+  useEffect(() => {
+    if (user && id) {
+      noteService
+        .getBookmarkedNotes({ limit: 100 })
+        .then((res) => {
+          const items = res.items || (Array.isArray(res) ? res : []);
+          const isSaved = items.some(
+            (b) => b.noteId === id || b.id === id || b.note?.id === id
+          );
+          setIsBookmarked(isSaved);
+        })
+        .catch(() => {});
+    }
+  }, [user, id]);
+
   const canModerate =
     (isModerator || isAdmin || isSuperAdmin) &&
     (note?.status === 'PENDING' || note?.status === 'PENDING_REVIEW') &&
     note?.uploadedById !== user?.id;
 
   const isOwner = user && note?.uploadedById === user.id;
+  const canEdit = user && (isOwner || isModerator || isAdmin || isSuperAdmin);
 
   // Approve submission
   async function handleApprove() {
@@ -105,6 +128,7 @@ export function NoteDetailsPage() {
     setIsDownloading(true);
     try {
       await noteService.downloadFile(note.id, note.fileName);
+      setNote((prev) => (prev ? { ...prev, downloadCount: (prev.downloadCount || 0) + 1 } : prev));
     } catch (err) {
       setError(
         err.response?.data?.error?.message || err.message || 'Failed to download study document.'
@@ -114,22 +138,46 @@ export function NoteDetailsPage() {
     }
   }
 
-  function formatBytes(bytes) {
-    if (!bytes) return '';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+  // Toggle Bookmark handler
+  async function handleToggleBookmark() {
+    if (!user) {
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+    setIsBookmarkLoading(true);
+    try {
+      if (isBookmarked) {
+        await noteService.removeBookmark(id);
+        setIsBookmarked(false);
+        setActionNotice('Note removed from your saved library.');
+      } else {
+        await noteService.bookmarkNote(id);
+        setIsBookmarked(true);
+        setActionNotice('Note saved to your personal library.');
+      }
+      setTimeout(() => setActionNotice(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error?.message || 'Failed to update bookmark.');
+    } finally {
+      setIsBookmarkLoading(false);
+    }
+  }
+
+  // Share note link handler
+  function handleShareLink() {
+    navigator.clipboard.writeText(window.location.href);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2500);
   }
 
   if (isLoading) {
     return (
-      <div className="notes-page">
+      <div className="notes-page note-details-page">
         <SEO title="Loading Study Note..." noindex={true} />
         <Container size="md">
-          <Skeleton width="120px" height="24px" style={{ marginBottom: '16px' }} />
-          <Skeleton width="80%" height="48px" style={{ marginBottom: '16px' }} />
-          <Skeleton count={6} height="20px" style={{ marginBottom: '12px' }} />
+          <Skeleton width="160px" height="32px" style={{ marginBottom: '24px' }} />
+          <Skeleton width="100%" height="240px" style={{ borderRadius: '12px', marginBottom: '24px' }} />
+          <Skeleton count={5} height="24px" style={{ marginBottom: '14px' }} />
         </Container>
       </div>
     );
@@ -137,7 +185,7 @@ export function NoteDetailsPage() {
 
   if (error || !note) {
     return (
-      <div className="notes-page">
+      <div className="notes-page note-details-page">
         <SEO title="Study Note Not Found" noindex={true} />
         <Container size="md">
           <div className="note-form__alert note-form__alert--danger" role="alert">
@@ -181,6 +229,9 @@ export function NoteDetailsPage() {
     year: 'numeric'
   });
 
+  const formatInfo = getFileFormatInfo(note.fileName, note.mimeType);
+  const formattedSize = formatBytes(note.fileSize);
+
   return (
     <div className="notes-page note-details-page">
       <SEO
@@ -195,22 +246,78 @@ export function NoteDetailsPage() {
         schema={noteSchema}
       />
       <Container size="md">
-        {/* Navigation Breadcrumb */}
-        <nav className="note-details__breadcrumb">
-          <button type="button" className="note-details__back-btn" onClick={() => navigate(-1)}>
-            ← Back
-          </button>
-          <span className="note-details__crumb-sep">/</span>
-          <Link to="/notes/explore" className="note-details__crumb-link">
-            Explore Notes
-          </Link>
-          {note.subject && (
-            <>
-              <span className="note-details__crumb-sep">/</span>
-              <span className="note-details__crumb-curr">{note.subject.name}</span>
-            </>
-          )}
-        </nav>
+        {/* Top Navigation & Action Bar */}
+        <div className="note-details__top-bar">
+          <nav className="note-details__breadcrumb" aria-label="Breadcrumb">
+            <button
+              type="button"
+              className="note-details__back-btn"
+              onClick={() => navigate(-1)}
+              title="Return to previous page"
+            >
+              ← Back
+            </button>
+            <span className="note-details__crumb-sep">/</span>
+            <Link to="/notes/explore" className="note-details__crumb-link">
+              Explore Notes
+            </Link>
+            {note.course && (
+              <>
+                <span className="note-details__crumb-sep">/</span>
+                <span className="note-details__crumb-link">{note.course.name}</span>
+              </>
+            )}
+            {note.semester && (
+              <>
+                <span className="note-details__crumb-sep">/</span>
+                <span>Sem {note.semester}</span>
+              </>
+            )}
+            {note.subject && (
+              <>
+                <span className="note-details__crumb-sep">/</span>
+                <span className="note-details__crumb-curr">{note.subject.name}</span>
+              </>
+            )}
+          </nav>
+
+          <div className="note-details__top-actions">
+            <button
+              type="button"
+              className={`note-details__pill-btn ${
+                isBookmarked ? 'note-details__pill-btn--active' : ''
+              }`}
+              onClick={handleToggleBookmark}
+              disabled={isBookmarkLoading}
+              title={isBookmarked ? 'Remove from saved library' : 'Save note to library'}
+              aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark note'}
+            >
+              <span>{isBookmarked ? '★ Saved' : '☆ Save'}</span>
+            </button>
+
+            <button
+              type="button"
+              className="note-details__pill-btn"
+              onClick={handleShareLink}
+              title="Copy shareable note link"
+              aria-label="Share note"
+            >
+              <span>{copiedLink ? '✓ Copied' : '🔗 Share'}</span>
+            </button>
+
+            {canEdit && (
+              <Link to={`/notes/${note.id}/edit`}>
+                <button
+                  type="button"
+                  className="note-details__pill-btn note-details__pill-btn--edit"
+                  title="Edit manuscript metadata"
+                >
+                  <span>✏️ Edit</span>
+                </button>
+              </Link>
+            )}
+          </div>
+        </div>
 
         {/* Action Notice */}
         {actionNotice && (
@@ -255,54 +362,75 @@ export function NoteDetailsPage() {
           </div>
         )}
 
-        {/* Manuscript Header */}
+        {/* Manuscript Header Card */}
         <header className="note-details__header">
           <div className="note-details__badges">
-            {note.category && <span className="note-card__category">{note.category.name}</span>}
-            {note.subject && <span className="note-card__subject">{note.subject.name}</span>}
+            {note.category && (
+              <span className="note-details__category-pill">{note.category.name}</span>
+            )}
+            {note.course && (
+              <span className="note-details__course-pill">{note.course.name}</span>
+            )}
+            {note.semester && (
+              <span className="note-details__course-pill">Semester {note.semester}</span>
+            )}
             {note.subject?.credits && (
-              <span className="note-card__credits" style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', background: '#EDF5F0', color: 'var(--color-primary, #245C46)', border: '1px solid var(--color-border, #D7D9D3)' }}>
-                {note.subject.credits} Credits
+              <span className="note-details__credits-pill">
+                {note.subject.credits} Academic Credits
               </span>
             )}
-            {note.semester && <span className="note-card__semester">Semester {note.semester}</span>}
             <NoteStatusBadge status={note.status} />
           </div>
 
           <h1 className="note-details__title">{note.title}</h1>
 
-          {note.description && <p className="note-details__abstract">{note.description}</p>}
+          {note.description && (
+            <p className="note-details__abstract">{note.description}</p>
+          )}
 
           {/* Author and Metadata Bar */}
           <div className="note-details__meta-bar">
             <div className="note-details__author">
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  color: 'inherit'
-                }}
-              >
+              <div className="note-details__author-avatar-wrap">
                 <Avatar
                   name={note.uploadedBy?.name || 'Scholar'}
                   src={note.uploadedBy?.avatarUrl}
                   size="md"
                 />
-                <div>
+              </div>
+              <div className="note-details__author-info">
+                <div className="note-details__author-row">
                   <span className="note-details__author-name">
                     {note.uploadedBy?.name || 'Academic Scholar'}
                   </span>
-                  <span className="note-details__author-date">
-                    {isApproved ? 'Published' : 'Uploaded'} on {displayDate}
-                  </span>
+                  {note.uploadedBy?.role && (
+                    <span className="note-details__role-tag">
+                      {note.uploadedBy.role === 'SUPER_ADMIN'
+                        ? 'Super Admin'
+                        : note.uploadedBy.role === 'ADMIN'
+                        ? 'Faculty Reviewer'
+                        : 'Scholar'}
+                    </span>
+                  )}
                 </div>
+                <span className="note-details__author-date">
+                  {isApproved ? 'Published' : 'Uploaded'} on {displayDate}
+                </span>
               </div>
             </div>
 
             <div className="note-details__counters">
-              <span>👁 {note.viewCount || 0} views</span>
-              {note.downloadCount > 0 && <span>📥 {note.downloadCount} downloads</span>}
+              <span className="note-details__counter-pill">
+                👁 {note.viewCount || 0} {note.viewCount === 1 ? 'view' : 'views'}
+              </span>
+              <span className="note-details__counter-pill">
+                📥 {note.downloadCount || 0} {note.downloadCount === 1 ? 'download' : 'downloads'}
+              </span>
+              {note.averageRating > 0 && (
+                <span className="note-details__counter-pill note-details__counter-pill--rating">
+                  ★ {Number(note.averageRating).toFixed(1)} ({note.totalReviews || 0})
+                </span>
+              )}
             </div>
           </div>
         </header>
@@ -329,38 +457,116 @@ export function NoteDetailsPage() {
           </aside>
         )}
 
-        {/* Attached Document File Card & Inline Document Viewer */}
+        {/* Attached Document Section: Clean, Non-Duplicated Presentation */}
         {note.fileName && (
-          <section className="note-details__file-section">
-            <div className="note-details__file-card">
-              <div className="note-details__file-icon" aria-hidden="true">
-                📑
-              </div>
-              <div className="note-details__file-info">
-                <span className="note-details__file-name">{note.fileName}</span>
-                <span className="note-details__file-meta">
-                  {note.mimeType} {note.fileSize && `• ${formatBytes(Number(note.fileSize))}`}
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <Button variant="outline" onClick={() => setShowPreview((prev) => !prev)}>
-                  {showPreview ? 'Hide Document Preview' : '👁 Preview Document'}
-                </Button>
-                <Button variant="primary" onClick={handleDownload} disabled={isDownloading}>
-                  {isDownloading ? 'Downloading...' : '📥 Download File'}
-                </Button>
-              </div>
-            </div>
+          <section className="note-details__document-section" aria-label="Attached Document">
+            {!formatInfo.canPreviewInline ? (
+              /* Case A: Non-inline format (DOCX, PPTX, XLSX, ZIP) -> Elegant File Hero Card */
+              <div className="note-doc-hero">
+                <div className="note-doc-hero__body">
+                  <div className="note-doc-hero__left">
+                    <div
+                      className="note-doc-hero__badge"
+                      style={{
+                        color: formatInfo.color,
+                        backgroundColor: formatInfo.bgColor,
+                        borderColor: formatInfo.borderColor
+                      }}
+                    >
+                      {formatInfo.badgeText}
+                    </div>
+                    <div className="note-doc-hero__details">
+                      <div className="note-doc-hero__title-row">
+                        <h3 className="note-doc-hero__file-name">{note.fileName}</h3>
+                        <span className="note-doc-hero__status-tag">
+                          <span className="note-doc-hero__status-dot" /> Verified Academic File
+                        </span>
+                      </div>
+                      <p className="note-doc-hero__meta">
+                        <strong>{formatInfo.friendlyType}</strong>
+                        {formattedSize && <span>• {formattedSize}</span>}
+                      </p>
+                      <p className="note-doc-hero__app-hint">{formatInfo.appHint}.</p>
+                    </div>
+                  </div>
 
-            {showPreview && (
-              <div style={{ marginTop: '16px' }}>
-                <NotePreview note={note} />
+                  <div className="note-doc-hero__actions">
+                    <button
+                      type="button"
+                      className="note-doc-hero__download-btn"
+                      onClick={handleDownload}
+                      disabled={isDownloading}
+                    >
+                      📥{' '}
+                      {isDownloading
+                        ? 'Downloading...'
+                        : `Download Manuscript (${formattedSize || formatInfo.ext})`}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="note-doc-hero__footer">
+                  <div className="note-doc-hero__guarantee">
+                    <span>🔒 Safe Academic Storage</span>
+                    <span>•</span>
+                    <span>Virus-scanned & preserved in high-fidelity original format</span>
+                  </div>
+                  <div>Direct institutional download for enrolled scholars</div>
+                </div>
+              </div>
+            ) : (
+              /* Case B: Interactive Inline Viewer (PDF, Image, Text) */
+              <div className="note-doc-viewer-card">
+                <div className="note-doc-viewer-toolbar">
+                  <div className="note-doc-viewer-toolbar__left">
+                    <span
+                      className="note-doc-viewer-toolbar__badge"
+                      style={{
+                        color: formatInfo.color,
+                        backgroundColor: formatInfo.bgColor,
+                        borderColor: formatInfo.borderColor
+                      }}
+                    >
+                      {formatInfo.badgeText}
+                    </span>
+                    <div className="note-doc-viewer-toolbar__info">
+                      <h4 className="note-doc-viewer-toolbar__name">{note.fileName}</h4>
+                      <p className="note-doc-viewer-toolbar__meta">
+                        {formatInfo.friendlyType} {formattedSize && `• ${formattedSize}`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="note-doc-viewer-toolbar__actions">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowPreview((prev) => !prev)}
+                    >
+                      {showPreview ? 'Hide Document Preview' : '👁 Open Document Preview'}
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={handleDownload}
+                      disabled={isDownloading}
+                    >
+                      📥 {isDownloading ? 'Downloading...' : 'Download'}
+                    </Button>
+                  </div>
+                </div>
+
+                {showPreview && (
+                  <div className="note-doc-viewer-frame">
+                    <NotePreview note={note} hideHeader={true} />
+                  </div>
+                )}
               </div>
             )}
           </section>
         )}
 
-        {/* Written Manuscript Content */}
+        {/* Written Manuscript Content (if note has inline markdown or text transcript) */}
         {note.content && (
           <article className="note-details__content">
             <h3 className="note-details__content-title">Manuscript Content</h3>
@@ -375,27 +581,30 @@ export function NoteDetailsPage() {
           <div
             style={{
               marginTop: '32px',
-              padding: '20px',
-              backgroundColor: 'var(--color-bg-surface)',
-              borderRadius: '8px',
-              border: '1px solid var(--color-border)',
+              padding: '20px 24px',
+              backgroundColor: 'var(--color-bg-surface, #ffffff)',
+              borderRadius: '12px',
+              border: '1px solid var(--color-border, #d7d9d3)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               flexWrap: 'wrap',
-              gap: '12px'
+              gap: '12px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
             }}
           >
             <div>
-              <strong>This study note is currently unpublished.</strong>
+              <strong style={{ color: 'var(--color-text-primary, #202620)' }}>
+                This study note is currently unpublished.
+              </strong>
               <p
                 style={{
                   fontSize: '0.8125rem',
-                  color: 'var(--color-text-secondary)',
+                  color: 'var(--color-text-secondary, #5c665c)',
                   margin: '4px 0 0'
                 }}
               >
-                Only administrators can view this note until it is published.
+                Only administrators and you can view this note until it is published.
               </p>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -443,35 +652,23 @@ export function NoteDetailsPage() {
             <p
               style={{
                 fontSize: '0.875rem',
-                color: 'var(--color-text-secondary)',
+                color: 'var(--color-text-secondary, #5c665c)',
                 marginBottom: '16px'
               }}
             >
               Provide constructive academic feedback explaining why this manuscript cannot be
-              approved in its current state. The student will see this feedback when revising.
+              approved in its current form.
             </p>
-
-            <div className="note-form__group" style={{ marginBottom: '20px' }}>
-              <label htmlFor="rejection-reason" className="note-form__label">
-                Feedback for Scholar <span className="note-form__required">*</span>
-              </label>
-              <textarea
-                id="rejection-reason"
-                rows={4}
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="e.g., The proofs in Section 2 are missing pseudocode examples. Please include the complete algorithm before resubmitting."
-                className="note-form__textarea"
-                required
-              />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <Button
-                variant="outline"
-                onClick={() => setRejectModalOpen(false)}
-                disabled={isReviewing}
-              >
+            <textarea
+              className="note-form__textarea"
+              rows={4}
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="e.g. Please clarify Unit 2 diagrams or provide missing citations..."
+              style={{ width: '100%', marginBottom: '20px' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <Button variant="outline" onClick={() => setRejectModalOpen(false)}>
                 Cancel
               </Button>
               <Button
@@ -479,7 +676,7 @@ export function NoteDetailsPage() {
                 onClick={handleReject}
                 disabled={isReviewing || !rejectionReason.trim()}
               >
-                {isReviewing ? 'Submitting...' : 'Reject Manuscript'}
+                {isReviewing ? 'Submitting...' : 'Confirm Rejection'}
               </Button>
             </div>
           </Modal>
