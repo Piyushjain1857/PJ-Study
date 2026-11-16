@@ -45,7 +45,7 @@ export class SubjectService {
    * @returns {Promise<any>}
    */
   async createSubject(input) {
-    const { courseId, name, semester, description, isActive = true } = input;
+    const { courseId, name, semester, description, credits = 3, isActive = true } = input;
 
     if (!courseId) {
       const error = new Error('Parent course ID is required.');
@@ -83,11 +83,14 @@ export class SubjectService {
       throw error;
     }
 
+    const parsedCredits = credits !== undefined ? parseInt(String(credits), 10) || 3 : 3;
+
     return subjectRepository.create({
       courseId,
       name: name.trim(),
       slug,
       semester: parsedSemester,
+      credits: parsedCredits,
       description: description?.trim() || null,
       isActive
     });

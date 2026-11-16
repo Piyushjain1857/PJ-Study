@@ -331,6 +331,7 @@ export function NoteForm({
             {filteredSubjects.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name} (Semester {s.semester}
+                {s.credits ? ` • ${s.credits} Credits` : ''}
                 {s.course?.name ? ` • ${s.course.name}` : ''})
               </option>
             ))}

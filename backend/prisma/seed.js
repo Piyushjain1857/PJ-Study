@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
@@ -271,12 +272,14 @@ async function main() {
           name: 'Probability, Statistics & Linear Algebra',
           slug: 'probability-statistics-linear-algebra',
           semester: 1,
+          credits: 4,
           description: 'Probability, Statistics, Matrices, Linear Algebra, and Data Analysis.'
         },
         {
           name: 'Programming for Problem Solving Using Python',
           slug: 'programming-python',
           semester: 1,
+          credits: 4,
           description:
             'Python Basics, Variables, Data Types, Loops, Functions, OOP, and Problem Solving.'
         },
@@ -284,6 +287,7 @@ async function main() {
           name: 'Web Dev I (HTML, CSS, JS Basics)',
           slug: 'web-development-1',
           semester: 1,
+          credits: 3,
           description:
             'HTML, CSS, JavaScript Basics, Responsive Web Design, and Web Development Fundamentals.'
         },
@@ -291,6 +295,7 @@ async function main() {
           name: 'Basics of Electronics & Digital Logic Design',
           slug: 'electronics-digital-logic',
           semester: 1,
+          credits: 3,
           description:
             'Electronic Components, Number Systems, Logic Gates, Boolean Algebra, K-Maps, and Digital Circuits.'
         },
@@ -298,6 +303,7 @@ async function main() {
           name: 'CS Fundamentals & Career Pathways',
           slug: 'cs-fundamentals-career-pathways',
           semester: 1,
+          credits: 2,
           description:
             'Computer Science Fundamentals, Computing Technologies, Programming Concepts, and Career Opportunities.'
         },
@@ -305,9 +311,23 @@ async function main() {
           name: 'Maker Lab: Tinkering with Technology',
           slug: 'maker-lab',
           semester: 1,
+          credits: 2,
           description:
             'Hands-on Prototyping, Electronics, Arduino, Sensors, Tinkering, and Technology Projects.'
         }
+        // Other semesters commented out:
+        // { name: 'Engineering Mathematics II', slug: 'engineering-math-2', semester: 2, description: 'Calculus, Ordinary Differential Equations, Vector Calculus, and Transforms.' },
+        // { name: 'Digital Logic & Circuit Design', slug: 'digital-logic-design', semester: 2, description: 'Combinational and sequential circuits, flip-flops, counters, and registers.' },
+        // { name: 'Data Structures & Algorithms', slug: 'data-structures-and-algorithms', semester: 3, description: 'Arrays, Linked Lists, Stacks, Queues, Trees, Graphs, Sorting, and Searching.' },
+        // { name: 'Computer Organization & Architecture', slug: 'computer-organization-arch', semester: 3, description: 'CPU Architecture, Memory Hierarchy, I/O Interfacing, and Pipelining.' },
+        // { name: 'Database Management Systems', slug: 'database-management-systems', semester: 4, description: 'Relational Model, SQL, Normalization, Transactions, Concurrency, and Indexing.' },
+        // { name: 'Operating Systems', slug: 'operating-systems', semester: 4, description: 'Processes, Threads, CPU Scheduling, Deadlocks, Memory Management, and File Systems.' },
+        // { name: 'Computer Networks', slug: 'computer-networks', semester: 5, description: 'OSI and TCP/IP Models, Routing Algorithms, Transport Layer, and Network Security.' },
+        // { name: 'Theory of Computation', slug: 'theory-of-computation', semester: 5, description: 'Automata Theory, Regular Languages, Context-Free Grammars, and Turing Machines.' },
+        // { name: 'Compiler Design', slug: 'compiler-design', semester: 6, description: 'Lexical Analysis, Parsing Techniques, Syntax-Directed Translation, and Code Generation.' },
+        // { name: 'Software Engineering & Agile Methodologies', slug: 'software-engineering-agile', semester: 6, description: 'SDLC Models, Agile, Scrum, Software Testing, and Design Patterns.' },
+        // { name: 'Artificial Intelligence & Machine Learning', slug: 'ai-and-machine-learning', semester: 7, description: 'Search Algorithms, Knowledge Representation, Supervised & Unsupervised Learning.' },
+        // { name: 'Cloud Computing & Distributed Systems', slug: 'cloud-computing-distributed-systems', semester: 8, description: 'Virtualization, Cloud Architectures, Distributed Algorithms, and Microservices.' }
       ]
     },
     {
@@ -317,46 +337,62 @@ async function main() {
         'Bachelor of Computer Applications - Undergraduate 3-year computational applications curriculum.',
       subjects: [
         {
-          name: 'Probability, Statistics & Linear Algebra',
-          slug: 'probability-statistics-linear-algebra',
+          name: 'Web Designing Using HTML, CSS, JavaScript & PHP',
+          slug: 'web-designing-html-css-js-php',
           semester: 1,
-          description: 'Probability, Statistics, Matrices, Linear Algebra, and Data Analysis.'
+          credits: 4,
+          description: 'HTML, CSS, JavaScript, PHP, Web Design, and Frontend Development.'
         },
         {
-          name: 'Programming for Problem Solving Using Python',
-          slug: 'programming-python',
+          name: 'Basics of Mathematics',
+          slug: 'basics-of-mathematics',
           semester: 1,
+          credits: 4,
           description:
-            'Python Basics, Variables, Data Types, Loops, Functions, OOP, and Problem Solving.'
+            'Fundamental Mathematics, Algebra, Calculus, Equations, and Mathematical Problem Solving.'
         },
         {
-          name: 'Web Dev I (HTML, CSS, JS Basics)',
-          slug: 'web-development-1',
+          name: 'Clean Coding with Python',
+          slug: 'clean-coding-python',
           semester: 1,
+          credits: 4,
           description:
-            'HTML, CSS, JavaScript Basics, Responsive Web Design, and Web Development Fundamentals.'
+            'Python Programming, Clean Code Principles, Functions, Data Structures, and Coding Best Practices.'
         },
         {
-          name: 'Basics of Electronics & Digital Logic Design',
-          slug: 'electronics-digital-logic',
+          name: 'Essentials of Software Engineering',
+          slug: 'essentials-software-engineering',
           semester: 1,
+          credits: 3,
           description:
-            'Electronic Components, Number Systems, Logic Gates, Boolean Algebra, K-Maps, and Digital Circuits.'
+            'Software Development Life Cycle, Software Design, Testing, Maintenance, and Engineering Principles.'
         },
         {
-          name: 'CS Fundamentals & Career Pathways',
-          slug: 'cs-fundamentals-career-pathways',
+          name: 'Environmental Studies & Disaster Management',
+          slug: 'environmental-studies-disaster-management',
           semester: 1,
+          credits: 2,
           description:
-            'Computer Science Fundamentals, Computing Technologies, Programming Concepts, and Career Opportunities.'
+            'Environmental Science, Sustainability, Pollution, Natural Disasters, and Disaster Management.'
         },
         {
-          name: 'Maker Lab: Tinkering with Technology',
-          slug: 'maker-lab',
+          name: 'Data Visualization using Power BI',
+          slug: 'data-visualization-power-bi',
           semester: 1,
+          credits: 3,
           description:
-            'Hands-on Prototyping, Electronics, Arduino, Sensors, Tinkering, and Technology Projects.'
+            'Power BI, Data Visualization, Interactive Dashboards, Data Analysis, and Business Intelligence.'
         }
+        // Other semesters commented out:
+        // { name: 'Data Structures using C', slug: 'bca-data-structures', semester: 2, description: 'Arrays, Stacks, Queues, Trees, Graphs in C.' },
+        // { name: 'Object-Oriented Programming with C++', slug: 'bca-oop-cpp', semester: 2, description: 'Classes, Objects, Inheritance, Polymorphism in C++.' },
+        // { name: 'Computer System Architecture', slug: 'bca-csa', semester: 3, description: 'Digital logic, CPU organization, memory hierarchy.' },
+        // { name: 'Relational Database Management Systems', slug: 'bca-rdbms', semester: 3, description: 'SQL, normalization, relational algebra.' },
+        // { name: 'Java Programming & Application Development', slug: 'bca-java', semester: 4, description: 'Java core, multithreading, GUI, JDBC.' },
+        // { name: 'Operating System Principles', slug: 'bca-os', semester: 4, description: 'Process management, memory management, file systems.' },
+        // { name: 'Software Engineering Practices', slug: 'bca-software-eng', semester: 5, description: 'SDLC, Agile methodology, testing.' },
+        // { name: 'Web Technologies & Frameworks', slug: 'bca-web-tech', semester: 5, description: 'Full stack development, APIs, modern web frameworks.' },
+        // { name: 'Network Security & Cyber Forensics', slug: 'bca-cyber-security', semester: 6, description: 'Cryptography, cyber laws, threat analysis.' }
       ]
     },
     {
@@ -437,6 +473,7 @@ async function main() {
       }
     });
 
+    // 1. Seed active semester 1 subjects
     for (const subj of prog.subjects) {
       await prisma.subject.upsert({
         where: {
@@ -448,19 +485,110 @@ async function main() {
         update: {
           name: subj.name,
           semester: subj.semester,
-          description: subj.description
+          credits: subj.credits !== undefined ? subj.credits : 3,
+          description: subj.description,
+          isActive: true
         },
         create: {
           courseId: courseRecord.id,
           name: subj.name,
           slug: subj.slug,
           semester: subj.semester,
-          description: subj.description
+          credits: subj.credits !== undefined ? subj.credits : 3,
+          description: subj.description,
+          isActive: true
         }
       });
       totalSubjectsSeeded++;
     }
+
+    // 2. Remove all unseeded/obsolete subjects for this course so only Sem 1 subjects exist
+    const allowedSlugs = prog.subjects.map((s) => s.slug);
+    const obsoleteSubjects = await prisma.subject.findMany({
+      where: {
+        courseId: courseRecord.id,
+        ...(allowedSlugs.length > 0 ? { slug: { notIn: allowedSlugs } } : {})
+      }
+    });
+
+    if (obsoleteSubjects.length > 0) {
+      let fallbackSubject = null;
+      if (allowedSlugs.length > 0) {
+        fallbackSubject = await prisma.subject.findFirst({
+          where: { courseId: courseRecord.id, slug: allowedSlugs[0] }
+        });
+      } else {
+        fallbackSubject = await prisma.subject.findFirst({
+          where: { slug: 'probability-statistics-linear-algebra' }
+        });
+      }
+
+      for (const oldSubj of obsoleteSubjects) {
+        if (fallbackSubject) {
+          await prisma.note.updateMany({
+            where: { subjectId: oldSubj.id },
+            data: {
+              subjectId: fallbackSubject.id,
+              courseId: fallbackSubject.courseId,
+              semester: fallbackSubject.semester
+            }
+          });
+        }
+        await prisma.topic.deleteMany({ where: { subjectId: oldSubj.id } });
+        await prisma.subject.delete({ where: { id: oldSubj.id } });
+      }
+    }
   }
+
+  // 3. Remove any remaining obsolete, test, or stray subjects outside the approved catalog
+  const allAllowedSubjectSlugs = academicPrograms.flatMap((p) => p.subjects.map((s) => s.slug));
+  const explicitForbiddenNames = [
+    'Clean Coding with Python Lab',
+    'Essentials of Software Engineering Lab',
+    'Web Design Lab',
+    'Direct Publishing Subject',
+    'Data Structures & Algorithms'
+  ];
+  const straySubjects = await prisma.subject.findMany({
+    where: {
+      OR: [
+        { name: { in: explicitForbiddenNames } },
+        { slug: { in: ['clean-coding-python-lab', 'software-engineering-lab', 'web-design-lab', 'pub-sub101', 'lib-dsa'] } },
+        { slug: { notIn: allAllowedSubjectSlugs } }
+      ]
+    }
+  });
+
+  if (straySubjects.length > 0) {
+    const fallbackSubject = await prisma.subject.findFirst({
+      where: { slug: 'probability-statistics-linear-algebra' }
+    });
+
+    for (const oldSubj of straySubjects) {
+      if (fallbackSubject) {
+        await prisma.note.updateMany({
+          where: { subjectId: oldSubj.id },
+          data: {
+            subjectId: fallbackSubject.id,
+            courseId: fallbackSubject.courseId,
+            semester: fallbackSubject.semester
+          }
+        });
+      }
+      await prisma.topic.deleteMany({ where: { subjectId: oldSubj.id } });
+      await prisma.subject.delete({ where: { id: oldSubj.id } });
+    }
+  }
+
+  // 4. Clean up any unseeded test courses that have no remaining subjects or notes
+  const allowedCourseSlugs = academicPrograms.map((p) => p.slug);
+  await prisma.course.deleteMany({
+    where: {
+      slug: { notIn: allowedCourseSlugs },
+      notes: { none: {} },
+      subjects: { none: {} }
+    }
+  });
 
   // Set default university for users if unassigned
   await prisma.user.updateMany({

@@ -260,6 +260,11 @@ export function NoteDetailsPage() {
           <div className="note-details__badges">
             {note.category && <span className="note-card__category">{note.category.name}</span>}
             {note.subject && <span className="note-card__subject">{note.subject.name}</span>}
+            {note.subject?.credits && (
+              <span className="note-card__credits" style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', background: '#EDF5F0', color: 'var(--color-primary, #245C46)', border: '1px solid var(--color-border, #D7D9D3)' }}>
+                {note.subject.credits} Credits
+              </span>
+            )}
             {note.semester && <span className="note-card__semester">Semester {note.semester}</span>}
             <NoteStatusBadge status={note.status} />
           </div>

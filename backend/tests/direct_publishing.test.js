@@ -118,11 +118,22 @@ test('PJ Study Direct Publishing & Workflow Removal Suite', async (t) => {
     if (server) {
       await new Promise((resolve) => server.close(resolve));
     }
-    // Cleanup notes
+    // Cleanup notes and test taxonomy
     if (createdNoteId || superAdminNoteId) {
       await prisma.note.deleteMany({
         where: { id: { in: [createdNoteId, superAdminNoteId].filter(Boolean) } }
       });
+    }
+    if (testSubject) {
+      await prisma.note.deleteMany({ where: { subjectId: testSubject.id } });
+      await prisma.topic.deleteMany({ where: { subjectId: testSubject.id } });
+      await prisma.subject.deleteMany({ where: { id: testSubject.id } });
+    }
+    if (testCourse) {
+      await prisma.course.deleteMany({ where: { id: testCourse.id } });
+    }
+    if (testCategory) {
+      await prisma.category.deleteMany({ where: { id: testCategory.id } });
     }
   });
 
