@@ -1150,6 +1150,24 @@ export class NoteService {
     }
   }
 
+  async getBookmarkedNotes(userId, query = {}) {
+    const { page, limit, skip } = getPaginationParams(query);
+    const search = query.search || '';
+
+    const [bookmarks, total] = await Promise.all([
+      this.repo.findBookmarksByUser(userId, { skip, take: limit, search }),
+      this.repo.countBookmarksByUser(userId, { search })
+    ]);
+
+    const items = (bookmarks || []).map((b) => ({
+      ...b.note,
+      bookmarkId: b.id,
+      bookmarkedAt: b.createdAt
+    }));
+
+    return buildPaginatedResponse(items, total, page, limit);
+  }
+
   async reviewNote(userId, noteId, rating, comment) {
     const parsedRating = parseInt(String(rating), 10);
     if (Number.isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {

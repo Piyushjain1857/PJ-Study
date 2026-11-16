@@ -1,6 +1,6 @@
 /**
- * PJ Study Global Stylesheet
- * High-legibility typography, smooth transitions, accessibility & modern browser resets
+ * PJ Study Global Stylesheet - Editorial Minimalist Architecture
+ * Canvas #F5F4F0 | Text Primary #202620 | Solid Accent #245C46 | Border #D7D9D3
  */
 
 html {
@@ -32,27 +32,68 @@ body {
   flex-direction: column;
 }
 
+/* Headings: Tight letter spacing, controlled weight */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--color-text-primary);
+  letter-spacing: var(--letter-spacing-tight);
+  margin-top: 0;
+  font-weight: var(--weight-semibold);
+}
+
+h1 {
+  font-size: var(--text-4xl);
+  line-height: var(--leading-tight);
+}
+
+h2 {
+  font-size: var(--text-2xl);
+  line-height: var(--leading-tight);
+}
+
+h3 {
+  font-size: var(--text-xl);
+  line-height: var(--leading-snug);
+}
+
+h4 {
+  font-size: var(--text-lg);
+  line-height: var(--leading-snug);
+}
+
+/* Tabular Numbers: Apply to stats, counts, tables, timestamps, data grids */
+.tabular-nums,
+table,
+.stats-num,
+.kpi-value,
+.badge-count,
+.date-meta,
+.counter-text {
+  font-variant-numeric: tabular-nums;
+}
+
 /* Accessibility: Skip Link (WCAG 2.4.1 Bypass Blocks) */
 .skip-link {
   position: absolute;
   top: -9999px;
   left: var(--space-4);
-  background-color: var(--color-primary);
-  color: var(--color-text-inverse);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-strong);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-sm);
   font-family: var(--font-body);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-medium);
   font-size: var(--text-sm);
   z-index: 10000;
   text-decoration: none;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-dropdown);
   transition: top var(--transition-fast);
 }
 
 .skip-link:focus {
   top: var(--space-4);
-  outline: 3px solid var(--color-accent);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -80,14 +121,14 @@ textarea:focus-visible,
 
 /* Selection */
 ::selection {
-  background-color: var(--color-primary-light);
+  background-color: var(--color-primary-subtle);
   color: var(--color-primary);
 }
 
-/* Scrollbar styling */
+/* Crisp Clean Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -96,11 +137,11 @@ textarea:focus-visible,
 
 ::-webkit-scrollbar-thumb {
   background: var(--color-border);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-xs);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-border-hover);
+  background: var(--color-border-strong);
 }
 
 /* Accessibility: Respect Reduced Motion */

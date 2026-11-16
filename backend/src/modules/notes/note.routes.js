@@ -26,6 +26,9 @@ router.get('/explore/filters', noteController.getExploreFilters);
 // Current scholar's personal notes dashboard
 router.get('/me', requireAuth, noteController.getMyNotes);
 
+// Current scholar's bookmarked notes
+router.get('/bookmarks', requireAuth, noteController.getBookmarkedNotes);
+
 // Moderation queue for academic staff
 router.get(
   '/moderation/queue',

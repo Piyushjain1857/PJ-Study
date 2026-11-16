@@ -961,8 +961,10 @@ export function AppLayout() {
       .filter((group) => (group.items || []).length > 0);
   }, [dynamicNav, isSuperAdminRole, isAdminRole, superAdminNavGroups, adminNavGroups, scholarNavGroups]);
 
+  const isStudioRoute = location.pathname.startsWith('/admin/ui-builder');
+
   return (
-    <div className={`app-shell ${sidebarCollapsed ? 'app-shell--collapsed' : ''}`}>
+    <div className={`app-shell ${sidebarCollapsed ? 'app-shell--collapsed' : ''} ${isStudioRoute ? 'app-shell--studio' : ''}`}>
       {/* Skip to Main Content Link for Keyboard and Screen Reader Accessibility */}
       <a href="#main-content" className="skip-link">
         Skip to main content

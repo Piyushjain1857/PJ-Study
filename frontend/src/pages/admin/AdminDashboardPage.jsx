@@ -1473,6 +1473,28 @@ export function AdminDashboardPage() {
 
   const hasActiveFilters = Boolean(search || roleFilter || statusFilter);
 
+  // When visiting the Visual Website & Workspace Builder, break out into full-page edge-to-edge studio
+  if (activeTab.startsWith('ui-builder') || activeTab === 'widgets') {
+    const targetPage =
+      activeTab === 'ui-builder-scholar'
+        ? 'scholar_dashboard'
+        : activeTab === 'ui-builder-admin'
+          ? 'admin_dashboard'
+          : activeTab === 'ui-builder-homepage'
+            ? 'homepage'
+            : 'scholar_dashboard';
+
+    return (
+      <div className="admin-dashboard admin-dashboard--builder-fullscreen" style={{ width: '100%', height: '100vh', padding: 0, margin: 0, overflow: 'hidden' }}>
+        <SEO title={headerInfo.seo} noindex={true} />
+        <VisualBuilderTab
+          targetPage={targetPage}
+          onNotify={setActionNotice}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="admin-dashboard">
       <SEO title={headerInfo.seo} noindex={true} />

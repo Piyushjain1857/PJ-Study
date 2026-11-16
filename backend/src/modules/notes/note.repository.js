@@ -169,6 +169,54 @@ export class NoteRepository {
     });
   }
 
+  async findBookmarksByUser(userId, { skip = 0, take = 20, search } = {}) {
+    const where = {
+      userId,
+      ...(search && search.trim()
+        ? {
+            note: {
+              OR: [
+                { title: { contains: search.trim() } },
+                { description: { contains: search.trim() } },
+                { subject: { name: { contains: search.trim() } } }
+              ]
+            }
+          }
+        : {})
+    };
+
+    return prisma.bookmark.findMany({
+      where,
+      skip,
+      take,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        note: {
+          include: NOTE_DETAIL_INCLUDE
+        }
+      }
+    });
+  }
+
+  async countBookmarksByUser(userId, { search } = {}) {
+    const where = {
+      userId,
+      ...(search && search.trim()
+        ? {
+            note: {
+              OR: [
+                { title: { contains: search.trim() } },
+                { description: { contains: search.trim() } },
+                { subject: { name: { contains: search.trim() } } }
+              ]
+            }
+          }
+        : {})
+    };
+
+    return prisma.bookmark.count({ where });
+  }
+
   // =========================================================================
   // REVIEW OPERATIONS
   // =========================================================================

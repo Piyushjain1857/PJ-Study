@@ -1,34 +1,33 @@
 /**
- * PJ Study Design Tokens - V2 Premium Typography & Layout System
- * Inspired by Linear (precision micro-spacing), Notion (whitespace clarity), Vercel (clean minimalism)
+ * PJ Study Design Tokens - Editorial Minimalist Design System
+ * Strict Three-Color Foundation: Canvas #F5F4F0 | Surface #FFFFFF | Accent #245C46
+ * Border-First Architecture, Crisp 1px Separators, Zero Gradients, Controlled Radii
  */
 
 :root {
   /* ===========================================================================
-     1. TYPOGRAPHY SYSTEM (Plus Jakarta Sans + Inter)
+     1. TYPOGRAPHY SYSTEM (Inter + Clean System Fallbacks)
      =========================================================================== */
-  --font-heading:
-    'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --font-display-serif: 'Instrument Serif', Georgia, Cambria, serif;
 
   /* Typography Scale */
   --text-2xs: 0.6875rem; /* 11px */
-  --text-xs: 0.75rem; /* 12px */
-  --text-sm: 0.875rem; /* 14px */
-  --text-base: 1rem; /* 16px */
-  --text-lg: 1.125rem; /* 18px */
-  --text-xl: 1.25rem; /* 20px */
-  --text-2xl: 1.5rem; /* 24px */
-  --text-3xl: 1.875rem; /* 30px */
-  --text-4xl: 2.125rem; /* 34px */
-  --text-display: clamp(2.25rem, 1.8rem + 1.8vw, 3.25rem);
+  --text-xs: 0.75rem;    /* 12px */
+  --text-sm: 0.8125rem;  /* 13px */
+  --text-base: 0.875rem; /* 14px */
+  --text-lg: 1rem;       /* 16px */
+  --text-xl: 1.125rem;   /* 18px */
+  --text-2xl: 1.25rem;   /* 20px */
+  --text-3xl: 1.5rem;    /* 24px */
+  --text-4xl: 1.875rem;  /* 30px */
+  --text-display: clamp(1.875rem, 1.5rem + 1.5vw, 2.25rem); /* 30-36px */
 
-  /* Legacy Font Size Aliases for Component Compatibility */
+  /* Legacy Scale Aliases */
   --font-size-2xs: var(--text-2xs);
   --font-size-xs: var(--text-xs);
-  --font-size-sm: var(--text-sm);
+  --font-size-sm: var(--text-base);
   --font-size-base: var(--text-base);
   --font-size-lg: var(--text-lg);
   --font-size-xl: var(--text-xl);
@@ -42,28 +41,31 @@
   --weight-medium: 500;
   --weight-semibold: 600;
   --weight-bold: 700;
-  --weight-extrabold: 800;
 
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
+  /* Letter Spacing */
+  --letter-spacing-tight: -0.03em;
+  --letter-spacing-normal: 0em;
+
   /* Line Heights */
   --leading-none: 1;
-  --leading-tight: 1.2;
-  --leading-snug: 1.35;
-  --leading-normal: 1.55;
-  --leading-relaxed: 1.65;
+  --leading-tight: 1.25;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.6;
 
   --line-height-none: 1;
-  --line-height-tight: 1.2;
-  --line-height-snug: 1.35;
-  --line-height-normal: 1.55;
-  --line-height-relaxed: 1.65;
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.375;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.6;
 
   /* ===========================================================================
-     2. SPACING SYSTEM (Section 15 Standard Scale)
+     2. STRICT 4PX SPACING SCALE
      =========================================================================== */
   --space-0-5: 2px;
   --space-1: 4px;
@@ -82,98 +84,98 @@
   --space-20: 80px;
 
   /* ===========================================================================
-     3. COLOR SYSTEM (Academic Emerald, Warm Sand, High-Legibility Slate)
+     3. STRICT THREE-COLOR SYSTEM (Canvas #F5F4F0 | Surface #FFFFFF | Accent #245C46)
      =========================================================================== */
-  /* Neutral Surfaces */
-  --color-background: #faf9f6;
-  --color-surface: #ffffff;
-  --color-surface-hover: #f5f4ef;
-  --color-surface-subtle: #f7f6f1;
-  --color-surface-elevated: #ffffff;
-  --color-surface-dark: #141715;
+  /* Neutral Canvas & Surfaces */
+  --color-background: #F5F4F0;
+  --color-canvas: #F5F4F0;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #F8F8F5;
+  --color-surface-subtle: #F0EFEA;
+  --color-surface-elevated: #FFFFFF;
+  --color-surface-dark: #202620;
 
-  /* Text & Ink Hierarchy (Section 3.4) */
-  --color-text-primary: #151816; /* Strong contrast for headings */
-  --color-text-secondary: #4b524d; /* Soft, highly readable for body & descriptions */
-  --color-text-tertiary: #757c77; /* Timestamps, metadata, labels */
-  --color-text-muted: #9fa6a1; /* Decorative or disabled hints */
-  --color-text-inverse: #ffffff;
+  /* Text & Ink Hierarchy */
+  --color-text-primary: #202620;
+  --color-text-secondary: #626A62;
+  --color-text-tertiary: #858B84;
+  --color-text-muted: #858B84;
+  --color-text-inverse: #FFFFFF;
 
-  /* Brand Primary (Academic Forest Emerald) */
-  --color-primary: #1b4d36;
-  --color-primary-hover: #143d2a;
-  --color-primary-active: #0e2b1d;
-  --color-primary-subtle: #edf5f0;
-  --color-primary-light: #d6e8de;
-  --color-primary-border: #b9d8c6;
+  /* Single Chromatic Brand Accent: Deep Forest Green */
+  --color-primary: #245C46;
+  --color-primary-hover: #1C4A38;
+  --color-primary-active: #15382B;
+  --color-primary-subtle: #EDF5F0;
+  --color-primary-light: #EDF5F0;
+  --color-primary-border: #B9BFB7;
+  --color-accent: #245C46;
+  --color-accent-hover: #1C4A38;
+  --color-accent-subtle: #EDF5F0;
 
-  /* Brand Accent (Warm Academic Amber) */
-  --color-accent: #b47318;
-  --color-accent-hover: #965e10;
-  --color-accent-subtle: #fdf6ec;
-  --color-accent-light: #fbebd0;
-  --color-accent-border: #ebd0a4;
+  /* Border-First Hairlines */
+  --color-border: #D7D9D3;
+  --color-border-subtle: #E4E6E1;
+  --color-border-hover: #B9BFB7;
+  --color-border-strong: #B9BFB7;
 
-  /* Borders & Hairlines */
-  --color-border: #e6e3da;
-  --color-border-subtle: #eeece4;
-  --color-border-hover: #cfccc2;
-  --color-border-strong: #b5b1a4;
+  /* Accessible Semantic Feedback (Restrained) */
+  --color-success: #245C46;
+  --color-success-hover: #1C4A38;
+  --color-success-subtle: #EDF5F0;
+  --color-success-border: #D7D9D3;
 
-  /* Semantic Feedback */
-  --color-success: #236e45;
-  --color-success-hover: #1b5736;
-  --color-success-subtle: #eef7f2;
-  --color-success-border: #b6dec6;
+  --color-warning: #92540D;
+  --color-warning-hover: #78440A;
+  --color-warning-subtle: #FDF8ED;
+  --color-warning-border: #E8D5B5;
 
-  --color-warning: #ad6512;
-  --color-warning-hover: #8e500b;
-  --color-warning-subtle: #fdf5ea;
-  --color-warning-border: #f3d7aa;
+  --color-danger: #B91C1C;
+  --color-danger-hover: #991B1B;
+  --color-danger-subtle: #FEF2F2;
+  --color-danger-border: #FECACA;
 
-  --color-danger: #b53434;
-  --color-danger-hover: #942929;
-  --color-danger-subtle: #fdf1f1;
-  --color-danger-border: #f6bebe;
-
-  --color-verified: #255eb3;
-  --color-verified-subtle: #edf4fd;
-  --color-verified-border: #bad4f9;
+  --color-verified: #245C46;
+  --color-verified-subtle: #EDF5F0;
+  --color-verified-border: #B9BFB7;
 
   /* ===========================================================================
-     4. COMPONENT GEOMETRY & ELEVATION
+     4. CONTROLLED BORDER RADIUS SCALE
      =========================================================================== */
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-small: 6px;
-  --radius-md: 10px;
-  --radius-medium: 10px;
-  --radius-lg: 14px;
-  --radius-large: 14px;
-  --radius-xl: 18px;
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-small: 5px;
+  --radius-md: 7px;
+  --radius-medium: 7px;
+  --radius-lg: 10px;
+  --radius-large: 10px;
+  --radius-xl: 10px;
   --radius-full: 9999px;
 
-  /* Layered Shadows */
-  --shadow-xs: 0 1px 2px rgba(21, 24, 22, 0.04);
-  --shadow-sm: 0 1px 3px rgba(21, 24, 22, 0.05), 0 1px 2px rgba(21, 24, 22, 0.03);
-  --shadow-subtle: 0 2px 6px rgba(21, 24, 22, 0.04);
-  --shadow-md: 0 4px 12px -1px rgba(21, 24, 22, 0.06), 0 2px 4px -1px rgba(21, 24, 22, 0.03);
-  --shadow-medium: 0 6px 16px rgba(21, 24, 22, 0.06);
-  --shadow-lg: 0 12px 28px -4px rgba(21, 24, 22, 0.08), 0 4px 8px -2px rgba(21, 24, 22, 0.03);
-  --shadow-dropdown: 0 10px 24px -2px rgba(21, 24, 22, 0.09), 0 3px 6px -1px rgba(21, 24, 22, 0.04);
-  --shadow-modal: 0 20px 48px -8px rgba(21, 24, 22, 0.14), 0 6px 16px -2px rgba(21, 24, 22, 0.06);
+  /* ===========================================================================
+     5. ELEVATION (Default: None. Overlays: Subtle Restrained Shadow)
+     =========================================================================== */
+  --shadow-none: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-subtle: none;
+  --shadow-md: none;
+  --shadow-medium: none;
+  --shadow-lg: none;
+  --shadow-dropdown: 0 4px 16px rgba(32, 38, 32, 0.08);
+  --shadow-modal: 0 8px 32px rgba(32, 38, 32, 0.12);
 
   /* Layout Dimensions */
-  --container-width: 1280px;
-  --container-wide: 1400px;
-  --navbar-height: 4rem; /* 64px */
-  --sidebar-width: 256px;
-  --sidebar-collapsed-width: 68px;
+  --container-width: 1240px;
+  --container-wide: 1360px;
+  --navbar-height: 3.5rem; /* 56px */
+  --sidebar-width: 240px;
+  --sidebar-collapsed-width: 64px;
 
-  /* Transitions */
-  --transition-fast: 140ms cubic-bezier(0.16, 1, 0.3, 1);
-  --transition-normal: 220ms cubic-bezier(0.16, 1, 0.3, 1);
-  --transition-slow: 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  /* Micro-Interaction Transitions (120-180ms ease-out) */
+  --transition-fast: 120ms ease-out;
+  --transition-normal: 150ms ease-out;
+  --transition-slow: 180ms ease-out;
 
   /* Z-index Scale */
   --z-base: 1;

@@ -194,6 +194,21 @@ export const noteService = {
   },
 
   /**
+   * Fetches notes bookmarked by current authenticated scholar.
+   *
+   * @param {{
+   *   page?: number,
+   *   limit?: number,
+   *   search?: string
+   * }} [params]
+   * @returns {Promise<{ items: any[], meta: any }>}
+   */
+  async getBookmarkedNotes(params = {}) {
+    const response = await apiClient.get('/notes/bookmarks', { params });
+    return response.data?.data;
+  },
+
+  /**
    * Fetches pending notes in the moderation queue for academic staff.
    *
    * @param {{

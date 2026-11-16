@@ -88,22 +88,24 @@ test('PJ Study Direct Publishing & Workflow Removal Suite', async (t) => {
           slug: 'pub-sub101'
         }
       },
-      update: { semester: 2 },
+      update: { semester: 2, isActive: true },
       create: {
         name: 'Direct Publishing Subject',
         slug: 'pub-sub101',
         code: 'PUB-SUB101',
         courseId: testCourse.id,
-        semester: 2
+        semester: 2,
+        isActive: true
       }
     });
 
     testCategory = await prisma.category.upsert({
       where: { slug: 'pub-cat' },
-      update: {},
+      update: { isActive: true },
       create: {
         name: 'Publishing Category',
-        slug: 'pub-cat'
+        slug: 'pub-cat',
+        isActive: true
       }
     });
 

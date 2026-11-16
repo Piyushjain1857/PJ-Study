@@ -496,6 +496,37 @@
   box-sizing: border-box;
 }
 
+/* Edge-to-Edge Breakout for Visual Website Builder Studio */
+.app-shell--studio .app-shell__sidebar,
+.app-shell:has(.admin-dashboard--builder-fullscreen) .app-shell__sidebar {
+  display: none !important;
+}
+
+.app-shell--studio .app-shell__top-bar,
+.app-shell:has(.admin-dashboard--builder-fullscreen) .app-shell__top-bar {
+  display: none !important;
+}
+
+.app-shell--studio .app-shell__main-wrapper,
+.app-shell:has(.admin-dashboard--builder-fullscreen) .app-shell__main-wrapper {
+  margin-left: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.app-shell--studio .app-shell__content,
+.app-shell:has(.admin-dashboard--builder-fullscreen) .app-shell__content,
+.app-shell:has(.pb-studio-root) .app-shell__content,
+.app-shell__content:has(.pb-studio-root),
+.app-shell__content:has(.admin-dashboard--builder-fullscreen) {
+  padding: 0 !important;
+  margin: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+}
+
 .app-shell__content > .container,
 .app-shell__content .layout-container {
   padding-left: 0;

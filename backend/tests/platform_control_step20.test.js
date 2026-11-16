@@ -360,16 +360,25 @@ test('Super Admin Platform Owner Control & Customization Suite', async (t) => {
   });
 
   await t.test('13. Notes Invariants: Admin uploads note and it publishes immediately', async () => {
-    // Get valid course and subject
+    // Get valid course and subject with fallback
     const courseRes = await fetch(`${baseUrl}/courses`);
     const courses = (await courseRes.json()).data || [];
-    const targetCourse = courses[0];
-    const subjRes = await fetch(`${baseUrl}/subjects?courseId=${targetCourse.id}&semester=1`);
-    const subjects = (await subjRes.json()).data || [];
-    const targetSubject = subjects[0];
+    let targetCourse = courses[0];
+    let targetSubject = null;
+
+    for (const c of courses) {
+      const subjRes = await fetch(`${baseUrl}/subjects?courseId=${c.id}`);
+      const subjects = (await subjRes.json()).data || [];
+      if (subjects.length > 0) {
+        targetCourse = c;
+        targetSubject = subjects[0];
+        break;
+      }
+    }
+
     const catRes = await fetch(`${baseUrl}/categories`);
     const categories = (await catRes.json()).data || [];
-    const targetCategory = categories[0];
+    const targetCategory = categories.find((cat) => cat.isActive) || categories[0];
 
     const uploadRes = await fetch(`${baseUrl}/notes`, {
       method: 'POST',
@@ -383,7 +392,7 @@ test('Super Admin Platform Owner Control & Customization Suite', async (t) => {
         courseId: targetCourse.id,
         subjectId: targetSubject.id,
         categoryId: targetCategory.id,
-        semester: 1,
+        semester: targetSubject.semester || 1,
         content: 'Comprehensive verified lecture notes.'
       })
     });

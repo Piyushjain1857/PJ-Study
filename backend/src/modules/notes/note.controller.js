@@ -271,6 +271,18 @@ export class NoteController {
   };
 
   /**
+   * Retrieves notes bookmarked by authenticated scholar.
+   */
+  getBookmarkedNotes = async (req, res, next) => {
+    try {
+      const result = await this.service.getBookmarkedNotes(req.user.id, req.query);
+      return sendSuccess(res, result, 200, 'Bookmarked notes retrieved successfully.');
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  /**
    * Rates and reviews note.
    */
   reviewNoteRating = async (req, res, next) => {

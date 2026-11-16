@@ -249,7 +249,7 @@ test('Advanced Notes Discovery, Search, Filtering & Student Library Suite', asyn
   });
 
   await t.test('1. Public discovery returns ONLY approved notes', async () => {
-    const res = await fetch(`${baseUrl}/notes/explore`);
+    const res = await fetch(`${baseUrl}/notes/explore?limit=50`);
     assert.strictEqual(res.status, 200);
     const body = await res.json();
 

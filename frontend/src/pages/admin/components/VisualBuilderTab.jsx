@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { platformConfigService } from '../../../services/platformConfigService.js';
 import Button from '../../../components/common/Button.jsx';
-import Badge from '../../../components/common/Badge.jsx';
 import Input from '../../../components/common/Input.jsx';
 import Skeleton from '../../../components/common/Skeleton.jsx';
 import { usePlatformConfig } from '../../../context/PlatformConfigContext.jsx';
@@ -30,68 +30,78 @@ const DEVICE_VIEWPORTS = {
 
 // Approved Component Registry with metadata & default schemas
 const COMPONENT_METADATA = {
+  // Scholar Dashboard
   welcome_header: { label: 'Welcome & Institutional Announcement', icon: '👋', category: 'Scholar' },
   quick_search: { label: 'Smart Notes Search Bar', icon: '🔍', category: 'Scholar' },
   academic_info: { label: 'KRMU Academic Enrollment Badge', icon: '🏛️', category: 'Scholar' },
   stats_kpi: { label: 'KPI Metric Progress Cards', icon: '📈', category: 'General' },
   activity_chart: { label: 'Weekly Study Trends Chart', icon: '📊', category: 'Scholar' },
   recent_notes: { label: 'Recently Published Manuscripts', icon: '📖', category: 'General' },
+  recommendations: { label: 'Curated Faculty Recommendations', icon: '⭐', category: 'Scholar' },
+  bottom_split: { label: 'Library & Campus Announcements Split', icon: '📑', category: 'Scholar' },
+  library_preview: { label: 'My Library Preview', icon: '🔖', category: 'Scholar' },
   downloads: { label: 'Study Downloads & History', icon: '📥', category: 'Scholar' },
   collections: { label: 'Study Binders & Collections', icon: '📁', category: 'Scholar' },
-  recommendations: { label: 'Curated Faculty Recommendations', icon: '⭐', category: 'Scholar' },
-  library_preview: { label: 'My Library Preview', icon: '🔖', category: 'Scholar' },
-  bottom_split: { label: 'Library & Announcements Split', icon: '📑', category: 'Scholar' },
   quick_actions: { label: 'Quick Action Shortcuts', icon: '⚡', category: 'Scholar' },
 
+  // Admin Dashboard / Command Center
+  quick_shortcuts: { label: 'Direct Publishing & Management Shortcuts', icon: '⚡', category: 'Admin' },
+  analytics_summary: { label: 'Readership Analytics Card', icon: '📉', category: 'Admin' },
+  announcements: { label: 'Platform Announcements Feed', icon: '📢', category: 'Admin' },
+  reports_feed: { label: 'Content Reports & Quality Queue', icon: '🚩', category: 'Admin' },
+
+  // Scholar Explore Notes
   explore_header: { label: 'Catalog Header & Search Summary', icon: '🔍', category: 'Scholar' },
-  search_filters: { label: 'Faceted Academic Filters', icon: '🏷️', category: 'General' },
-  notes_catalog: { label: 'Manuscripts Catalog Grid', icon: '📚', category: 'General' },
+  search_filters: { label: 'Curriculum Multi-Select Filters', icon: '🏷️', category: 'General' },
+  notes_catalog: { label: 'Curriculum Manuscripts Catalog', icon: '📚', category: 'General' },
 
+  // Scholar Recommendations
   rec_header: { label: 'Recommendation Header', icon: '🎯', category: 'Scholar' },
-  rec_grid: { label: 'Curated Manuscript Cards', icon: '✨', category: 'Scholar' },
+  rec_grid: { label: 'Curated Manuscript Cards Grid', icon: '✨', category: 'Scholar' },
 
-  library_header: { label: 'Library Header & Stats', icon: '🔖', category: 'Scholar' },
+  // Scholar Library
+  library_header: { label: 'Library Header & Storage Stats', icon: '🔖', category: 'Scholar' },
   saved_tabs: { label: 'Saved Tabs & Filter Pills', icon: '📑', category: 'Scholar' },
   collections_grid: { label: 'Personal Binder Bins', icon: '🗂️', category: 'Scholar' },
 
+  // Scholar Profile
   profile_header: { label: 'Profile Summary Header', icon: '👤', category: 'Scholar' },
   academic_card: { label: 'K.R. Mangalam University Credentials', icon: '🎓', category: 'Scholar' },
   security_settings: { label: 'Password & RBAC Security Preferences', icon: '🔒', category: 'General' },
 
-  notifications_header: { label: 'Notifications Header', icon: '🔔', category: 'General' },
+  // Scholar Notifications
+  notifications_header: { label: 'Notification Center Header', icon: '🔔', category: 'General' },
   notifications_feed: { label: 'Live Notifications Stream', icon: '📩', category: 'General' },
 
-  quick_shortcuts: { label: 'Admin Management Shortcuts', icon: '⚡', category: 'Admin' },
-  analytics_summary: { label: 'Readership Analytics Card', icon: '📉', category: 'Admin' },
-  announcements: { label: 'Platform Announcements Feed', icon: '📢', category: 'Admin' },
-  reports_feed: { label: 'Content Reports Queue', icon: '🚩', category: 'Admin' },
-
-  upload_header: { label: 'Publishing Header', icon: '📤', category: 'Admin' },
+  // Admin Upload Note
+  upload_header: { label: 'Direct Publishing Header', icon: '📤', category: 'Admin' },
   file_uploader: { label: 'PDF Document Drag & Drop Vault', icon: '📁', category: 'Admin' },
   metadata_form: { label: 'Course & Curriculum Metadata Form', icon: '📝', category: 'Admin' },
 
-  notes_header: { label: 'Inventory Header & Stats', icon: '📑', category: 'Admin' },
+  // Admin Curriculum Inventory
+  notes_header: { label: 'Inventory Header & Storage KPI', icon: '📑', category: 'Admin' },
   inventory_filters: { label: 'Curriculum Inventory Filters', icon: '🔎', category: 'Admin' },
   inventory_table: { label: 'Complete Notes Inventory Table', icon: '📋', category: 'Admin' },
 
+  // Public Homepage
   announcement_banner: { label: 'Top Notification Ticker', icon: '📣', category: 'Public' },
   hero: { label: 'Hero Banner & Call to Action', icon: '🌟', category: 'Public' },
-  features: { label: 'Platform Capability Cards', icon: '💡', category: 'Public' },
-  how_it_works: { label: 'Three-Step Study Workflow', icon: '🔄', category: 'Public' },
+  features: { label: 'Platform Capabilities Bento Grid', icon: '💡', category: 'Public' },
+  how_it_works: { label: 'Three-Step Curriculum Roadmap', icon: '🔄', category: 'Public' },
   academic_highlights: { label: 'K.R. Mangalam Academic Programs', icon: '🏛️', category: 'Public' },
   trust_cta: { label: 'Institutional Trust CTA', icon: '🛡️', category: 'Public' },
-  footer: { label: 'Institutional Footer & Links', icon: '📄', category: 'Public' }
+  footer: { label: 'Institutional Academic Footer', icon: '📄', category: 'Public' }
 };
 
 // Approved Addable Components Catalog
 const ADDABLE_COMPONENTS = [
-  { key: 'announcement_banner', name: 'Announcement Banner', icon: '📣', desc: 'Top alert ribbon for campus notices & exam dates', defaultProps: { text: 'Semester examination revision notes are live.', linkText: 'View Notes', linkUrl: '/notes/explore', variant: 'emerald', isVisible: true } },
+  { key: 'announcement_banner', name: 'Announcement Banner', icon: '📣', desc: 'Top alert ribbon for campus notices & exam dates', defaultProps: { text: 'Semester examination revision notes are live.', linkText: 'View Notes', linkUrl: '/notes/explore', isVisible: true } },
   { key: 'hero', name: 'Hero Section', icon: '🌟', desc: 'Full-width banner with title, description & CTA actions', defaultProps: { headline: 'Study Smarter with KRMU Notes', description: 'Curriculum-aligned lecture notes and exam guides.', eyebrow: 'Official Academic Portal', primaryCtaText: 'Explore Notes', primaryCtaLink: '/notes/explore', isVisible: true } },
   { key: 'stats_kpi', name: 'Quick Statistics KPI', icon: '📈', desc: 'Metric counters for published notes, reads & downloads', defaultProps: { columns: 4, cards: [{ id: 'published', label: 'Published Notes', show: true }, { id: 'reads', label: 'Catalog Reads', show: true }], isVisible: true } },
   { key: 'academic_info', name: 'Academic Identity Banner', icon: '🏛️', desc: 'Displays enrolled university school, degree & semester', defaultProps: { campusName: 'K.R. Mangalam University', schoolLabel: 'School of Computer Science & Engineering', isVisible: true } },
   { key: 'recent_notes', name: 'Recent Notes Grid', icon: '📖', desc: 'Showcase of recently uploaded and published study materials', defaultProps: { title: 'Recently Published Notes', subtitle: 'Latest study notes uploaded by faculty', isVisible: true } },
   { key: 'recommendations', name: 'Personalized Recommendations', icon: '⭐', desc: 'Hand-picked manuscripts matched to student enrolled courses', defaultProps: { title: 'Recommended For You', subtitle: 'Curated based on your active semester', maxItems: 6, isVisible: true } },
-  { key: 'features', name: 'Platform Capabilities Grid', icon: '💡', desc: 'Feature highlights and benefits cards with icons', defaultProps: { title: 'Why PJ Study?', subtitle: 'Engineered for seamless academic preparation', columns: 3, isVisible: true } },
+  { key: 'features', name: 'Platform Capabilities Grid', icon: '💡', desc: 'Feature highlights and benefits cards with icons', defaultProps: { title: 'Why PJ Study?', subtitle: 'Organized course notes and exam revision materials', columns: 3, isVisible: true } },
   { key: 'how_it_works', name: 'How It Works Guide', icon: '🔄', desc: 'Three-step curriculum study roadmap for students', defaultProps: { title: 'How PJ Study Works', subtitle: 'Get exam-ready in three simple steps', isVisible: true } },
   { key: 'trust_cta', name: 'Institutional Trust CTA', icon: '🛡️', desc: 'High-converting call to action block for students and faculty', defaultProps: { headline: 'Ready to elevate your academic scores?', description: 'Join fellow KRMU scholars today.', buttonText: 'Explore Catalog Now', buttonLink: '/notes/explore', isVisible: true } }
 ];
@@ -109,11 +119,12 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
 
   // Viewport & Canvas options
   const [device, setDevice] = useState('desktop');
-  const [zoom, setZoom] = useState('fit'); // 'fit' | 50 | 75 | 100
+  const [zoom, setZoom] = useState('100'); // '100' (default 1:1) | 'fit' | 75 | 50
   const [isEditMode, setIsEditMode] = useState(true); // true = Edit Mode, false = Preview Mode
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
   const [isRightCollapsed, setIsRightCollapsed] = useState(false);
+  const [showBrowserFrame, setShowBrowserFrame] = useState(true);
 
   // Canvas container auto-fit measurement
   const canvasContainerRef = useRef(null);
@@ -142,14 +153,13 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
   // Compute scale ratio
   const targetWidth = DEVICE_VIEWPORTS[device]?.width || 1200;
   const fitScale = useMemo(() => {
-    if (!canvasContainerWidth) return 0.75;
-    // Allow padding
+    if (!canvasContainerWidth) return 1;
     const availableWidth = Math.max(280, canvasContainerWidth - 48);
     const computed = availableWidth / targetWidth;
     return Math.min(1, Math.max(0.3, Math.round(computed * 100) / 100));
   }, [canvasContainerWidth, targetWidth]);
 
-  const currentScale = zoom === 'fit' ? fitScale : zoom / 100;
+  const currentScale = zoom === 'fit' ? fitScale : Number(zoom) / 100;
 
   // Drag and drop state
   const [draggedSection, setDraggedSection] = useState(null);
@@ -254,7 +264,7 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleUndo, handleRedo]);
 
-  // Filter pages by workspace
+  // Filter supported pages based on active role tab
   const filteredPages = useMemo(() => {
     if (workspaceRole === 'ALL') return SUPPORTED_PAGES;
     return SUPPORTED_PAGES.filter((p) => p.role === workspaceRole);
@@ -265,36 +275,25 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
     return SUPPORTED_PAGES.find((p) => p.id === selectedPage) || SUPPORTED_PAGES[0];
   }, [selectedPage]);
 
-  // Current section order
+  // Active section order in the canvas
   const currentSectionOrder = useMemo(() => {
     if (!draftConfig) return [];
     if (Array.isArray(draftConfig.section_order) && draftConfig.section_order.length > 0) {
       return draftConfig.section_order;
     }
-    return Object.keys(draftConfig).filter((k) => k !== 'section_order' && k !== 'sidebar');
+    // Fallback: exclude non-section system keys
+    const systemKeys = new Set(['version', 'lastUpdated', 'updatedBy', 'title', 'themePreset', 'section_order', 'customCSS', 'headCode', 'footerCode', 'layout']);
+    return Object.keys(draftConfig).filter((k) => !systemKeys.has(k));
   }, [draftConfig]);
 
-  // Move section by direction (▲ / ▼)
-  const handleMoveSection = (sectionKey, direction) => {
-    if (!draftConfig) return;
-    const order = [...currentSectionOrder];
-    const currentIndex = order.indexOf(sectionKey);
-    if (currentIndex === -1) return;
+  // Auto-select first section when section order updates or page changes
+  useEffect(() => {
+    if (currentSectionOrder.length > 0 && (!activeSection || !currentSectionOrder.includes(activeSection))) {
+      setActiveSection(currentSectionOrder[0]);
+    }
+  }, [currentSectionOrder, activeSection]);
 
-    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    if (targetIndex < 0 || targetIndex >= order.length) return;
-
-    const [moved] = order.splice(currentIndex, 1);
-    order.splice(targetIndex, 0, moved);
-
-    const newConfig = {
-      ...draftConfig,
-      section_order: order
-    };
-    pushHistory(newConfig);
-  };
-
-  // Drag and Drop handlers
+  // Drag and Drop handlers for section reordering
   const handleDragStart = (e, sectionKey) => {
     setDraggedSection(sectionKey);
     e.dataTransfer.effectAllowed = 'move';
@@ -332,6 +331,24 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
     }
     setDraggedSection(null);
     setDragOverSection(null);
+  };
+
+  // Move section up or down in order
+  const handleMoveSection = (sectionKey, direction) => {
+    if (!draftConfig) return;
+    const order = [...currentSectionOrder];
+    const idx = order.indexOf(sectionKey);
+    if (idx === -1) return;
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= order.length) return;
+
+    const [moved] = order.splice(idx, 1);
+    order.splice(targetIdx, 0, moved);
+
+    pushHistory({
+      ...draftConfig,
+      section_order: order
+    });
   };
 
   // Toggle section visibility
@@ -499,6 +516,17 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
     }
   };
 
+  // Toggle Focus Mode (maximize canvas)
+  const toggleFocusMode = () => {
+    if (isLeftCollapsed && isRightCollapsed) {
+      setIsLeftCollapsed(false);
+      setIsRightCollapsed(false);
+    } else {
+      setIsLeftCollapsed(true);
+      setIsRightCollapsed(true);
+    }
+  };
+
   if (isLoading) {
     return (
       <div style={{ padding: '24px' }}>
@@ -522,17 +550,44 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
           : ''
   ].filter(Boolean).join(' ');
 
+  const isNaturalDesktopScale = device === 'desktop' && (zoom === 100 || zoom === '100');
+
   return (
     <div className={`pb-studio-root ${isFullscreen ? 'pb-studio-root--fullscreen' : ''}`}>
       {/* =========================================================================
           TOP COMMAND TOOLBAR
           ========================================================================= */}
       <div className="pb-studio-toolbar">
-        {/* Left: Page Title, Workspace & Unsaved Indicator */}
+        {/* Left: Exit to Admin, Page Title, Workspace & Unsaved Indicator */}
         <div className="pb-studio-toolbar__left">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '18px' }}>🎨</span>
-            <span style={{ fontWeight: 800, fontSize: '13px', color: '#f8fafc', letterSpacing: '-0.01em' }}>
+          <Link
+            to="/admin"
+            className="pb-toolbar-back-btn"
+            title="Return to Super Admin Dashboard"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              padding: '4px 10px',
+              borderRadius: '4px',
+              background: 'var(--color-bg-primary, #F5F4F0)',
+              border: '1px solid var(--color-border, #D7D9D3)',
+              color: 'var(--color-text-primary, #202620)',
+              textDecoration: 'none',
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
+          >
+            <span>←</span>
+            <span>Exit to Admin</span>
+          </Link>
+
+          <div style={{ width: '1px', height: '18px', background: 'var(--color-border, #D7D9D3)', margin: '0 2px' }} />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '15px' }}>🎨</span>
+            <span style={{ fontWeight: 800, fontSize: '13px', color: 'var(--color-text-primary, #202620)', letterSpacing: '-0.01em' }}>
               Studio 3.0
             </span>
           </div>
@@ -541,7 +596,16 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
             className="admin-select"
             value={selectedPage}
             onChange={(e) => setSelectedPage(e.target.value)}
-            style={{ fontWeight: 700, fontSize: '12px', minWidth: '190px', background: '#0f172a', color: '#f8fafc', borderColor: '#334155' }}
+            style={{
+              fontWeight: 700,
+              fontSize: '12px',
+              minWidth: '200px',
+              background: '#FFFFFF',
+              color: 'var(--color-text-primary, #202620)',
+              borderColor: 'var(--color-border, #D7D9D3)',
+              padding: '4px 8px',
+              borderRadius: '4px'
+            }}
           >
             {SUPPORTED_PAGES.map((p) => (
               <option key={p.id} value={p.id}>
@@ -619,24 +683,36 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
 
           {/* Zoom Bar with Auto-Fit */}
           <div className="pb-zoom-bar">
-            <button
-              type="button"
-              className={`pb-zoom-btn ${zoom === 'fit' ? 'pb-zoom-btn--active' : ''}`}
-              onClick={() => setZoom('fit')}
-              title="Auto-Fit to available screen width"
-            >
-              Fit
-            </button>
-            {[50, 75, 100].map((lvl) => (
+            {['100', 'fit', 75, 50].map((lvl) => (
               <button
                 key={lvl}
                 type="button"
-                className={`pb-zoom-btn ${zoom === lvl ? 'pb-zoom-btn--active' : ''}`}
+                className={`pb-zoom-btn ${String(zoom) === String(lvl) ? 'pb-zoom-btn--active' : ''}`}
                 onClick={() => setZoom(lvl)}
               >
-                {lvl}%
+                {lvl === 'fit' ? 'Fit' : `${lvl}%`}
               </button>
             ))}
+          </div>
+
+          {/* Focus Mode & Chrome Frame Toggles */}
+          <div style={{ display: 'flex', gap: '4px' }}>
+            <button
+              type="button"
+              className={`pb-panel-toggle-btn ${isLeftCollapsed && isRightCollapsed ? 'pb-panel-toggle-btn--active' : ''}`}
+              onClick={toggleFocusMode}
+              title={isLeftCollapsed && isRightCollapsed ? 'Restore Side Panels' : 'Focus Mode: Maximize Canvas View'}
+            >
+              <span>⛶</span> {isLeftCollapsed && isRightCollapsed ? 'Exit Focus' : 'Full Canvas'}
+            </button>
+            <button
+              type="button"
+              className={`pb-panel-toggle-btn ${showBrowserFrame ? 'pb-panel-toggle-btn--active' : ''}`}
+              onClick={() => setShowBrowserFrame((prev) => !prev)}
+              title="Toggle Browser Mockup Chrome Header"
+            >
+              <span>🌐</span> Frame
+            </button>
           </div>
 
           {/* Quick Panel Collapse/Expand Toggles */}
@@ -645,7 +721,7 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
               type="button"
               className={`pb-panel-toggle-btn ${!isLeftCollapsed ? 'pb-panel-toggle-btn--active' : ''}`}
               onClick={() => setIsLeftCollapsed((prev) => !prev)}
-              title={isLeftCollapsed ? 'Show Layers Panel' : 'Hide Layers Panel (Expand Canvas)'}
+              title={isLeftCollapsed ? 'Show Layers Panel' : 'Hide Layers Panel'}
             >
               <span>📑</span> Layers
             </button>
@@ -653,7 +729,7 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
               type="button"
               className={`pb-panel-toggle-btn ${!isRightCollapsed ? 'pb-panel-toggle-btn--active' : ''}`}
               onClick={() => setIsRightCollapsed((prev) => !prev)}
-              title={isRightCollapsed ? 'Show Inspector Panel' : 'Hide Inspector Panel (Expand Canvas)'}
+              title={isRightCollapsed ? 'Show Inspector Panel' : 'Hide Inspector Panel'}
             >
               <span>⚙️</span> Inspector
             </button>
@@ -666,7 +742,7 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
             onClick={() => setIsFullscreen((prev) => !prev)}
             title={isFullscreen ? 'Exit Fullscreen' : 'Open Fullscreen Studio'}
           >
-            {isFullscreen ? '✕ Exit' : '⛶ Fullscreen'}
+            {isFullscreen ? '✕ Exit' : 'Fullscreen'}
           </button>
         </div>
 
@@ -728,13 +804,12 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
             {/* Header with Collapse Button */}
             <div className="pb-navigator-panel__header" style={{ padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <span style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a' }}>Layers & Structure</span>
-                <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>Full page hierarchy</p>
+                <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--color-text-primary, #202620)' }}>Layers & Structure</span>
+                <p style={{ margin: 0, fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>Full page hierarchy</p>
               </div>
               <button
                 type="button"
                 className="pb-toolbar-icon-btn"
-                style={{ color: '#475569' }}
                 onClick={() => setIsLeftCollapsed(true)}
                 title="Collapse Panel"
               >
@@ -778,7 +853,7 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
                 </div>
 
                 {/* Pages List */}
-                <div style={{ maxHeight: '160px', overflowY: 'auto', borderBottom: '1px solid #e2e8f0', padding: '6px' }}>
+                <div style={{ maxHeight: '160px', overflowY: 'auto', borderBottom: '1px solid var(--color-border, #D7D9D3)', padding: '6px' }}>
                   {filteredPages.map((page) => (
                     <button
                       key={page.id}
@@ -796,7 +871,7 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
                 </div>
 
                 {/* Section Structure Hierarchy with Drag and Drop */}
-                <div style={{ padding: '8px 12px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: '11px', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                <div style={{ padding: '8px 12px', background: 'var(--color-bg-primary, #F5F4F0)', borderBottom: '1px solid var(--color-border, #D7D9D3)', fontSize: '10px', fontWeight: 700, color: 'var(--color-text-secondary, #626A62)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                   Canvas Sections ({currentSectionOrder.length})
                 </div>
 
@@ -824,7 +899,7 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
                         >
                           <span className="pb-drag-handle" title="Drag to reorder">⋮⋮</span>
                           <span style={{ fontSize: '14px' }}>{meta.icon}</span>
-                          <span style={{ flex: 1, fontSize: '11px', fontWeight: isSelected ? 800 : 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#0f172a' }}>
+                          <span style={{ flex: 1, fontSize: '11px', fontWeight: isSelected ? 800 : 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--color-text-primary, #202620)' }}>
                             {meta.label}
                           </span>
 
@@ -851,7 +926,7 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
                                 e.stopPropagation();
                                 handleMoveSection(sectionKey, 'up');
                               }}
-                              title="Move Up"
+                              title="Move section up"
                             >
                               ▲
                             </button>
@@ -863,13 +938,13 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
                                 e.stopPropagation();
                                 handleMoveSection(sectionKey, 'down');
                               }}
-                              title="Move Down"
+                              title="Move section down"
                             >
                               ▼
                             </button>
                           </div>
 
-                          {/* Remove Section */}
+                          {/* Delete Action */}
                           <button
                             type="button"
                             className="pb-tree-action-btn"
@@ -877,10 +952,9 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
                               e.stopPropagation();
                               handleRemoveSection(sectionKey);
                             }}
-                            title="Remove Section"
-                            style={{ color: '#ef4444' }}
+                            title="Remove section from page"
                           >
-                            ×
+                            ✕
                           </button>
                         </div>
                       </React.Fragment>
@@ -891,42 +965,41 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
             ) : (
               /* TAB CONTENT: ADD COMPONENT LIBRARY */
               <div className="pb-add-components-panel">
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
-                  Approved UI Components
+                <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-text-secondary, #626A62)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Approved UI Components ({ADDABLE_COMPONENTS.length})
                 </span>
-                <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>
-                  Insert supported components into the active page layout.
-                </p>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-                  {ADDABLE_COMPONENTS.map((comp) => {
-                    const alreadyAdded = currentSectionOrder.includes(comp.key);
-                    return (
-                      <button
-                        key={comp.key}
-                        type="button"
-                        className="pb-add-card"
-                        onClick={() => handleAddComponent(comp)}
-                      >
-                        <span className="pb-add-card__icon">{comp.icon}</span>
-                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <strong style={{ fontSize: '12px', color: '#0f172a' }}>{comp.name}</strong>
-                            {alreadyAdded && <span style={{ fontSize: '10px', color: '#0f766e', fontWeight: 700 }}>In Page</span>}
-                          </div>
-                          <span style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{comp.desc}</span>
+                {ADDABLE_COMPONENTS.map((comp) => {
+                  const isAlreadyAdded = currentSectionOrder.includes(comp.key);
+                  return (
+                    <div
+                      key={comp.key}
+                      className="pb-add-card"
+                      onClick={() => handleAddComponent(comp)}
+                    >
+                      <span className="pb-add-card__icon">{comp.icon}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <strong style={{ fontSize: '12px', color: 'var(--color-text-primary, #202620)' }}>{comp.name}</strong>
+                          {isAlreadyAdded && (
+                            <span style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '3px', background: '#EDF5F0', color: 'var(--color-primary, #245C46)', fontWeight: 700 }}>
+                              Active
+                            </span>
+                          )}
                         </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                        <p style={{ margin: '3px 0 0', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
+                          {comp.desc}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </aside>
         )}
 
         {/* =====================================================================
-            PANEL 2: CENTER FULL-PAGE LIVE CANVAS
+            PANEL 2: CENTER FULL-PAGE REAL CANVAS
             ===================================================================== */}
         <main
           className="pb-canvas-panel"
@@ -937,9 +1010,9 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
           <div className="pb-canvas-zoom-pill">
             <span>{DEVICE_VIEWPORTS[device]?.icon} {DEVICE_VIEWPORTS[device]?.label}</span>
             <span>·</span>
-            <span>{Math.round(currentScale * 100)}% {zoom === 'fit' ? '(Auto-Fit)' : ''}</span>
+            <span>{isNaturalDesktopScale ? '100% (Natural Scale)' : `${Math.round(currentScale * 100)}%`} {zoom === 'fit' ? '(Auto-Fit)' : ''}</span>
             <span>·</span>
-            <span style={{ color: isEditMode ? '#10b981' : '#38bdf8' }}>
+            <span style={{ color: isEditMode ? 'var(--color-primary, #245C46)' : '#2563EB', fontWeight: 600 }}>
               {isEditMode ? 'Click any section to inspect & edit' : 'Live Interactive Preview'}
             </span>
           </div>
@@ -947,8 +1020,11 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
           {/* Centered Scaled Canvas Container */}
           <div
             style={{
-              width: `${targetWidth * currentScale}px`,
-              transition: 'width 0.2s ease',
+              width: isNaturalDesktopScale
+                ? '100%'
+                : `${targetWidth * currentScale}px`,
+              maxWidth: isNaturalDesktopScale ? '1200px' : undefined,
+              transition: 'width 0.15s ease',
               margin: '0 auto',
               display: 'flex',
               flexDirection: 'column',
@@ -958,46 +1034,49 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
             <div
               className="pb-canvas-viewport"
               style={{
-                width: `${targetWidth}px`,
-                transform: `scale(${currentScale})`,
-                transformOrigin: 'top left',
-                transition: 'transform 0.2s ease, width 0.2s ease'
+                width: isNaturalDesktopScale
+                  ? '100%'
+                  : `${targetWidth}px`,
+                transform: isNaturalDesktopScale
+                  ? 'none'
+                  : `scale(${currentScale})`,
+                transformOrigin: 'top center',
+                transition: 'transform 0.15s ease, width 0.15s ease'
               }}
             >
-              {/* Browser Chrome Header */}
-              <div className="pb-canvas-browser-bar">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ display: 'flex', gap: '5px' }}>
-                    <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#ef4444' }} />
-                    <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#f59e0b' }} />
-                    <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#10b981' }} />
+              {/* Browser Chrome Header (Optional toggleable) */}
+              {showBrowserFrame && (
+                <div className="pb-canvas-browser-bar">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '5px' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#EF4444' }} />
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#F59E0B' }} />
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981' }} />
+                    </div>
+                    <span style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--color-text-secondary, #626A62)', background: 'var(--color-bg-primary, #F5F4F0)', border: '1px solid var(--color-border, #D7D9D3)', padding: '2px 10px', borderRadius: '4px' }}>
+                      https://pjstudy.krmu.edu.in{currentPageMeta?.route || '/'}
+                    </span>
                   </div>
-                  <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#94a3b8', background: '#0f172a', padding: '3px 10px', borderRadius: '4px' }}>
-                    https://pjstudy.krmu.edu.in{currentPageMeta?.route || '/'}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '10px', color: 'var(--color-text-secondary, #626A62)', fontWeight: 600 }}>
+                      {device === 'desktop' ? 'Full Width' : `${targetWidth}px`} · {DEVICE_VIEWPORTS[device]?.label}
+                    </span>
+                    <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: 'var(--color-primary, #245C46)', color: '#ffffff', fontWeight: 700 }}>
+                      {currentPageMeta?.role || 'PJ STUDY'}
+                    </span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>
-                    {targetWidth}px · {DEVICE_VIEWPORTS[device]?.label}
-                  </span>
-                  <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: '#0f766e', color: '#ffffff', fontWeight: 700 }}>
-                    {currentPageMeta?.role || 'PJ STUDY'}
-                  </span>
-                </div>
-              </div>
+              )}
 
-              {/* AUTHENTIC APPLICATION SHELL (SIDEBAR + TOP HEADER + INTERACTIVE CONTENT) */}
-              <div className="pb-canvas-app-shell">
-                {/* Genuine mini-sidebar for Admin / Scholar */}
-                {renderCanvasSidebar(currentPageMeta?.role)}
-
+              {/* AUTHENTIC APPLICATION SHELL (INTERACTIVE CONTENT) */}
+              <div className="pb-canvas-app-shell" style={{ width: '100%', minHeight: 'auto', display: 'flex', flexDirection: 'column' }}>
                 {/* Main Content Area */}
-                <div className="pb-canvas-main">
+                <div className="pb-canvas-main" style={{ width: '100%', background: '#FFFFFF' }}>
                   {/* Genuine Top Bar Header */}
                   {renderCanvasHeader(currentPageMeta)}
 
                   {/* Flow of Interactive Sections */}
-                  <div className="pb-canvas-body">
+                  <div className="pb-canvas-body" style={{ width: '100%', boxSizing: 'border-box' }}>
                     {currentSectionOrder.map((sectionKey) => {
                       const isSelected = isEditMode && activeSection === sectionKey;
                       const secConfig = draftConfig?.[sectionKey] || {};
@@ -1016,7 +1095,7 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
                           onClick={() => {
                             if (isEditMode) {
                               setActiveSection(sectionKey);
-                              setIsRightCollapsed(false); // Auto-open inspector if closed!
+                              setIsRightCollapsed(false); // Auto-open inspector if closed
                             }
                           }}
                           draggable={isEditMode}
@@ -1063,21 +1142,20 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
           <aside className="pb-inspector-panel" aria-label="Component Inspector">
             <div className="pb-inspector-panel__header">
               <div>
-                <span style={{ fontSize: '11px', fontWeight: 800, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-primary, #245C46)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                   {currentPageMeta?.role === 'ADMIN'
                     ? 'Admin Workspace Section'
                     : currentPageMeta?.role === 'PUBLIC'
                       ? 'Public Homepage Section'
                       : 'Scholar Workspace Section'}
                 </span>
-                <h4 style={{ margin: '2px 0 0', fontSize: '13px', fontWeight: 800, color: '#0f172a' }}>
+                <h4 style={{ margin: '2px 0 0', fontSize: '13px', fontWeight: 800, color: 'var(--color-text-primary, #202620)' }}>
                   {activeSectionMeta.icon} {activeSectionMeta.label}
                 </h4>
               </div>
               <button
                 type="button"
                 className="pb-toolbar-icon-btn"
-                style={{ color: '#475569' }}
                 onClick={() => setIsRightCollapsed(true)}
                 title="Collapse Inspector"
               >
@@ -1121,134 +1199,168 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
               {/* TAB 1: CONTENT */}
               {inspectorTab === 'content' && (
                 <>
-                  {activeSectionConfig.title !== undefined && (
+                  {/* Title / Heading Input */}
+                  <div className="pb-prop-group">
+                    <Input
+                      label="Section Heading / Title"
+                      value={activeSectionConfig.title || activeSectionConfig.headline || ''}
+                      onChange={(e) => handleFieldChange(activeSection, activeSectionConfig.headline !== undefined ? 'headline' : 'title', e.target.value)}
+                      placeholder="e.g. Curated Study Materials"
+                    />
+                  </div>
+
+                  {/* Subtitle / Description Input */}
+                  <div className="pb-prop-group">
+                    <label className="pb-prop-label">Subtitle / Description</label>
+                    <textarea
+                      className="admin-input"
+                      rows="2"
+                      style={{ width: '100%', resize: 'vertical', fontSize: '12px' }}
+                      value={activeSectionConfig.subtitle || activeSectionConfig.description || ''}
+                      onChange={(e) => handleFieldChange(activeSection, activeSectionConfig.description !== undefined ? 'description' : 'subtitle', e.target.value)}
+                      placeholder="e.g. Verified syllabus documents for KRMU students"
+                    />
+                  </div>
+
+                  {/* Eyebrow (Hero / Banners) */}
+                  {activeSectionConfig.eyebrow !== undefined && (
                     <div className="pb-prop-group">
                       <Input
-                        label="Section Heading / Title"
-                        value={activeSectionConfig.title || ''}
-                        onChange={(e) => handleFieldChange(activeSection, 'title', e.target.value)}
-                        placeholder="e.g. Curated Study Materials"
+                        label="Eyebrow Kicker"
+                        value={activeSectionConfig.eyebrow || ''}
+                        onChange={(e) => handleFieldChange(activeSection, 'eyebrow', e.target.value)}
+                        placeholder="e.g. OFFICIAL ACADEMIC PORTAL"
                       />
                     </div>
                   )}
 
-                  {activeSectionConfig.subtitle !== undefined && (
+                  {/* Search Placeholder */}
+                  {activeSectionConfig.placeholder !== undefined && (
                     <div className="pb-prop-group">
                       <Input
-                        label="Subtitle / Description"
-                        value={activeSectionConfig.subtitle || ''}
-                        onChange={(e) => handleFieldChange(activeSection, 'subtitle', e.target.value)}
-                        placeholder="e.g. Verified syllabus documents for KRMU students"
+                        label="Search Input Placeholder"
+                        value={activeSectionConfig.placeholder || ''}
+                        onChange={(e) => handleFieldChange(activeSection, 'placeholder', e.target.value)}
+                        placeholder="e.g. Search notes, subjects, faculty..."
                       />
                     </div>
                   )}
 
-                  {activeSectionConfig.headline !== undefined && (
+                  {/* Primary CTA Button */}
+                  {(activeSectionConfig.primaryCtaText !== undefined || activeSectionConfig.buttonText !== undefined) && (
                     <div className="pb-prop-group">
                       <Input
-                        label="Headline Text"
-                        value={activeSectionConfig.headline || ''}
-                        onChange={(e) => handleFieldChange(activeSection, 'headline', e.target.value)}
+                        label="Primary CTA Text"
+                        value={activeSectionConfig.primaryCtaText || activeSectionConfig.buttonText || ''}
+                        onChange={(e) => handleFieldChange(activeSection, activeSectionConfig.primaryCtaText !== undefined ? 'primaryCtaText' : 'buttonText', e.target.value)}
                       />
-                    </div>
-                  )}
-
-                  {activeSectionConfig.description !== undefined && (
-                    <div className="pb-prop-group">
-                      <label className="pb-prop-label">Description Text</label>
-                      <textarea
-                        className="admin-input"
-                        rows="3"
-                        style={{ width: '100%', resize: 'vertical' }}
-                        value={activeSectionConfig.description || ''}
-                        onChange={(e) => handleFieldChange(activeSection, 'description', e.target.value)}
-                      />
-                    </div>
-                  )}
-
-                  {activeSectionConfig.text !== undefined && (
-                    <div className="pb-prop-group">
                       <Input
-                        label="Notice / Banner Text"
-                        value={activeSectionConfig.text || ''}
-                        onChange={(e) => handleFieldChange(activeSection, 'text', e.target.value)}
+                        label="Primary CTA Link"
+                        value={activeSectionConfig.primaryCtaLink || activeSectionConfig.buttonLink || ''}
+                        onChange={(e) => handleFieldChange(activeSection, activeSectionConfig.primaryCtaLink !== undefined ? 'primaryCtaLink' : 'buttonLink', e.target.value)}
                       />
                     </div>
                   )}
 
-                  {activeSectionConfig.buttonText !== undefined && (
-                    <div className="pb-prop-group">
-                      <Input
-                        label="Button Action Text"
-                        value={activeSectionConfig.buttonText || ''}
-                        onChange={(e) => handleFieldChange(activeSection, 'buttonText', e.target.value)}
-                      />
-                    </div>
-                  )}
-
-                  {activeSectionConfig.buttonLink !== undefined && (
-                    <div className="pb-prop-group">
-                      <Input
-                        label="Safe Link Destination"
-                        value={activeSectionConfig.buttonLink || ''}
-                        onChange={(e) => handleFieldChange(activeSection, 'buttonLink', e.target.value)}
-                      />
-                    </div>
-                  )}
-
-                  {/* Banner Alert Sub-Object */}
+                  {/* Banner Alert Toggle & Message */}
                   {activeSectionConfig.bannerAlert !== undefined && (
                     <div className="pb-prop-group">
-                      <span className="pb-prop-label">Institutional Banner Alert</span>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>
                         <input
                           type="checkbox"
                           checked={Boolean(activeSectionConfig.bannerAlert?.show)}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const current = activeSectionConfig.bannerAlert || {};
                             handleFieldChange(activeSection, 'bannerAlert', {
-                              ...activeSectionConfig.bannerAlert,
+                              ...current,
                               show: e.target.checked
-                            })
-                          }
+                            });
+                          }}
                         />
                         Display Notice Banner
                       </label>
                       {activeSectionConfig.bannerAlert?.show && (
                         <div style={{ marginTop: '8px' }}>
                           <Input
-                            label="Alert Message"
+                            label="Notice Banner Message"
                             value={activeSectionConfig.bannerAlert?.message || ''}
-                            onChange={(e) =>
+                            onChange={(e) => {
+                              const current = activeSectionConfig.bannerAlert || {};
                               handleFieldChange(activeSection, 'bannerAlert', {
-                                ...activeSectionConfig.bannerAlert,
+                                ...current,
                                 message: e.target.value
-                              })
-                            }
-                            placeholder="e.g. End-term examination revision materials are live"
+                              });
+                            }}
+                            placeholder="e.g. Examination schedules are now live."
                           />
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Campus Info Sub-Object */}
-                  {activeSectionConfig.campusName !== undefined && (
+                  {/* Columns Count Control (KPIs, Features) */}
+                  {activeSectionConfig.columns !== undefined && (
                     <div className="pb-prop-group">
-                      <Input
-                        label="University / Institution Name"
-                        value={activeSectionConfig.campusName || ''}
-                        onChange={(e) => handleFieldChange(activeSection, 'campusName', e.target.value)}
-                      />
+                      <label className="pb-prop-label">Grid Columns ({activeSectionConfig.columns})</label>
+                      <div className="pb-segmented-grid">
+                        {[2, 3, 4].map((num) => (
+                          <button
+                            key={num}
+                            type="button"
+                            className={`pb-segmented-btn ${activeSectionConfig.columns === num ? 'pb-segmented-btn--active' : ''}`}
+                            onClick={() => handleFieldChange(activeSection, 'columns', num)}
+                          >
+                            {num} Columns
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
 
-                  {activeSectionConfig.schoolLabel !== undefined && (
+                  {/* KPI Cards Item Editor */}
+                  {activeSection === 'stats_kpi' && Array.isArray(activeSectionConfig.cards) && (
                     <div className="pb-prop-group">
-                      <Input
-                        label="School / Department Name"
-                        value={activeSectionConfig.schoolLabel || ''}
-                        onChange={(e) => handleFieldChange(activeSection, 'schoolLabel', e.target.value)}
-                      />
+                      <label className="pb-prop-label">KPI Metric Cards ({activeSectionConfig.cards.length})</label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {activeSectionConfig.cards.map((card, cIdx) => (
+                          <div
+                            key={card.id || cIdx}
+                            style={{
+                              padding: '8px 10px',
+                              background: 'var(--color-bg-primary, #F5F4F0)',
+                              border: '1px solid var(--color-border, #D7D9D3)',
+                              borderRadius: '4px'
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                              <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-primary, #202620)' }}>
+                                Card {cIdx + 1}: {card.label || card.id}
+                              </span>
+                              <label style={{ fontSize: '10px', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontWeight: 600 }}>
+                                <input
+                                  type="checkbox"
+                                  checked={card.show !== false}
+                                  onChange={(e) => {
+                                    const updatedCards = [...activeSectionConfig.cards];
+                                    updatedCards[cIdx] = { ...card, show: e.target.checked };
+                                    handleFieldChange(activeSection, 'cards', updatedCards);
+                                  }}
+                                />
+                                Show
+                              </label>
+                            </div>
+                            <Input
+                              label="Metric Title"
+                              value={card.label || ''}
+                              onChange={(e) => {
+                                const updatedCards = [...activeSectionConfig.cards];
+                                updatedCards[cIdx] = { ...card, label: e.target.value };
+                                handleFieldChange(activeSection, 'cards', updatedCards);
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </>
@@ -1258,89 +1370,58 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
               {inspectorTab === 'appearance' && (
                 <>
                   <div className="pb-prop-group">
-                    <span className="pb-prop-label">Style Preset</span>
+                    <label className="pb-prop-label">Visual Style Preset</label>
                     <div className="pb-style-presets">
                       {[
-                        { id: 'default', name: 'Clean White', desc: 'Standard card styling' },
-                        { id: 'slate', name: 'Slate Gray', desc: 'Soft secondary surface' },
-                        { id: 'teal-tint', name: 'KRMU Teal', desc: 'Subtle institutional tint' },
-                        { id: 'amber-tint', name: 'Amber Notice', desc: 'High-visibility highlight' },
-                        { id: 'dark-card', name: 'Midnight Dark', desc: 'Sleek contrast background' },
-                        { id: 'bordered', name: 'Outline Border', desc: 'Crisp bordered card' }
-                      ].map((preset) => (
+                        { id: 'default', label: 'Clean White', desc: 'Crisp white surface' },
+                        { id: 'slate', label: 'Subtle Canvas', desc: 'Ivory #F5F4F0 background' },
+                        { id: 'teal-tint', label: 'Subtle Sage', desc: 'Soft #EDF5F0 green tint' },
+                        { id: 'bordered', label: 'Strong Border', desc: 'Solid crisp neutral boundary' }
+                      ].map((st) => (
                         <button
-                          key={preset.id}
+                          key={st.id}
                           type="button"
-                          className={`pb-style-preset-btn ${
-                            (activeSectionConfig.appearance?.preset || 'default') === preset.id
-                              ? 'pb-style-preset-btn--active'
-                              : ''
-                          }`}
-                          onClick={() => handleAppearanceChange(activeSection, 'preset', preset.id)}
+                          className={`pb-style-preset-btn ${(activeSectionConfig.appearance?.preset || 'default') === st.id ? 'pb-style-preset-btn--active' : ''}`}
+                          onClick={() => handleAppearanceChange(activeSection, 'preset', st.id)}
                         >
-                          <span>{preset.name}</span>
-                          <span style={{ fontSize: '10px', color: '#64748b' }}>{preset.desc}</span>
+                          <span style={{ fontWeight: 700 }}>{st.label}</span>
+                          <span style={{ fontSize: '10px', color: 'var(--color-text-secondary, #626A62)' }}>{st.desc}</span>
                         </button>
                       ))}
                     </div>
                   </div>
 
                   <div className="pb-prop-group">
-                    <span className="pb-prop-label">Theme Accent Color</span>
-                    <div className="pb-color-swatches">
-                      {[
-                        { color: '#0f766e', name: 'KRMU Emerald' },
-                        { color: '#0369a1', name: 'Scholar Sky' },
-                        { color: '#4338ca', name: 'Indigo Faculty' },
-                        { color: '#d97706', name: 'Amber Warning' },
-                        { color: '#be123c', name: 'Crimson Alert' },
-                        { color: '#334155', name: 'Slate Neutral' }
-                      ].map((swatch) => (
-                        <button
-                          key={swatch.color}
-                          type="button"
-                          className={`pb-color-swatch ${
-                            activeSectionConfig.appearance?.accentColor === swatch.color ? 'pb-color-swatch--active' : ''
-                          }`}
-                          style={{ background: swatch.color }}
-                          onClick={() => handleAppearanceChange(activeSection, 'accentColor', swatch.color)}
-                          title={swatch.name}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="pb-prop-group">
-                    <span className="pb-prop-label">Border Radius</span>
-                    <div className="pb-segmented-grid">
-                      {['0px', '4px', '8px', '12px', '16px', '24px'].map((rad) => (
-                        <button
-                          key={rad}
-                          type="button"
-                          className={`pb-segmented-btn ${
-                            (activeSectionConfig.appearance?.borderRadius || '8px') === rad ? 'pb-segmented-btn--active' : ''
-                          }`}
-                          onClick={() => handleAppearanceChange(activeSection, 'borderRadius', rad)}
-                        >
-                          {rad}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="pb-prop-group">
-                    <span className="pb-prop-label">Text Alignment</span>
+                    <label className="pb-prop-label">Text Alignment</label>
                     <div className="pb-segmented-grid">
                       {['left', 'center', 'right'].map((align) => (
                         <button
                           key={align}
                           type="button"
-                          className={`pb-segmented-btn ${
-                            (activeSectionConfig.appearance?.align || 'left') === align ? 'pb-segmented-btn--active' : ''
-                          }`}
+                          className={`pb-segmented-btn ${(activeSectionConfig.appearance?.align || 'left') === align ? 'pb-segmented-btn--active' : ''}`}
                           onClick={() => handleAppearanceChange(activeSection, 'align', align)}
                         >
                           {align.charAt(0).toUpperCase() + align.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pb-prop-group">
+                    <label className="pb-prop-label">Border Radius</label>
+                    <div className="pb-segmented-grid">
+                      {[
+                        { label: '3px', val: '3px' },
+                        { label: '5px', val: '5px' },
+                        { label: '7px', val: '7px' }
+                      ].map((rad) => (
+                        <button
+                          key={rad.val}
+                          type="button"
+                          className={`pb-segmented-btn ${(activeSectionConfig.appearance?.borderRadius || '5px') === rad.val ? 'pb-segmented-btn--active' : ''}`}
+                          onClick={() => handleAppearanceChange(activeSection, 'borderRadius', rad.val)}
+                        >
+                          {rad.label}
                         </button>
                       ))}
                     </div>
@@ -1352,58 +1433,38 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
               {inspectorTab === 'layout' && (
                 <>
                   <div className="pb-prop-group">
-                    <span className="pb-prop-label">Section Position</span>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleMoveSection(activeSection, 'up')}
-                        disabled={currentSectionOrder.indexOf(activeSection) <= 0}
-                      >
-                        ▲ Move Up
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleMoveSection(activeSection, 'down')}
-                        disabled={currentSectionOrder.indexOf(activeSection) >= currentSectionOrder.length - 1}
-                      >
-                        ▼ Move Down
-                      </Button>
-                    </div>
-                  </div>
-
-                  {activeSectionConfig.columns !== undefined && (
-                    <div className="pb-prop-group">
-                      <span className="pb-prop-label">Grid Columns</span>
-                      <div className="pb-segmented-grid">
-                        {[1, 2, 3, 4].map((col) => (
-                          <button
-                            key={col}
-                            type="button"
-                            className={`pb-segmented-btn ${activeSectionConfig.columns === col ? 'pb-segmented-btn--active' : ''}`}
-                            onClick={() => handleFieldChange(activeSection, 'columns', col)}
-                          >
-                            {col} Col
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="pb-prop-group">
-                    <span className="pb-prop-label">Content Padding</span>
+                    <label className="pb-prop-label">Vertical Padding</label>
                     <div className="pb-segmented-grid">
-                      {['compact', 'normal', 'spacious'].map((pad) => (
+                      {['compact', 'standard', 'spacious'].map((pad) => (
                         <button
                           key={pad}
                           type="button"
-                          className={`pb-segmented-btn ${
-                            (activeSectionConfig.appearance?.padding || 'normal') === pad ? 'pb-segmented-btn--active' : ''
-                          }`}
-                          onClick={() => handleAppearanceChange(activeSection, 'padding', pad)}
+                          className={`pb-segmented-btn ${(activeSectionConfig.layout?.padding || 'standard') === pad ? 'pb-segmented-btn--active' : ''}`}
+                          onClick={() => {
+                            const current = activeSectionConfig.layout || {};
+                            handleFieldChange(activeSection, 'layout', { ...current, padding: pad });
+                          }}
                         >
                           {pad.charAt(0).toUpperCase() + pad.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pb-prop-group">
+                    <label className="pb-prop-label">Container Width</label>
+                    <div className="pb-segmented-grid">
+                      {['boxed', 'full'].map((w) => (
+                        <button
+                          key={w}
+                          type="button"
+                          className={`pb-segmented-btn ${(activeSectionConfig.layout?.width || 'boxed') === w ? 'pb-segmented-btn--active' : ''}`}
+                          onClick={() => {
+                            const current = activeSectionConfig.layout || {};
+                            handleFieldChange(activeSection, 'layout', { ...current, width: w });
+                          }}
+                        >
+                          {w === 'boxed' ? 'Boxed (1200px)' : 'Full Width'}
                         </button>
                       ))}
                     </div>
@@ -1415,46 +1476,25 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
               {inspectorTab === 'visibility' && (
                 <>
                   <div className="pb-prop-group">
-                    <span className="pb-prop-label">Section Visibility</span>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>
                       <input
                         type="checkbox"
                         checked={activeSectionConfig.isVisible !== false}
-                        onChange={() => handleToggleVisibility(activeSection)}
+                        onChange={(e) => handleFieldChange(activeSection, 'isVisible', e.target.checked)}
                       />
-                      Show this section on the live page
+                      Display this section on live page
                     </label>
-                    <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#64748b' }}>
-                      When hidden, this section is preserved in drafts but excluded from the scholar and visitor viewports.
+                    <p style={{ margin: '4px 0 0', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
+                      When hidden, this section is preserved in drafts but excluded from student and admin views.
                     </p>
                   </div>
 
-                  <div className="pb-prop-group">
-                    <span className="pb-prop-label">Device Display Rules</span>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
-                      <input
-                        type="checkbox"
-                        checked={activeSectionConfig.showOnDesktop !== false}
-                        onChange={(e) => handleFieldChange(activeSection, 'showOnDesktop', e.target.checked)}
-                      />
-                      Display on Desktop & Laptops
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
-                      <input
-                        type="checkbox"
-                        checked={activeSectionConfig.showOnMobile !== false}
-                        onChange={(e) => handleFieldChange(activeSection, 'showOnMobile', e.target.checked)}
-                      />
-                      Display on Tablet & Mobile Devices
-                    </label>
-                  </div>
-
-                  <div className="pb-prop-group">
-                    <span className="pb-prop-label">Danger Zone</span>
+                  <div style={{ marginTop: '12px' }}>
                     <Button
                       variant="danger"
                       size="sm"
                       onClick={() => handleRemoveSection(activeSection)}
+                      style={{ width: '100%' }}
                     >
                       Remove Section from Page
                     </Button>
@@ -1467,43 +1507,51 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
       </div>
 
       {/* =========================================================================
-          PUBLISH LIVE MODAL
+          PUBLISH MODAL
           ========================================================================= */}
       {showPublishModal && (
-        <div className="pb-history-modal">
-          <div className="pb-history-card" style={{ maxWidth: '480px' }}>
+        <div className="pb-history-modal" onClick={() => setShowPublishModal(false)}>
+          <div className="pb-history-card" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
             <div className="pb-history-header">
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
-                Publish Changes Live
-              </h3>
+              <div>
+                <strong style={{ fontSize: '14px', color: 'var(--color-text-primary, #202620)' }}>Publish Layout Changes Live</strong>
+                <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
+                  Target: {currentPageMeta?.label} (v{pageData?.version || 1})
+                </p>
+              </div>
               <button
                 type="button"
                 className="pb-toolbar-icon-btn"
-                style={{ color: '#64748b' }}
                 onClick={() => setShowPublishModal(false)}
               >
                 ✕
               </button>
             </div>
-            <div style={{ padding: '20px' }}>
-              <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#64748b', lineHeight: 1.5 }}>
-                Publishing will immediately apply this section ordering, visibility, and properties to all live users visiting <strong>{pageData?.title || selectedPage}</strong>.
+
+            <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-text-primary, #202620)', lineHeight: 1.5 }}>
+                Publishing pushes your draft modifications live to all authenticated scholars and staff immediately. A rollback snapshot will be created in the version audit log.
               </p>
 
-              <div style={{ marginBottom: '16px' }}>
-                <Input
-                  label="Release / Audit Change Summary (Optional)"
-                  placeholder="e.g. Reordered recently published notes and updated term notice"
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary, #626A62)', marginBottom: '6px' }}>
+                  Release Summary / Note (Optional)
+                </label>
+                <input
+                  type="text"
+                  className="admin-input"
+                  style={{ width: '100%', fontSize: '12px' }}
+                  placeholder="e.g. Updated semester exam revision ribbon and KPI layout"
                   value={changeSummary}
                   onChange={(e) => setChangeSummary(e.target.value)}
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                <Button variant="outline" size="md" onClick={() => setShowPublishModal(false)}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px' }}>
+                <Button variant="outline" size="sm" onClick={() => setShowPublishModal(false)}>
                   Cancel
                 </Button>
-                <Button variant="primary" size="md" onClick={handlePublish} isLoading={isPublishing}>
+                <Button variant="primary" size="sm" onClick={handlePublish} isLoading={isPublishing}>
                   Confirm & Publish Live
                 </Button>
               </div>
@@ -1513,24 +1561,21 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
       )}
 
       {/* =========================================================================
-          VERSION HISTORY & ROLLBACK MODAL
+          VERSION HISTORY & AUDIT LOG MODAL
           ========================================================================= */}
       {showHistoryModal && (
-        <div className="pb-history-modal">
-          <div className="pb-history-card">
+        <div className="pb-history-modal" onClick={() => setShowHistoryModal(false)}>
+          <div className="pb-history-card" onClick={(e) => e.stopPropagation()}>
             <div className="pb-history-header">
               <div>
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
-                  Version Audit History & Rollback
-                </h3>
-                <span style={{ fontSize: '12px', color: '#64748b' }}>
-                  {pageData?.title || selectedPage} · Audit Snapshots
-                </span>
+                <strong style={{ fontSize: '14px', color: 'var(--color-text-primary, #202620)' }}>Version History & Rollback</strong>
+                <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
+                  Audit snapshots for {currentPageMeta?.label}
+                </p>
               </div>
               <button
                 type="button"
                 className="pb-toolbar-icon-btn"
-                style={{ color: '#64748b' }}
                 onClick={() => setShowHistoryModal(false)}
               >
                 ✕
@@ -1539,9 +1584,8 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
 
             <div className="pb-history-body">
               {versionHistoryList.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '36px', color: '#64748b' }}>
-                  <p>No audit snapshots recorded yet for this page.</p>
-                  <span style={{ fontSize: '12px' }}>Publishing new configurations creates safe rollback points automatically.</span>
+                <div style={{ padding: '24px', textAlign: 'center', color: 'var(--color-text-secondary, #626A62)', fontSize: '13px' }}>
+                  No previous published versions recorded for this page yet.
                 </div>
               ) : (
                 <table className="pb-history-table">
@@ -1549,29 +1593,27 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
                     <tr>
                       <th>Version</th>
                       <th>Summary</th>
-                      <th>Date</th>
-                      <th style={{ textAlign: 'right' }}>Action</th>
+                      <th>Published At</th>
+                      <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {versionHistoryList.map((ver) => (
                       <tr key={ver.id}>
-                        <td>
-                          <Badge variant="primary" size="sm">v{ver.version}</Badge>
+                        <td style={{ fontWeight: 800, color: 'var(--color-primary, #245C46)' }}>
+                          v{ver.version}
+                        </td>
+                        <td>{ver.changeSummary || 'Layout update'}</td>
+                        <td style={{ color: 'var(--color-text-secondary, #626A62)', fontSize: '11px' }}>
+                          {ver.createdAt ? new Date(ver.createdAt).toLocaleString() : 'N/A'}
                         </td>
                         <td>
-                          <strong style={{ fontSize: '12px' }}>{ver.changeSummary || 'Configuration publication'}</strong>
-                        </td>
-                        <td style={{ color: '#64748b', fontSize: '11px' }}>
-                          {new Date(ver.createdAt).toLocaleString()}
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleRollbackVersion(ver.id, ver.version)}
                           >
-                            Restore This Version
+                            Rollback
                           </Button>
                         </td>
                       </tr>
@@ -1588,84 +1630,30 @@ export function VisualBuilderTab({ targetPage = 'scholar_dashboard', onNotify })
 }
 
 // =============================================================================
-// AUTHENTIC MINI APP SHELL RENDERERS (SIDEBAR & HEADER)
+// AUTHENTIC MINI APP SHELL HEADER
 // =============================================================================
 
-function renderCanvasSidebar(role) {
-  if (role === 'PUBLIC') return null;
-
-  const isAdmin = role === 'ADMIN';
-
-  return (
-    <aside className="pb-canvas-sidebar" aria-hidden="true">
-      {/* Brand Identity */}
-      <div className="pb-canvas-sidebar-brand">
-        <div className="pb-canvas-sidebar-logo">PJ</div>
-        <div>
-          <span className="pb-canvas-sidebar-title">PJ Study</span>
-          <span className="pb-canvas-sidebar-sub">
-            {isAdmin ? 'COMMAND CENTER' : 'SCHOLAR DESK'}
-          </span>
-        </div>
-      </div>
-
-      {/* Navigation Links */}
-      <div className="pb-canvas-sidebar-nav">
-        <span className="pb-canvas-sidebar-heading">MAIN NAVIGATION</span>
-        <div className="pb-canvas-sidebar-item pb-canvas-sidebar-item--active">
-          <span>{isAdmin ? '⚡' : '📊'}</span>
-          <span>{isAdmin ? 'Overview Dashboard' : 'Scholar Dashboard'}</span>
-        </div>
-        <div className="pb-canvas-sidebar-item">
-          <span>{isAdmin ? '📤' : '🔍'}</span>
-          <span>{isAdmin ? 'Direct Upload Note' : 'Explore Notes'}</span>
-        </div>
-        <div className="pb-canvas-sidebar-item">
-          <span>{isAdmin ? '📑' : '✨'}</span>
-          <span>{isAdmin ? 'Curriculum Inventory' : 'Recommended'}</span>
-        </div>
-        <div className="pb-canvas-sidebar-item">
-          <span>{isAdmin ? '📢' : '📚'}</span>
-          <span>{isAdmin ? 'Announcements' : 'My Study Library'}</span>
-        </div>
-
-        <span className="pb-canvas-sidebar-heading" style={{ marginTop: '12px' }}>GOVERNANCE & SYSTEM</span>
-        <div className="pb-canvas-sidebar-item">
-          <span>{isAdmin ? '🛡️' : '🔔'}</span>
-          <span>{isAdmin ? 'Audit Compliance' : 'Notification Center'}</span>
-        </div>
-        <div className="pb-canvas-sidebar-item">
-          <span>{isAdmin ? '⚙️' : '👤'}</span>
-          <span>{isAdmin ? 'Platform Settings' : 'Scholar Profile'}</span>
-        </div>
-      </div>
-    </aside>
-  );
-}
-
 function renderCanvasHeader(pageMeta) {
-  const isPublic = pageMeta?.role === 'PUBLIC';
-
-  if (isPublic) {
+  if (pageMeta?.role === 'PUBLIC') {
     return (
-      <header className="pb-canvas-top-header" style={{ padding: '0 24px', background: '#ffffff', borderBottom: '1px solid #e2e8f0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#0f766e', color: '#fff', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px' }}>
+      <header className="pb-canvas-top-header" style={{ padding: '0 20px', background: '#FFFFFF', borderBottom: '1px solid var(--color-border, #D7D9D3)', height: '48px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ width: '26px', height: '26px', borderRadius: '4px', background: 'var(--color-primary, #245C46)', color: '#FFFFFF', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>
             PJ
           </div>
-          <strong style={{ fontSize: '14px', color: '#0f172a' }}>PJ Study</strong>
-          <span style={{ fontSize: '11px', color: '#64748b' }}>· K.R. Mangalam University</span>
+          <strong style={{ fontSize: '13px', color: 'var(--color-text-primary, #202620)' }}>PJ Study</strong>
+          <span style={{ fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>· K.R. Mangalam University</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>🏛️ Universities & Schools</span>
-          <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>📚 Explore Notes</span>
-          <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>💡 How It Works</span>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <span style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '11px', fontWeight: 700, color: '#334155' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary, #626A62)' }}>Curriculum Notes</span>
+          <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary, #626A62)' }}>Faculties</span>
+          <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary, #626A62)' }}>How It Works</span>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <span style={{ padding: '4px 10px', borderRadius: '4px', border: '1px solid var(--color-border, #D7D9D3)', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-primary, #202620)' }}>
               Sign In
             </span>
-            <span style={{ padding: '5px 12px', borderRadius: '6px', background: '#0f766e', color: '#ffffff', fontSize: '11px', fontWeight: 700 }}>
+            <span style={{ padding: '4px 10px', borderRadius: '4px', background: 'var(--color-primary, #245C46)', color: '#FFFFFF', fontSize: '11px', fontWeight: 700 }}>
               Get Started
             </span>
           </div>
@@ -1675,36 +1663,36 @@ function renderCanvasHeader(pageMeta) {
   }
 
   return (
-    <header className="pb-canvas-top-header">
+    <header className="pb-canvas-top-header" style={{ padding: '0 20px', background: '#FFFFFF', borderBottom: '1px solid var(--color-border, #D7D9D3)', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       {/* Breadcrumbs */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
-        <span style={{ color: '#64748b' }}>PJ Study</span>
-        <span style={{ color: '#cbd5e1' }}>/</span>
-        <strong style={{ color: '#0f172a' }}>{pageMeta?.label || 'Workspace'}</strong>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+        <span style={{ color: 'var(--color-text-secondary, #626A62)' }}>PJ Study</span>
+        <span style={{ color: 'var(--color-border, #D7D9D3)' }}>/</span>
+        <strong style={{ color: 'var(--color-text-primary, #202620)' }}>{pageMeta?.label || 'Workspace'}</strong>
       </div>
 
       {/* Search Bar & User Status */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-        <div style={{ padding: '5px 12px', background: '#f1f5f9', borderRadius: '6px', fontSize: '11px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px', minWidth: '180px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ padding: '4px 10px', background: 'var(--color-bg-primary, #F5F4F0)', border: '1px solid var(--color-border, #D7D9D3)', borderRadius: '4px', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)', display: 'flex', alignItems: 'center', gap: '6px', minWidth: '160px' }}>
           <span>🔍</span>
-          <span>Search notes, subjects, faculty...</span>
+          <span>Search notes, subjects...</span>
         </div>
 
         {/* Notifications Bell */}
-        <div style={{ position: 'relative', cursor: 'pointer', fontSize: '15px' }}>
+        <div style={{ position: 'relative', cursor: 'pointer', fontSize: '14px' }}>
           <span>🔔</span>
-          <span style={{ position: 'absolute', top: '-4px', right: '-6px', width: '14px', height: '14px', background: '#ef4444', color: '#fff', borderRadius: '50%', fontSize: '9px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            3
+          <span style={{ position: 'absolute', top: '-3px', right: '-5px', width: '12px', height: '12px', background: '#DC2626', color: '#fff', borderRadius: '50%', fontSize: '8px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            2
           </span>
         </div>
 
         {/* User Avatar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#0f766e', color: '#fff', fontSize: '11px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--color-primary, #245C46)', color: '#fff', fontSize: '10px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {pageMeta?.role === 'ADMIN' ? 'SA' : 'SK'}
           </div>
-          <span style={{ fontSize: '11px', fontWeight: 700, color: '#334155' }}>
-            {pageMeta?.role === 'ADMIN' ? 'Super Admin' : 'Scholar Student'}
+          <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-primary, #202620)' }}>
+            {pageMeta?.role === 'ADMIN' ? 'Super Admin' : 'Scholar'}
           </span>
         </div>
       </div>
@@ -1719,28 +1707,25 @@ function renderCanvasHeader(pageMeta) {
 function renderRealCanvasSection(sectionKey, config, _selectedPage) {
   const align = config.appearance?.align || 'left';
   const preset = config.appearance?.preset || 'default';
-  const borderRadius = config.appearance?.borderRadius || '8px';
+  const borderRadius = config.appearance?.borderRadius || '5px';
 
-  let bgStyle = '#ffffff';
-  let borderStyle = '1px solid #e2e8f0';
-  let textColor = '#0f172a';
+  let bgStyle = '#FFFFFF';
+  let borderStyle = '1px solid var(--color-border, #D7D9D3)';
+  let textColor = 'var(--color-text-primary, #202620)';
 
   if (preset === 'slate') {
-    bgStyle = '#f8fafc';
-    borderStyle = '1px solid #e2e8f0';
+    bgStyle = 'var(--color-bg-primary, #F5F4F0)';
   } else if (preset === 'teal-tint') {
-    bgStyle = 'rgba(15, 118, 110, 0.04)';
-    borderStyle = '1px solid rgba(15, 118, 110, 0.2)';
-  } else if (preset === 'amber-tint') {
-    bgStyle = 'rgba(245, 158, 11, 0.05)';
-    borderStyle = '1px solid rgba(245, 158, 11, 0.25)';
+    bgStyle = '#EDF5F0';
+    borderStyle = '1px solid var(--color-border, #D7D9D3)';
+    textColor = 'var(--color-primary, #245C46)';
   } else if (preset === 'dark-card') {
-    bgStyle = '#0f172a';
-    borderStyle = '1px solid #1e293b';
-    textColor = '#f8fafc';
+    bgStyle = 'var(--color-text-primary, #202620)';
+    borderStyle = '1px solid #333833';
+    textColor = '#FFFFFF';
   } else if (preset === 'bordered') {
-    bgStyle = '#ffffff';
-    borderStyle = '2px solid #cbd5e1';
+    bgStyle = '#FFFFFF';
+    borderStyle = '2px solid var(--color-border-strong, #B9BFB7)';
   }
 
   const containerStyle = {
@@ -1750,30 +1735,33 @@ function renderRealCanvasSection(sectionKey, config, _selectedPage) {
     padding: '16px 20px',
     textAlign: align,
     color: textColor,
-    transition: 'all 0.15s ease'
+    transition: 'all 0.12s ease-out'
   };
 
   switch (sectionKey) {
+    // -------------------------------------------------------------------------
+    // SCHOLAR & ADMIN: WELCOME HEADER
+    // -------------------------------------------------------------------------
     case 'welcome_header':
       return (
         <div style={containerStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
             <div>
-              <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: textColor, letterSpacing: '-0.02em' }}>
-                {config.title || 'Welcome back to PJ Study'}
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: textColor, letterSpacing: '-0.02em' }}>
+                {config.title || config.headline || 'Welcome back to PJ Study'}
               </h2>
-              <p style={{ margin: '4px 0 0', fontSize: '13px', color: preset === 'dark-card' ? '#94a3b8' : '#64748b' }}>
-                {config.subtitle || 'Your K.R. Mangalam University academic manuscript library.'}
+              <p style={{ margin: '4px 0 0', fontSize: '12px', color: preset === 'dark-card' ? '#A3A8A3' : 'var(--color-text-secondary, #626A62)' }}>
+                {config.subtitle || config.description || 'Your K.R. Mangalam University academic manuscript library.'}
               </p>
             </div>
-            <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', background: '#ecfdf5', color: '#047857', fontWeight: 700 }}>
+            <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '4px', background: '#EDF5F0', color: 'var(--color-primary, #245C46)', fontWeight: 700, border: '1px solid var(--color-border, #D7D9D3)' }}>
               Active Term 2026
             </span>
           </div>
           {config.bannerAlert?.show && (
-            <div style={{ marginTop: '14px', padding: '10px 14px', borderRadius: '8px', background: '#eff6ff', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '15px' }}>📢</span>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e40af' }}>
+            <div style={{ marginTop: '12px', padding: '8px 12px', borderRadius: '4px', background: '#EDF5F0', border: '1px solid var(--color-border, #D7D9D3)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '14px' }}>📢</span>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-primary, #245C46)' }}>
                 {config.bannerAlert.message || 'Semester examination revision notes and past paper solutions are live.'}
               </span>
             </div>
@@ -1781,20 +1769,23 @@ function renderRealCanvasSection(sectionKey, config, _selectedPage) {
         </div>
       );
 
+    // -------------------------------------------------------------------------
+    // SCHOLAR: QUICK SEARCH
+    // -------------------------------------------------------------------------
     case 'quick_search':
       return (
         <div style={containerStyle}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px 14px' }}>
-            <span style={{ fontSize: '16px', color: '#64748b' }}>🔍</span>
-            <span style={{ fontSize: '13px', color: '#94a3b8', flex: 1 }}>{config.placeholder || 'Search notes, subjects, courses, or professors...'}</span>
-            <span style={{ background: '#0f766e', color: '#fff', padding: '6px 14px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--color-bg-primary, #F5F4F0)', border: '1px solid var(--color-border, #D7D9D3)', borderRadius: '4px', padding: '8px 12px' }}>
+            <span style={{ fontSize: '14px', color: 'var(--color-text-secondary, #626A62)' }}>🔍</span>
+            <span style={{ fontSize: '12px', color: 'var(--color-text-secondary, #626A62)', flex: 1 }}>{config.placeholder || 'Search notes, subjects, courses, or professors...'}</span>
+            <span style={{ background: 'var(--color-primary, #245C46)', color: '#fff', padding: '5px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 600 }}>
               Search Catalog
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Quick Filters:</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-text-secondary, #626A62)', textTransform: 'uppercase' }}>Quick Filters:</span>
             {['All Notes', 'Operating Systems', 'DBMS', 'Networks', 'Discrete Math'].map((t, idx) => (
-              <span key={idx} style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '4px', background: '#f1f5f9', color: '#334155', fontWeight: 600 }}>
+              <span key={idx} style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '3px', background: 'var(--color-bg-primary, #F5F4F0)', border: '1px solid var(--color-border, #D7D9D3)', color: 'var(--color-text-primary, #202620)', fontWeight: 500 }}>
                 {t}
               </span>
             ))}
@@ -1802,37 +1793,47 @@ function renderRealCanvasSection(sectionKey, config, _selectedPage) {
         </div>
       );
 
+    // -------------------------------------------------------------------------
+    // SCHOLAR: ACADEMIC INFO BANNER
+    // -------------------------------------------------------------------------
     case 'academic_info':
       return (
         <div style={{ ...containerStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '28px' }}>🏛️</span>
+            <span style={{ fontSize: '24px' }}>🏛️</span>
             <div>
-              <strong style={{ fontSize: '14px', color: textColor }}>
+              <strong style={{ fontSize: '13px', color: textColor }}>
                 {config.campusName || 'K.R. Mangalam University'}
               </strong>
-              <p style={{ margin: '2px 0 0', fontSize: '12px', color: preset === 'dark-card' ? '#94a3b8' : '#64748b' }}>
+              <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
                 {config.schoolLabel || 'School of Engineering & Technology'} · Semester 4
               </p>
             </div>
           </div>
-          <span style={{ fontSize: '11px', fontWeight: 700, color: '#0f766e', background: '#f0fdf4', padding: '4px 12px', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
+          <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-primary, #245C46)', background: '#EDF5F0', padding: '3px 10px', borderRadius: '4px', border: '1px solid var(--color-border, #D7D9D3)' }}>
             Enrolled Scholar
           </span>
         </div>
       );
 
+    // -------------------------------------------------------------------------
+    // STATS KPI CARDS
+    // -------------------------------------------------------------------------
     case 'stats_kpi': {
       const cols = config.columns || 4;
-      const cards = config.cards || [
-        { label: 'Published Notes', value: '142', icon: '📚', trend: '+12% this month' },
-        { label: 'Catalog Reads', value: '1,280', icon: '👁️', trend: '+24% this week' },
-        { label: 'Active Scholars', value: '350', icon: '🎓', trend: '+8% this term' },
-        { label: 'Downloads Facilitated', value: '890', icon: '📥', trend: '+18% this month' }
+      const defaultCards = [
+        { label: 'Published Notes', value: '142', icon: '📚', trend: '+12% this month', show: true },
+        { label: 'Catalog Reads', value: '1,280', icon: '👁️', trend: '+24% this week', show: true },
+        { label: 'Active Scholars', value: '350', icon: '🎓', trend: '+8% this term', show: true },
+        { label: 'Downloads Facilitated', value: '890', icon: '📥', trend: '+18% this month', show: true }
       ];
+      const rawCards = Array.isArray(config.cards) && config.cards.length > 0 ? config.cards : defaultCards;
+      const visibleCards = rawCards.filter((c) => c.show !== false);
+      const cardsToRender = visibleCards.length > 0 ? visibleCards : defaultCards;
+
       return (
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '14px' }}>
-          {cards.map((c, i) => (
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(cols, cardsToRender.length || 1)}, 1fr)`, gap: '10px' }}>
+          {cardsToRender.map((c, i) => (
             <div key={i} className="pb-metric-card" style={{ borderRadius }}>
               <div className="pb-metric-card__header">
                 <span className="pb-metric-card__icon">{c.icon || '📈'}</span>
@@ -1846,12 +1847,15 @@ function renderRealCanvasSection(sectionKey, config, _selectedPage) {
       );
     }
 
+    // -------------------------------------------------------------------------
+    // ADMIN: QUICK SHORTCUTS
+    // -------------------------------------------------------------------------
     case 'quick_shortcuts':
       return (
         <div style={containerStyle}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <strong style={{ fontSize: '14px', color: textColor }}>{config.title || 'Direct Publishing & Management Shortcuts'}</strong>
-            <span style={{ fontSize: '11px', color: '#0f766e', fontWeight: 700 }}>Direct Publishing Enabled</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <strong style={{ fontSize: '13px', color: textColor }}>{config.title || 'Direct Publishing & Management Shortcuts'}</strong>
+            <span style={{ fontSize: '10px', color: 'var(--color-primary, #245C46)', fontWeight: 700 }}>Direct Publishing Enabled</span>
           </div>
           <div className="pb-shortcuts-grid">
             <div className="pb-shortcut-item">
@@ -1886,17 +1890,20 @@ function renderRealCanvasSection(sectionKey, config, _selectedPage) {
         </div>
       );
 
+    // -------------------------------------------------------------------------
+    // RECENT NOTES (TABLE / CARDS)
+    // -------------------------------------------------------------------------
     case 'recent_notes':
       return (
         <div style={containerStyle}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <div>
-              <strong style={{ fontSize: '14px', color: textColor }}>{config.title || 'Recently Uploaded Notes'}</strong>
-              <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#64748b' }}>
+              <strong style={{ fontSize: '13px', color: textColor }}>{config.title || 'Recently Published Notes'}</strong>
+              <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
                 {config.subtitle || 'Latest academic materials published to the student catalog'}
               </p>
             </div>
-            <span style={{ fontSize: '11px', color: '#0f766e', fontWeight: 700 }}>View Complete Inventory (142) →</span>
+            <span style={{ fontSize: '11px', color: 'var(--color-primary, #245C46)', fontWeight: 600 }}>View Complete Inventory (142) →</span>
           </div>
           <table className="pb-canvas-table">
             <thead>
@@ -1917,20 +1924,20 @@ function renderRealCanvasSection(sectionKey, config, _selectedPage) {
                 { title: 'Discrete Mathematics — Graph Theory & Shortest Path Trees', course: 'B.Tech CSE · Sem 3', code: 'MAT201', author: 'Dr. Mukherjee', status: 'Published', fmt: 'PDF · 1.9 MB' }
               ].map((row, idx) => (
                 <tr key={idx}>
-                  <td style={{ fontWeight: 700, color: '#0f172a' }}>{row.title}</td>
-                  <td style={{ color: '#475569' }}>{row.course}</td>
+                  <td style={{ fontWeight: 600, color: 'var(--color-text-primary, #202620)' }}>{row.title}</td>
+                  <td style={{ color: 'var(--color-text-secondary, #626A62)' }}>{row.course}</td>
                   <td>
-                    <span style={{ padding: '2px 6px', borderRadius: '4px', background: '#f1f5f9', color: '#475569', fontSize: '10px', fontWeight: 700 }}>
+                    <span style={{ padding: '2px 6px', borderRadius: '3px', background: 'var(--color-bg-primary, #F5F4F0)', color: 'var(--color-text-primary, #202620)', fontSize: '10px', fontWeight: 600, border: '1px solid var(--color-border, #D7D9D3)' }}>
                       {row.code}
                     </span>
                   </td>
-                  <td style={{ color: '#64748b' }}>{row.author}</td>
+                  <td style={{ color: 'var(--color-text-secondary, #626A62)' }}>{row.author}</td>
                   <td>
-                    <span style={{ padding: '3px 8px', borderRadius: '12px', background: '#ecfdf5', color: '#047857', fontSize: '10px', fontWeight: 800 }}>
+                    <span style={{ padding: '2px 6px', borderRadius: '3px', background: '#EDF5F0', color: 'var(--color-primary, #245C46)', fontSize: '10px', fontWeight: 700, border: '1px solid var(--color-border, #D7D9D3)' }}>
                       ● {row.status}
                     </span>
                   </td>
-                  <td style={{ color: '#0f766e', fontWeight: 600 }}>{row.fmt}</td>
+                  <td style={{ color: 'var(--color-primary, #245C46)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{row.fmt}</td>
                 </tr>
               ))}
             </tbody>
@@ -1938,276 +1945,112 @@ function renderRealCanvasSection(sectionKey, config, _selectedPage) {
         </div>
       );
 
+    // -------------------------------------------------------------------------
+    // ACTIVITY CHART / ANALYTICS SUMMARY
+    // -------------------------------------------------------------------------
     case 'activity_chart':
     case 'analytics_summary':
       return (
         <div style={containerStyle}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-            <div>
-              <strong style={{ fontSize: '14px', color: textColor }}>{config.title || 'Weekly Study & Readership Velocity'}</strong>
-              <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#64748b' }}>Daily manuscript downloads and page reads over the last 7 days</p>
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '4px', background: '#f1f5f9', fontWeight: 700 }}>7 Days</span>
-              <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '4px', background: '#f1f5f9', color: '#94a3b8' }}>30 Days</span>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '14px', height: '110px', padding: '0 12px' }}>
-            {[
-              { day: 'Mon', val: 45, reads: '140 reads' },
-              { day: 'Tue', val: 68, reads: '210 reads' },
-              { day: 'Wed', val: 52, reads: '165 reads' },
-              { day: 'Thu', val: 88, reads: '290 reads' },
-              { day: 'Fri', val: 96, reads: '320 reads' },
-              { day: 'Sat', val: 72, reads: '240 reads' },
-              { day: 'Sun', val: 64, reads: '200 reads' }
-            ].map((bar, idx) => (
-              <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '9px', fontWeight: 700, color: '#0f766e' }}>{bar.val}%</span>
-                <div style={{ width: '100%', height: `${bar.val}%`, background: 'linear-gradient(180deg, #0f766e, #14b8a6)', borderRadius: '6px' }} />
-                <span style={{ fontSize: '10px', fontWeight: 600, color: '#64748b' }}>{bar.day}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-
-    case 'announcements':
-      return (
-        <div style={containerStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <strong style={{ fontSize: '14px', color: textColor }}>{config.title || 'Institutional Announcements'}</strong>
-            <span style={{ fontSize: '11px', color: '#0f766e', fontWeight: 700 }}>Create Notice +</span>
+            <div>
+              <strong style={{ fontSize: '13px', color: textColor }}>{config.title || 'Weekly Study & Readership Velocity'}</strong>
+              <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>Daily manuscript downloads and page reads over the last 7 days</p>
+            </div>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '3px', background: 'var(--color-bg-primary, #F5F4F0)', border: '1px solid var(--color-border, #D7D9D3)', fontWeight: 600 }}>7 Days</span>
+              <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '3px', background: '#FFFFFF', color: 'var(--color-text-secondary, #626A62)' }}>30 Days</span>
+            </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', height: '100px', padding: '0 8px' }}>
             {[
-              { tag: 'EXAM', title: 'End-Term Examination Schedule & Revision Guides Uploaded', date: 'Today · 10:30 AM', color: '#ef4444' },
-              { tag: 'CURRICULUM', title: 'New Lab Manuals for Artificial Intelligence & Machine Learning Live', date: 'Yesterday · 4:15 PM', color: '#0f766e' }
-            ].map((item, i) => (
-              <div key={i} style={{ padding: '10px 12px', borderRadius: '6px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '9px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', background: `${item.color}15`, color: item.color }}>
-                    {item.tag}
-                  </span>
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a' }}>{item.title}</span>
-                </div>
-                <span style={{ fontSize: '10px', color: '#64748b' }}>{item.date}</span>
+              { day: 'Mon', val: 45 },
+              { day: 'Tue', val: 68 },
+              { day: 'Wed', val: 52 },
+              { day: 'Thu', val: 88 },
+              { day: 'Fri', val: 96 },
+              { day: 'Sat', val: 72 },
+              { day: 'Sun', val: 64 }
+            ].map((bar, idx) => (
+              <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                <span style={{ fontSize: '9px', fontWeight: 600, color: 'var(--color-primary, #245C46)', fontVariantNumeric: 'tabular-nums' }}>{bar.val}%</span>
+                <div style={{ width: '100%', height: `${bar.val}%`, background: 'var(--color-primary, #245C46)', borderRadius: '3px' }} />
+                <span style={{ fontSize: '10px', fontWeight: 500, color: 'var(--color-text-secondary, #626A62)' }}>{bar.day}</span>
               </div>
             ))}
           </div>
         </div>
       );
 
-    case 'bottom_split':
-      return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '16px' }}>
-          <div style={containerStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <strong style={{ fontSize: '13px', color: textColor }}>My Library Preview</strong>
-              <span style={{ fontSize: '11px', color: '#0f766e', fontWeight: 700 }}>Go to Library →</span>
-            </div>
-            {['Operating Systems — Deadlock Solutions', 'DBMS — BCNF Normalization'].map((title, i) => (
-              <div key={i} style={{ padding: '8px 10px', borderRadius: '6px', background: '#f8fafc', border: '1px solid #f1f5f9', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#0f172a' }}>🔖 {title}</span>
-                <span style={{ fontSize: '10px', color: '#0f766e', fontWeight: 700 }}>Open</span>
-              </div>
-            ))}
-          </div>
-          <div style={containerStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <strong style={{ fontSize: '13px', color: textColor }}>Campus Announcements</strong>
-              <span style={{ fontSize: '14px' }}>📢</span>
-            </div>
-            <div style={{ padding: '8px 10px', borderRadius: '6px', background: '#fcfbf9', border: '1px solid #e2e8f0' }}>
-              <span style={{ fontSize: '9px', fontWeight: 800, padding: '2px 5px', borderRadius: '3px', background: '#ecfdf5', color: '#047857' }}>EXAM</span>
-              <p style={{ margin: '4px 0 2px', fontSize: '11px', fontWeight: 700, color: '#0f172a' }}>End-Term Revision Packets Uploaded</p>
-              <span style={{ fontSize: '10px', color: '#64748b' }}>Today · School of Engineering</span>
-            </div>
-          </div>
-        </div>
-      );
-
-    case 'library_preview':
+    // -------------------------------------------------------------------------
+    // SCHOLAR: RECOMMENDATIONS
+    // -------------------------------------------------------------------------
+    case 'recommendations':
+    case 'rec_grid':
       return (
         <div style={containerStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <strong style={{ fontSize: '13px', color: textColor }}>{config.title || 'My Library Preview'}</strong>
-            <span style={{ fontSize: '11px', color: '#0f766e', fontWeight: 700 }}>Go to Library →</span>
-          </div>
-          {['Operating Systems — Deadlock Solutions', 'DBMS — BCNF Normalization'].map((title, i) => (
-            <div key={i} style={{ padding: '8px 10px', borderRadius: '6px', background: '#f8fafc', border: '1px solid #f1f5f9', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#0f172a' }}>🔖 {title}</span>
-              <span style={{ fontSize: '10px', color: '#0f766e', fontWeight: 700 }}>Open</span>
-            </div>
-          ))}
-        </div>
-      );
-
-    case 'reports_feed':
-      return (
-        <div style={containerStyle}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <strong style={{ fontSize: '14px', color: textColor }}>{config.title || 'Quality & Compliance Reports'}</strong>
-            <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '12px', background: '#ecfdf5', color: '#047857', fontWeight: 700 }}>
-              ✓ 100% Compliant
-            </span>
-          </div>
-          <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
-            All manuscripts comply with K.R. Mangalam academic honor codes. 0 flagged copyright or syllabus violations.
-          </p>
-        </div>
-      );
-
-    case 'hero':
-      return (
-        <div style={{ ...containerStyle, textAlign: 'center', padding: '42px 24px' }}>
-          <span style={{ fontSize: '11px', fontWeight: 800, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '0.08em', background: '#f0fdf4', padding: '4px 12px', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
-            {config.eyebrow || 'K.R. MANGALAM UNIVERSITY ACADEMIC PORTAL'}
-          </span>
-          <h1 style={{ margin: '14px 0 10px', fontSize: '30px', fontWeight: 900, color: textColor, letterSpacing: '-0.03em', lineHeight: 1.2 }}>
-            {config.headline || config.title || 'Study Smarter with Verified Faculty Lecture Notes'}
-          </h1>
-          <p style={{ margin: '0 auto 22px', fontSize: '14px', color: preset === 'dark-card' ? '#94a3b8' : '#64748b', maxWidth: '560px', lineHeight: 1.5 }}>
-            {config.description || config.subtitle || 'Syllabus-aligned lecture manuscripts, revision manuals, and past exam solutions for KRMU students.'}
-          </p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-            <span style={{ padding: '10px 20px', background: '#0f766e', color: '#ffffff', borderRadius: '8px', fontWeight: 700, fontSize: '13px' }}>
-              {config.primaryCtaText || 'Explore Notes Catalog'}
-            </span>
-            <span style={{ padding: '10px 20px', background: '#ffffff', border: '1px solid #cbd5e1', color: '#334155', borderRadius: '8px', fontWeight: 700, fontSize: '13px' }}>
-              Direct Upload Note
-            </span>
-          </div>
-        </div>
-      );
-
-    case 'features':
-      return (
-        <div style={containerStyle}>
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-            <strong style={{ fontSize: '16px', color: textColor }}>{config.title || 'Built for Academic Excellence'}</strong>
-            <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748b' }}>
-              {config.subtitle || 'Everything K.R. Mangalam students need for exam preparation and coursework'}
-            </p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${config.columns || 3}, 1fr)`, gap: '14px' }}>
-            {[
-              { icon: '🎯', title: 'Curriculum-Mapped Notes', desc: 'Lecture manuscripts organized strictly by university school, degree program, and semester syllabus.' },
-              { icon: '⚡', title: 'Direct Faculty Publishing', desc: 'Instant live publishing with automatic validation and zero approval bottlenecks.' },
-              { icon: '📁', title: 'Personal Study Desk', desc: 'Private bookmarking, organized collections, reading history, and direct PDF downloads.' }
-            ].map((f, i) => (
-              <div key={i} style={{ padding: '16px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                <span style={{ fontSize: '24px' }}>{f.icon}</span>
-                <p style={{ margin: '8px 0 4px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{f.title}</p>
-                <span style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.4, display: 'block' }}>{f.desc}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-
-    case 'how_it_works':
-      return (
-        <div style={containerStyle}>
-          <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-            <strong style={{ fontSize: '15px', color: textColor }}>{config.title || 'How PJ Study Powers Your Learning'}</strong>
-            <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748b' }}>
-              {config.subtitle || 'From initial enrollment to final exam mastery in three streamlined steps.'}
-            </p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-            {[
-              { step: '1', title: 'Select School & Course', desc: 'Navigate directly to your KRMU faculty and active semester subjects.' },
-              { step: '2', title: 'Access Peer-Reviewed Notes', desc: 'Read detailed lecture slides, past question solutions, and concise cheat sheets.' },
-              { step: '3', title: 'Build Your Personal Library', desc: 'Bookmark key chapters, track downloads, and review materials before exam deadlines.' }
-            ].map((s, idx) => (
-              <div key={idx} style={{ padding: '14px', borderRadius: '8px', background: '#ffffff', border: '1px solid #e2e8f0', position: 'relative' }}>
-                <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#0f766e', color: '#fff', fontSize: '11px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' }}>
-                  {s.step}
-                </span>
-                <p style={{ margin: '0 0 4px', fontSize: '12px', fontWeight: 700, color: '#0f172a' }}>{s.title}</p>
-                <span style={{ fontSize: '11px', color: '#64748b' }}>{s.desc}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-
-    case 'academic_highlights':
-      return (
-        <div style={containerStyle}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <div>
-              <strong style={{ fontSize: '14px', color: textColor }}>{config.title || 'Official KRMU Campus Taxonomy'}</strong>
-              <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#64748b' }}>
-                {config.subtitle || 'Dedicated curriculum architecture and course catalog for K.R. Mangalam University.'}
+              <strong style={{ fontSize: '13px', color: textColor }}>{config.title || 'Curated Academic Recommendations'}</strong>
+              <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
+                {config.subtitle || 'Recommended based on your enrolled course and semester syllabus'}
               </p>
             </div>
-            <span style={{ fontSize: '11px', color: '#0f766e', fontWeight: 700 }}>6 Academic Schools</span>
+            <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '3px', background: '#EDF5F0', color: 'var(--color-primary, #245C46)', fontWeight: 700, border: '1px solid var(--color-border, #D7D9D3)' }}>
+              98% Curriculum Alignment
+            </span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
             {[
-              'School of Engineering & Technology (SOET)',
-              'School of Management & Commerce (SOMC)',
-              'School of Medical & Allied Sciences (SMAS)',
-              'School of Legal Studies (SOLS)',
-              'School of Basic & Applied Sciences (SBAS)',
-              'School of Journalism & Mass Comm (SJMC)'
-            ].map((sch, i) => (
-              <div key={i} style={{ padding: '10px 12px', borderRadius: '6px', background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '11px', fontWeight: 600, color: '#334155' }}>
-                🏛️ {sch}
+              { title: 'Computer Networks — Transport Layer & Congestion Control', code: 'CSE208', sem: 'Sem 4', rating: '4.9 ★', reads: '310 reads' },
+              { title: 'Operating Systems — CPU Scheduling Algorithms & Gantt Charts', code: 'CSE204', sem: 'Sem 4', rating: '4.8 ★', reads: '450 reads' },
+              { title: 'Database Systems — SQL Query Optimization & Indexing', code: 'CSE206', sem: 'Sem 4', rating: '4.9 ★', reads: '380 reads' }
+            ].map((n, i) => (
+              <div key={i} style={{ padding: '12px', borderRadius: '4px', background: '#FFFFFF', border: '1px solid var(--color-border, #D7D9D3)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '9px', fontWeight: 700, padding: '1px 5px', borderRadius: '3px', background: 'var(--color-bg-primary, #F5F4F0)', color: 'var(--color-text-primary, #202620)', border: '1px solid var(--color-border, #D7D9D3)' }}>{n.code}</span>
+                  <span style={{ fontSize: '10px', color: 'var(--color-primary, #245C46)', fontWeight: 700 }}>{n.rating}</span>
+                </div>
+                <strong style={{ fontSize: '12px', color: 'var(--color-text-primary, #202620)', lineHeight: 1.3 }}>{n.title}</strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '6px', borderTop: '1px solid var(--color-border-subtle, #E4E6E1)', fontSize: '10px', color: 'var(--color-text-secondary, #626A62)' }}>
+                  <span>{n.sem}</span>
+                  <span style={{ color: 'var(--color-primary, #245C46)', fontWeight: 600 }}>Preview →</span>
+                </div>
               </div>
             ))}
           </div>
         </div>
       );
 
-    case 'trust_cta':
+    // -------------------------------------------------------------------------
+    // SCHOLAR: EXPLORE NOTES CATALOG & FILTERS
+    // -------------------------------------------------------------------------
+    case 'explore_header':
       return (
-        <div style={{ ...containerStyle, background: 'linear-gradient(135deg, #0f766e, #134e4a)', color: '#ffffff', textAlign: 'center', padding: '32px 24px', border: 'none' }}>
-          <h3 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 800, color: '#ffffff' }}>
-            {config.headline || 'Ready to Elevate Your Academic Journey?'}
-          </h3>
-          <p style={{ margin: '0 auto 16px', fontSize: '13px', color: '#ccfbf1', maxWidth: '480px' }}>
-            {config.description || 'Join thousands of university scholars discovering course-mapped lecture notes and study collections.'}
-          </p>
-          <span style={{ display: 'inline-block', padding: '8px 20px', background: '#ffffff', color: '#0f766e', borderRadius: '6px', fontWeight: 800, fontSize: '12px' }}>
-            {config.buttonText || 'Get Started Free'}
+        <div style={containerStyle}>
+          <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-primary, #245C46)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            ACADEMIC NOTES DIRECTORY
           </span>
+          <h2 style={{ margin: '4px 0 2px', fontSize: '18px', fontWeight: 800, color: textColor }}>
+            {config.title || 'Explore Curriculum Study Notes'}
+          </h2>
+          <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-text-secondary, #626A62)' }}>
+            {config.subtitle || 'Discover verified lecture manuscripts, revision manuals, and past exam solutions for KRMU schools.'}
+          </p>
         </div>
-      );
-
-    case 'footer':
-      return (
-        <footer style={{ ...containerStyle, background: '#0f172a', color: '#94a3b8', padding: '24px', border: 'none' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-            <div>
-              <strong style={{ color: '#ffffff', fontSize: '13px' }}>{config.brandText || 'PJ Study Academic Library'}</strong>
-              <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#64748b' }}>
-                {config.copyright || '© 2026 PJ Study. Dedicated to K.R. Mangalam University Scholars.'}
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: '16px', fontSize: '11px', color: '#cbd5e1' }}>
-              <span>Privacy Policy</span>
-              <span>Terms of Service</span>
-              <span>Faculty Portal</span>
-              <span>KRMU Direct</span>
-            </div>
-          </div>
-        </footer>
       );
 
     case 'search_filters':
     case 'inventory_filters':
       return (
-        <div style={{ ...containerStyle, display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <div style={{ flex: 1, padding: '8px 12px', background: '#f1f5f9', borderRadius: '6px', fontSize: '12px', color: '#94a3b8' }}>
+        <div style={{ ...containerStyle, display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: '180px', padding: '6px 10px', background: 'var(--color-bg-primary, #F5F4F0)', border: '1px solid var(--color-border, #D7D9D3)', borderRadius: '4px', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
             🔍 Search by course, subject code, or keyword...
           </div>
-          <span style={{ padding: '8px 12px', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '11px', fontWeight: 600 }}>
+          <span style={{ padding: '6px 10px', background: '#FFFFFF', border: '1px solid var(--color-border, #D7D9D3)', borderRadius: '4px', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-primary, #202620)' }}>
             School: All Schools ▼
           </span>
-          <span style={{ padding: '8px 12px', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '11px', fontWeight: 600 }}>
+          <span style={{ padding: '6px 10px', background: '#FFFFFF', border: '1px solid var(--color-border, #D7D9D3)', borderRadius: '4px', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-primary, #202620)' }}>
             Semester: All Semesters ▼
           </span>
         </div>
@@ -2219,7 +2062,7 @@ function renderRealCanvasSection(sectionKey, config, _selectedPage) {
         <div style={containerStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
             <strong style={{ fontSize: '13px', color: textColor }}>Curriculum Manuscripts</strong>
-            <span style={{ fontSize: '11px', color: '#64748b' }}>Displaying 12 of 142 items</span>
+            <span style={{ fontSize: '11px', color: 'var(--color-text-secondary, #626A62)', fontVariantNumeric: 'tabular-nums' }}>Displaying 12 of 142 items</span>
           </div>
           <table className="pb-canvas-table">
             <thead>
@@ -2227,20 +2070,21 @@ function renderRealCanvasSection(sectionKey, config, _selectedPage) {
                 <th>Document Title</th>
                 <th>School & Course</th>
                 <th>Semester</th>
-                <th>Format</th>
+                <th>Format & Size</th>
               </tr>
             </thead>
             <tbody>
               {[
                 { title: 'Computer Networks — Transport Layer Protocols', course: 'B.Tech CSE', sem: 'Sem 5', fmt: 'PDF (3.2 MB)' },
                 { title: 'Data Structures — AVL & Red-Black Trees', course: 'B.Tech CSE', sem: 'Sem 3', fmt: 'PDF (2.1 MB)' },
-                { title: 'Discrete Mathematics — Graph Theory', course: 'B.Tech CSE', sem: 'Sem 3', fmt: 'PDF (1.8 MB)' }
+                { title: 'Discrete Mathematics — Graph Theory', course: 'B.Tech CSE', sem: 'Sem 3', fmt: 'PDF (1.8 MB)' },
+                { title: 'Database Systems — ACID & Serializability', course: 'B.Tech CSE', sem: 'Sem 4', fmt: 'PDF (2.4 MB)' }
               ].map((row, i) => (
                 <tr key={i}>
-                  <td style={{ fontWeight: 700, color: '#0f172a' }}>{row.title}</td>
-                  <td style={{ color: '#475569' }}>{row.course}</td>
-                  <td style={{ color: '#475569' }}>{row.sem}</td>
-                  <td style={{ color: '#0f766e', fontWeight: 600 }}>{row.fmt}</td>
+                  <td style={{ fontWeight: 600, color: 'var(--color-text-primary, #202620)' }}>{row.title}</td>
+                  <td style={{ color: 'var(--color-text-secondary, #626A62)' }}>{row.course}</td>
+                  <td style={{ color: 'var(--color-text-secondary, #626A62)' }}>{row.sem}</td>
+                  <td style={{ color: 'var(--color-primary, #245C46)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{row.fmt}</td>
                 </tr>
               ))}
             </tbody>
@@ -2248,41 +2092,468 @@ function renderRealCanvasSection(sectionKey, config, _selectedPage) {
         </div>
       );
 
+    // -------------------------------------------------------------------------
+    // SCHOLAR: LIBRARY & COLLECTIONS
+    // -------------------------------------------------------------------------
+    case 'library_header':
+      return (
+        <div style={containerStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: textColor }}>
+                {config.title || 'My Study Desk & Personal Library'}
+              </h2>
+              <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
+                {config.subtitle || 'Access your bookmarked study notes, custom binders, and offline reading vault.'}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', fontSize: '11px' }}>
+              <span style={{ padding: '3px 8px', borderRadius: '3px', background: '#EDF5F0', color: 'var(--color-primary, #245C46)', fontWeight: 700, border: '1px solid var(--color-border, #D7D9D3)' }}>14 Saved</span>
+              <span style={{ padding: '3px 8px', borderRadius: '3px', background: 'var(--color-bg-primary, #F5F4F0)', border: '1px solid var(--color-border, #D7D9D3)', fontWeight: 600 }}>3 Binders</span>
+            </div>
+          </div>
+        </div>
+      );
+
+    case 'saved_tabs':
+      return (
+        <div style={{ ...containerStyle, padding: '8px 12px', display: 'flex', gap: '6px' }}>
+          {['🔖 Saved Manuscripts (14)', '📁 Custom Binders (3)', '📥 Download History (8)'].map((tab, idx) => (
+            <span key={idx} style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: idx === 0 ? 700 : 500, background: idx === 0 ? '#EDF5F0' : 'transparent', color: idx === 0 ? 'var(--color-primary, #245C46)' : 'var(--color-text-secondary, #626A62)', border: idx === 0 ? '1px solid var(--color-border, #D7D9D3)' : '1px solid transparent' }}>
+              {tab}
+            </span>
+          ))}
+        </div>
+      );
+
+    case 'collections_grid':
+      return (
+        <div style={containerStyle}>
+          <strong style={{ fontSize: '13px', color: textColor, display: 'block', marginBottom: '8px' }}>
+            Personal Study Binders
+          </strong>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+            {[
+              { name: 'End-Term Exam Revision', count: '6 notes', updated: '2h ago' },
+              { name: 'Operating Systems Deep Dive', count: '4 notes', updated: 'Yesterday' },
+              { name: 'DBMS Lab & Cheat Sheets', count: '4 notes', updated: '3 days ago' }
+            ].map((b, i) => (
+              <div key={i} style={{ padding: '10px 12px', borderRadius: '4px', background: '#FFFFFF', border: '1px solid var(--color-border, #D7D9D3)' }}>
+                <span style={{ fontSize: '16px' }}>📁</span>
+                <strong style={{ display: 'block', margin: '4px 0 2px', fontSize: '12px', color: 'var(--color-text-primary, #202620)' }}>{b.name}</strong>
+                <span style={{ fontSize: '10px', color: 'var(--color-text-secondary, #626A62)' }}>{b.count} · {b.updated}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+    // -------------------------------------------------------------------------
+    // SCHOLAR: PROFILE & SECURITY
+    // -------------------------------------------------------------------------
+    case 'profile_header':
+      return (
+        <div style={{ ...containerStyle, display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--color-primary, #245C46)', color: '#FFFFFF', fontSize: '18px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            SK
+          </div>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: textColor }}>
+              Siddharth Kapoor
+            </h3>
+            <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
+              KRMU2024CS042 · B.Tech Computer Science & Engineering · Semester 4
+            </p>
+          </div>
+        </div>
+      );
+
+    case 'academic_card':
+      return (
+        <div style={containerStyle}>
+          <strong style={{ fontSize: '13px', color: textColor, display: 'block', marginBottom: '8px' }}>
+            K.R. Mangalam University Credentials
+          </strong>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+            <div style={{ padding: '8px 10px', background: 'var(--color-bg-primary, #F5F4F0)', borderRadius: '4px', border: '1px solid var(--color-border, #D7D9D3)' }}>
+              <span style={{ fontSize: '10px', color: 'var(--color-text-secondary, #626A62)', display: 'block' }}>Faculty</span>
+              <strong style={{ fontSize: '11px', color: 'var(--color-text-primary, #202620)' }}>SOET (Engineering)</strong>
+            </div>
+            <div style={{ padding: '8px 10px', background: 'var(--color-bg-primary, #F5F4F0)', borderRadius: '4px', border: '1px solid var(--color-border, #D7D9D3)' }}>
+              <span style={{ fontSize: '10px', color: 'var(--color-text-secondary, #626A62)', display: 'block' }}>Semester</span>
+              <strong style={{ fontSize: '11px', color: 'var(--color-text-primary, #202620)' }}>Semester 4 of 8</strong>
+            </div>
+            <div style={{ padding: '8px 10px', background: 'var(--color-bg-primary, #F5F4F0)', borderRadius: '4px', border: '1px solid var(--color-border, #D7D9D3)' }}>
+              <span style={{ fontSize: '10px', color: 'var(--color-text-secondary, #626A62)', display: 'block' }}>CGPA</span>
+              <strong style={{ fontSize: '11px', color: 'var(--color-primary, #245C46)' }}>8.64 / 10.0</strong>
+            </div>
+          </div>
+        </div>
+      );
+
+    case 'security_settings':
+      return (
+        <div style={containerStyle}>
+          <strong style={{ fontSize: '13px', color: textColor, display: 'block', marginBottom: '8px' }}>
+            Account Security & Permissions
+          </strong>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: 'var(--color-bg-primary, #F5F4F0)', borderRadius: '4px', border: '1px solid var(--color-border, #D7D9D3)' }}>
+            <div>
+              <strong style={{ fontSize: '11px', color: 'var(--color-text-primary, #202620)' }}>Two-Factor Authentication</strong>
+              <p style={{ margin: 0, fontSize: '10px', color: 'var(--color-text-secondary, #626A62)' }}>Enabled via university single sign-on</p>
+            </div>
+            <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '3px', background: '#EDF5F0', color: 'var(--color-primary, #245C46)', fontWeight: 700 }}>Active</span>
+          </div>
+        </div>
+      );
+
+    // -------------------------------------------------------------------------
+    // SCHOLAR: NOTIFICATIONS
+    // -------------------------------------------------------------------------
+    case 'notifications_header':
+      return (
+        <div style={containerStyle}>
+          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: textColor }}>
+            {config.title || 'Notification Center'}
+          </h2>
+          <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
+            {config.subtitle || 'Stay updated on syllabus releases, exam schedules, and new curriculum notes.'}
+          </p>
+        </div>
+      );
+
+    case 'notifications_feed':
+      return (
+        <div style={containerStyle}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {[
+              { tag: 'EXAM', title: 'End-Term Exam Schedule Uploaded for Semester 4', time: '10m ago' },
+              { tag: 'CURRICULUM', title: 'New Lab Manuals for Artificial Intelligence & ML Published', time: '2h ago' }
+            ].map((item, i) => (
+              <div key={i} style={{ padding: '8px 10px', borderRadius: '4px', background: 'var(--color-bg-primary, #F5F4F0)', border: '1px solid var(--color-border, #D7D9D3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '9px', fontWeight: 700, padding: '1px 5px', borderRadius: '3px', background: '#EDF5F0', color: 'var(--color-primary, #245C46)', border: '1px solid var(--color-border, #D7D9D3)' }}>
+                    {item.tag}
+                  </span>
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-primary, #202620)' }}>{item.title}</span>
+                </div>
+                <span style={{ fontSize: '10px', color: 'var(--color-text-secondary, #626A62)' }}>{item.time}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+    // -------------------------------------------------------------------------
+    // ADMIN: UPLOAD NOTE
+    // -------------------------------------------------------------------------
+    case 'upload_header':
+      return (
+        <div style={containerStyle}>
+          <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-primary, #245C46)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            FACULTY PUBLISHING PORTAL
+          </span>
+          <h2 style={{ margin: '4px 0 2px', fontSize: '18px', fontWeight: 800, color: textColor }}>
+            {config.title || 'Direct Manuscript Publishing'}
+          </h2>
+          <p style={{ margin: 0, fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
+            {config.subtitle || 'Verified faculty author and publish official course manuscripts directly into the student catalog.'}
+          </p>
+        </div>
+      );
+
     case 'file_uploader':
       return (
-        <div style={{ ...containerStyle, border: '2px dashed #cbd5e1', textAlign: 'center', padding: '28px 16px' }}>
-          <span style={{ fontSize: '36px' }}>📄</span>
-          <p style={{ margin: '8px 0 2px', fontSize: '14px', fontWeight: 700, color: textColor }}>
+        <div style={{ ...containerStyle, border: '2px dashed var(--color-border-strong, #B9BFB7)', textAlign: 'center', padding: '24px 16px', background: 'var(--color-bg-primary, #F5F4F0)' }}>
+          <span style={{ fontSize: '28px' }}>📄</span>
+          <p style={{ margin: '6px 0 2px', fontSize: '13px', fontWeight: 700, color: textColor }}>
             Upload Lecture Notes & Curriculum Manuscripts
           </p>
-          <span style={{ fontSize: '12px', color: '#64748b' }}>
-            Supported formats: {config.allowedTypes || 'PDF, JPG, PNG'} (Max {config.maxMb || 25} MB) · Direct Publishing
+          <span style={{ fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
+            Supported formats: {config.allowedTypes || 'PDF, JPG, PNG'} (Max {config.maxMb || 25} MB) · Direct Publishing Enabled
           </span>
         </div>
       );
 
-    case 'announcement_banner':
+    case 'metadata_form':
       return (
-        <div style={{ ...containerStyle, background: '#ecfdf5', border: '1px solid #a7f3d0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '14px' }}>📣</span>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#065f46' }}>
-              {config.text || 'Important notice for all students.'}
+        <div style={containerStyle}>
+          <strong style={{ fontSize: '13px', color: textColor, display: 'block', marginBottom: '10px' }}>
+            Course & Curriculum Metadata
+          </strong>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <div style={{ padding: '6px 10px', background: 'var(--color-bg-primary, #F5F4F0)', border: '1px solid var(--color-border, #D7D9D3)', borderRadius: '4px', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
+              School: School of Engineering & Technology
+            </div>
+            <div style={{ padding: '6px 10px', background: 'var(--color-bg-primary, #F5F4F0)', border: '1px solid var(--color-border, #D7D9D3)', borderRadius: '4px', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
+              Course: B.Tech Computer Science & Engineering
+            </div>
+            <div style={{ padding: '6px 10px', background: 'var(--color-bg-primary, #F5F4F0)', border: '1px solid var(--color-border, #D7D9D3)', borderRadius: '4px', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
+              Semester: Semester 4
+            </div>
+            <div style={{ padding: '6px 10px', background: 'var(--color-bg-primary, #F5F4F0)', border: '1px solid var(--color-border, #D7D9D3)', borderRadius: '4px', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
+              Subject Code: CSE204 (Operating Systems)
+            </div>
+          </div>
+        </div>
+      );
+
+    // -------------------------------------------------------------------------
+    // ADMIN: NOTES INVENTORY
+    // -------------------------------------------------------------------------
+    case 'notes_header':
+      return (
+        <div style={containerStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: textColor }}>
+                {config.title || 'Curriculum Notes Inventory'}
+              </h2>
+              <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
+                {config.subtitle || 'Complete repository of 142 published manuscripts and pending drafts across all faculties.'}
+              </p>
+            </div>
+            <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: '#EDF5F0', color: 'var(--color-primary, #245C46)', fontWeight: 700, border: '1px solid var(--color-border, #D7D9D3)' }}>
+              142 Total Manuscripts
             </span>
           </div>
-          <span style={{ fontSize: '11px', fontWeight: 700, color: '#047857' }}>
+        </div>
+      );
+
+    // -------------------------------------------------------------------------
+    // PUBLIC HOMEPAGE
+    // -------------------------------------------------------------------------
+    case 'hero':
+      return (
+        <div style={{ ...containerStyle, textAlign: 'center', padding: '36px 20px' }}>
+          <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-primary, #245C46)', textTransform: 'uppercase', letterSpacing: '0.06em', background: '#EDF5F0', padding: '3px 10px', borderRadius: '4px', border: '1px solid var(--color-border, #D7D9D3)' }}>
+            {config.eyebrow || 'K.R. MANGALAM UNIVERSITY ACADEMIC PORTAL'}
+          </span>
+          <h1 style={{ margin: '12px 0 8px', fontSize: '26px', fontWeight: 800, color: textColor, letterSpacing: '-0.03em', lineHeight: 1.25 }}>
+            {config.headline || config.title || 'Study Smarter with Verified Faculty Lecture Notes'}
+          </h1>
+          <p style={{ margin: '0 auto 18px', fontSize: '13px', color: 'var(--color-text-secondary, #626A62)', maxWidth: '540px', lineHeight: 1.5 }}>
+            {config.description || config.subtitle || 'Syllabus-aligned lecture manuscripts, revision manuals, and past exam solutions for KRMU students.'}
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+            <span style={{ padding: '8px 18px', background: 'var(--color-primary, #245C46)', color: '#FFFFFF', borderRadius: '4px', fontWeight: 600, fontSize: '12px' }}>
+              {config.primaryCtaText || 'Explore Notes Catalog'}
+            </span>
+            <span style={{ padding: '8px 18px', background: '#FFFFFF', border: '1px solid var(--color-border, #D7D9D3)', color: 'var(--color-text-primary, #202620)', borderRadius: '4px', fontWeight: 600, fontSize: '12px' }}>
+              Direct Upload Note
+            </span>
+          </div>
+        </div>
+      );
+
+    case 'features':
+      return (
+        <div style={containerStyle}>
+          <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+            <strong style={{ fontSize: '15px', color: textColor }}>{config.title || 'Built for Academic Excellence'}</strong>
+            <p style={{ margin: '3px 0 0', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
+              {config.subtitle || 'Everything K.R. Mangalam students need for exam preparation and coursework'}
+            </p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${config.columns || 3}, 1fr)`, gap: '10px' }}>
+            {[
+              { icon: '🎯', title: 'Curriculum-Mapped Notes', desc: 'Lecture manuscripts organized strictly by university school, degree program, and semester syllabus.' },
+              { icon: '⚡', title: 'Direct Faculty Publishing', desc: 'Instant live publishing with automatic validation and zero approval bottlenecks.' },
+              { icon: '📁', title: 'Personal Study Desk', desc: 'Private bookmarking, organized collections, reading history, and direct PDF downloads.' }
+            ].map((f, i) => (
+              <div key={i} style={{ padding: '12px', borderRadius: '4px', background: '#FFFFFF', border: '1px solid var(--color-border, #D7D9D3)' }}>
+                <span style={{ fontSize: '20px' }}>{f.icon}</span>
+                <p style={{ margin: '6px 0 2px', fontSize: '12px', fontWeight: 700, color: 'var(--color-text-primary, #202620)' }}>{f.title}</p>
+                <span style={{ fontSize: '11px', color: 'var(--color-text-secondary, #626A62)', lineHeight: 1.4, display: 'block' }}>{f.desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+    case 'how_it_works':
+      return (
+        <div style={containerStyle}>
+          <div style={{ textAlign: 'center', marginBottom: '14px' }}>
+            <strong style={{ fontSize: '14px', color: textColor }}>{config.title || 'How PJ Study Powers Your Learning'}</strong>
+            <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
+              {config.subtitle || 'From initial enrollment to final exam mastery in three streamlined steps.'}
+            </p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+            {[
+              { step: '1', title: 'Select School & Course', desc: 'Navigate directly to your KRMU faculty and active semester subjects.' },
+              { step: '2', title: 'Access Peer-Reviewed Notes', desc: 'Read detailed lecture slides, past question solutions, and concise cheat sheets.' },
+              { step: '3', title: 'Build Your Personal Library', desc: 'Bookmark key chapters, track downloads, and review materials before exam deadlines.' }
+            ].map((s, idx) => (
+              <div key={idx} style={{ padding: '12px', borderRadius: '4px', background: '#FFFFFF', border: '1px solid var(--color-border, #D7D9D3)' }}>
+                <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--color-primary, #245C46)', color: '#fff', fontSize: '10px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '6px' }}>
+                  {s.step}
+                </span>
+                <p style={{ margin: '0 0 3px', fontSize: '12px', fontWeight: 700, color: 'var(--color-text-primary, #202620)' }}>{s.title}</p>
+                <span style={{ fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>{s.desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+    case 'academic_highlights':
+      return (
+        <div style={containerStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div>
+              <strong style={{ fontSize: '13px', color: textColor }}>{config.title || 'Official KRMU Campus Taxonomy'}</strong>
+              <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
+                {config.subtitle || 'Dedicated curriculum architecture and course catalog for K.R. Mangalam University.'}
+              </p>
+            </div>
+            <span style={{ fontSize: '10px', color: 'var(--color-primary, #245C46)', fontWeight: 700 }}>6 Academic Faculties</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            {[
+              'School of Engineering & Technology (SOET)',
+              'School of Management & Commerce (SOMC)',
+              'School of Medical & Allied Sciences (SMAS)',
+              'School of Legal Studies (SOLS)',
+              'School of Basic & Applied Sciences (SBAS)',
+              'School of Journalism & Mass Comm (SJMC)'
+            ].map((sch, i) => (
+              <div key={i} style={{ padding: '8px 10px', borderRadius: '4px', background: 'var(--color-bg-primary, #F5F4F0)', border: '1px solid var(--color-border, #D7D9D3)', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-primary, #202620)' }}>
+                🏛️ {sch}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+    case 'trust_cta':
+      return (
+        <div style={{ ...containerStyle, background: 'var(--color-primary, #245C46)', color: '#FFFFFF', textAlign: 'center', padding: '28px 20px', border: 'none' }}>
+          <h3 style={{ margin: '0 0 6px', fontSize: '18px', fontWeight: 800, color: '#FFFFFF' }}>
+            {config.headline || 'Ready to Elevate Your Academic Journey?'}
+          </h3>
+          <p style={{ margin: '0 auto 14px', fontSize: '12px', color: '#D1E0D7', maxWidth: '460px' }}>
+            {config.description || 'Join thousands of university scholars discovering course-mapped lecture notes and study collections.'}
+          </p>
+          <span style={{ display: 'inline-block', padding: '7px 18px', background: '#FFFFFF', color: 'var(--color-primary, #245C46)', borderRadius: '4px', fontWeight: 700, fontSize: '12px' }}>
+            {config.buttonText || 'Get Started Free'}
+          </span>
+        </div>
+      );
+
+    case 'footer':
+      return (
+        <footer style={{ ...containerStyle, background: 'var(--color-text-primary, #202620)', color: '#A3A8A3', padding: '20px', border: 'none' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <strong style={{ color: '#FFFFFF', fontSize: '12px' }}>{config.brandText || 'PJ Study Academic Library'}</strong>
+              <p style={{ margin: '3px 0 0', fontSize: '10px', color: '#858B84' }}>
+                {config.copyright || '© 2026 PJ Study. Dedicated to K.R. Mangalam University Scholars.'}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '14px', fontSize: '11px', color: '#D7D9D3' }}>
+              <span>Privacy Policy</span>
+              <span>Terms of Service</span>
+              <span>Faculty Portal</span>
+              <span>KRMU Direct</span>
+            </div>
+          </div>
+        </footer>
+      );
+
+    case 'announcement_banner':
+      return (
+        <div style={{ ...containerStyle, background: '#EDF5F0', border: '1px solid var(--color-border, #D7D9D3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '14px' }}>📣</span>
+            <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-primary, #245C46)' }}>
+              {config.text || 'Important examination notice for all KRMU scholars.'}
+            </span>
+          </div>
+          <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-primary, #245C46)' }}>
             {config.linkText || 'Learn More'} →
           </span>
+        </div>
+      );
+
+    case 'bottom_split':
+      return (
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '12px' }}>
+          <div style={containerStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <strong style={{ fontSize: '12px', color: textColor }}>My Library Preview</strong>
+              <span style={{ fontSize: '11px', color: 'var(--color-primary, #245C46)', fontWeight: 600 }}>Go to Library →</span>
+            </div>
+            {['Operating Systems — Deadlock Solutions', 'DBMS — BCNF Normalization'].map((title, i) => (
+              <div key={i} style={{ padding: '6px 8px', borderRadius: '4px', background: 'var(--color-bg-primary, #F5F4F0)', border: '1px solid var(--color-border, #D7D9D3)', marginBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-primary, #202620)' }}>🔖 {title}</span>
+                <span style={{ fontSize: '10px', color: 'var(--color-primary, #245C46)', fontWeight: 600 }}>Open</span>
+              </div>
+            ))}
+          </div>
+          <div style={containerStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <strong style={{ fontSize: '12px', color: textColor }}>Campus Announcements</strong>
+              <span style={{ fontSize: '13px' }}>📢</span>
+            </div>
+            <div style={{ padding: '6px 8px', borderRadius: '4px', background: '#EDF5F0', border: '1px solid var(--color-border, #D7D9D3)' }}>
+              <span style={{ fontSize: '9px', fontWeight: 700, padding: '1px 4px', borderRadius: '2px', background: '#FFFFFF', color: 'var(--color-primary, #245C46)' }}>EXAM</span>
+              <p style={{ margin: '3px 0 1px', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-primary, #202620)' }}>End-Term Revision Packets Uploaded</p>
+              <span style={{ fontSize: '10px', color: 'var(--color-text-secondary, #626A62)' }}>Today · School of Engineering</span>
+            </div>
+          </div>
+        </div>
+      );
+
+    case 'announcements':
+      return (
+        <div style={containerStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <strong style={{ fontSize: '13px', color: textColor }}>{config.title || 'Institutional Announcements'}</strong>
+            <span style={{ fontSize: '11px', color: 'var(--color-primary, #245C46)', fontWeight: 600 }}>Create Notice +</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {[
+              { tag: 'EXAM', title: 'End-Term Examination Schedule & Revision Guides Uploaded', date: 'Today · 10:30 AM' },
+              { tag: 'CURRICULUM', title: 'New Lab Manuals for Artificial Intelligence & Machine Learning Live', date: 'Yesterday · 4:15 PM' }
+            ].map((item, i) => (
+              <div key={i} style={{ padding: '8px 10px', borderRadius: '4px', background: 'var(--color-bg-primary, #F5F4F0)', border: '1px solid var(--color-border, #D7D9D3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '9px', fontWeight: 700, padding: '1px 5px', borderRadius: '3px', background: '#EDF5F0', color: 'var(--color-primary, #245C46)', border: '1px solid var(--color-border, #D7D9D3)' }}>
+                    {item.tag}
+                  </span>
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-primary, #202620)' }}>{item.title}</span>
+                </div>
+                <span style={{ fontSize: '10px', color: 'var(--color-text-secondary, #626A62)' }}>{item.date}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+    case 'reports_feed':
+      return (
+        <div style={containerStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <strong style={{ fontSize: '13px', color: textColor }}>{config.title || 'Quality & Compliance Reports'}</strong>
+            <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '3px', background: '#EDF5F0', color: 'var(--color-primary, #245C46)', fontWeight: 700, border: '1px solid var(--color-border, #D7D9D3)' }}>
+              ✓ 100% Compliant
+            </span>
+          </div>
+          <p style={{ margin: 0, fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
+            All manuscripts comply with K.R. Mangalam academic honor codes. 0 flagged copyright or syllabus violations.
+          </p>
         </div>
       );
 
     default:
       return (
         <div style={containerStyle}>
-          <strong style={{ fontSize: '13px', color: textColor }}>{config.title || sectionKey}</strong>
-          {config.subtitle && (
-            <p style={{ margin: '4px 0 0', fontSize: '11px', color: preset === 'dark-card' ? '#94a3b8' : '#64748b' }}>
-              {config.subtitle}
+          <strong style={{ fontSize: '13px', color: textColor }}>{config.title || config.headline || sectionKey}</strong>
+          {(config.subtitle || config.description) && (
+            <p style={{ margin: '3px 0 0', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
+              {config.subtitle || config.description}
             </p>
           )}
         </div>
