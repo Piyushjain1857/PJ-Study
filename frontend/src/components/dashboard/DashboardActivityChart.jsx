@@ -128,7 +128,7 @@ export function DashboardActivityChart({
 
   // Format short date (e.g. "Nov 8")
   const formatShortDate = (dateStr) => {
-    if (!dateStr) return '';
+    if (!dateStr || typeof dateStr !== 'string') return '';
     const parts = dateStr.split('-');
     if (parts.length === 3) {
       const monthNames = [

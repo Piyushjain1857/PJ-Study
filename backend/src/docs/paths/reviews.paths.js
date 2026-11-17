@@ -104,6 +104,41 @@ export const reviewsPaths = {
       }
     }
   },
+  '/api/v1/reviews/{id}': {
+    patch: {
+      tags: ['Reviews & Ratings'],
+      summary: 'Edit a review by review ID',
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                rating: { type: 'integer', minimum: 1, maximum: 5 },
+                title: { type: 'string' },
+                comment: { type: 'string' }
+              }
+            }
+          }
+        }
+      },
+      responses: {
+        200: { description: 'Review updated' }
+      }
+    },
+    delete: {
+      tags: ['Reviews & Ratings'],
+      summary: 'Delete review by review ID',
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+      responses: {
+        200: { description: 'Review removed' }
+      }
+    }
+  },
   '/api/v1/reviews/{id}/reports': {
     post: {
       tags: ['Reviews & Ratings'],

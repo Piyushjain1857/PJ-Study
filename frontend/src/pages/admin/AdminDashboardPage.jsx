@@ -2581,9 +2581,9 @@ export function AdminDashboardPage() {
                       </button>
                     </span>
                   )}
-                  {auditActionFilter !== 'ALL' && (
+                  {auditActionFilter && auditActionFilter !== 'ALL' && (
                     <span className="admin-audit-filter-chip">
-                      Action: {auditActionFilter.split(',')[0]}
+                      Action: {typeof auditActionFilter === 'string' ? auditActionFilter.split(',')[0] : auditActionFilter}
                       <button
                         type="button"
                         onClick={() => handleAuditActionFilterChange({ target: { value: 'ALL' } })}
