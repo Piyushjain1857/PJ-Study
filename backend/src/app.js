@@ -89,9 +89,9 @@ export function createApp() {
   // Cookie parsing middleware
   app.use(cookieParser());
 
-  // Body parsing middleware
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  // Body parsing middleware with strict size bounds (prevent memory exhaustion DoS)
+  app.use(express.json({ limit: '1mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
   // Top-level crawler and discovery routes
   app.get('/sitemap.xml', seoController.getSitemapXml);

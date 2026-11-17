@@ -24,6 +24,10 @@ export function validatePasswordStrength(password) {
     errors.push('Password must be at least 8 characters long');
   }
 
+  if (password.length > 72) {
+    errors.push('Password cannot exceed 72 characters (bcrypt maximum limit)');
+  }
+
   if (!/[A-Z]/.test(password)) {
     errors.push('Password must contain at least one uppercase letter');
   }

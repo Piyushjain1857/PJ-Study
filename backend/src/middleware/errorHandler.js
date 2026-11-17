@@ -39,8 +39,9 @@ export function errorHandler(err, req, res, _next) {
   ) {
     statusCode = 503;
     code = 'DATABASE_UNAVAILABLE';
-    message =
-      'Unable to connect to the MySQL database server. Please verify MySQL is running at localhost:3306.';
+    message = env.isProduction
+      ? 'Database service is currently unavailable. Please try again shortly.'
+      : 'Unable to connect to the MySQL database server. Please verify MySQL is running at localhost:3306.';
   }
 
   // Friendly interception for database authentication issues (e.g. Prisma P1000)
@@ -51,8 +52,9 @@ export function errorHandler(err, req, res, _next) {
   ) {
     statusCode = 500;
     code = 'DATABASE_AUTH_FAILED';
-    message =
-      'Database authentication failed. Please verify the database credentials in backend/.env.';
+    message = env.isProduction
+      ? 'Database service is experiencing technical difficulties.'
+      : 'Database authentication failed. Please verify the database credentials in backend/.env.';
   }
 
   // Intercept Prisma unique constraint violations (P2002)

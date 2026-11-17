@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import env from '../../config/env.js';
 import noteService, { NoteService } from './note.service.js';
 import storageService from '../../services/storage/storage.service.js';
 import { sendSuccess } from '../../utils/apiResponse.js';
@@ -315,6 +316,16 @@ export class NoteController {
         `${disposition}; filename="${encodeURIComponent(fileData.fileName)}"`
       );
       res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Cache-Control', 'private, no-transform, max-age=3600');
+
+      if (isInline) {
+        const allowedOrigins = `'self' http://localhost:5173 ${env.frontendUrl || ''}`.trim();
+        res.setHeader('Content-Security-Policy', `frame-ancestors ${allowedOrigins}`);
+        res.removeHeader('X-Frame-Options');
+      } else {
+        res.setHeader('X-Frame-Options', 'DENY');
+      }
 
       if (fileData.isRange) {
         res.status(206);
