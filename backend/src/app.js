@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import env from './config/env.js';
 import v1Routes from './routes/index.js';
 import seoController from './modules/seo/seo.controller.js';
+import swaggerRoutes from './docs/swagger.routes.js';
 import notFound from './middleware/notFound.js';
 import errorHandler from './middleware/errorHandler.js';
 
@@ -109,6 +110,11 @@ export function createApp() {
       }
     });
   });
+
+  // Swagger OpenAPI Documentation and Explorer
+  app.use('/api', swaggerRoutes);
+  app.get('/docs', (req, res) => res.redirect('/api/docs'));
+  app.get('/api/v1/docs', (req, res) => res.redirect('/api/docs'));
 
   // API v1 router
   app.use('/api/v1', v1Routes);
