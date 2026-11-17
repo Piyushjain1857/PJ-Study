@@ -112,10 +112,11 @@ export function createApp() {
   });
 
   // Swagger OpenAPI Documentation and Explorer
+  app.use('/', swaggerRoutes);
   app.use('/api', swaggerRoutes);
-  app.get(['/docs', '/docs/*', '/swagger', '/swagger/*'], (req, res) => res.redirect('/api/docs/'));
-  app.get(['/api/swagger', '/api/swagger/*'], (req, res) => res.redirect('/api/docs/'));
-  app.get(['/api/v1/docs', '/api/v1/swagger'], (req, res) => res.redirect('/api/docs/'));
+  app.get(['/docs', '/docs/*', '/swagger', '/swagger/*'], (req, res) => res.redirect('/api-docs/'));
+  app.get(['/api/swagger', '/api/swagger/*'], (req, res) => res.redirect('/api-docs/'));
+  app.get(['/api/v1/docs', '/api/v1/swagger', '/api/v1/api-docs'], (req, res) => res.redirect('/api-docs/'));
 
   // API v1 router
   app.use('/api/v1', v1Routes);

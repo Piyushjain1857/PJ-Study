@@ -308,6 +308,17 @@ export function AppLayout() {
     };
   }, [mobileSidebarOpen]);
 
+  // Close mobile sidebar on Escape key
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && mobileSidebarOpen) {
+        setMobileSidebarOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [mobileSidebarOpen]);
+
   const toggleSidebar = () => setSidebarCollapsed((prev) => !prev);
   const toggleMobileSidebar = () => setMobileSidebarOpen((prev) => !prev);
   const closeMobileSidebar = () => setMobileSidebarOpen(false);

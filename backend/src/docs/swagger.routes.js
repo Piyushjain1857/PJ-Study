@@ -1,47 +1,55 @@
 import { Router } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './swaggerSpec.js';
+import { customSwaggerCss } from './swagger.config.js';
+import env from '../config/env.js';
 
 const router = Router();
 
-// Custom branding CSS for Swagger UI to match PJ Study's editorial green design palette
-const customCss = `
-  .swagger-ui .topbar {
-    background-color: #173d2f !important;
-    border-bottom: 2px solid #245c46;
+/**
+ * Access control guard for Swagger UI and raw OpenAPI JSON spec.
+ * - Always accessible in development and test environments.
+ * - In production: Disabled by default (returns HTTP 403), unless explicitly enabled
+ *   via ENABLE_SWAGGER=true or SWAGGER_ENABLED=true in environment configuration.
+ * - Optional SWAGGER_KEY header/query support in production.
+ */
+export const checkDocsAccess = (req, res, next) => {
+  const isProd = process.env.NODE_ENV === 'production' || (env.isProduction && !env.isTest);
+  if (!isProd) {
+    return next();
   }
-  .swagger-ui .topbar .topbar-wrapper a span {
-    color: #ffffff;
-    font-weight: 700;
-    font-size: 1.15rem;
-    letter-spacing: -0.01em;
+
+  const isEnabled = process.env.ENABLE_SWAGGER === 'true' || process.env.SWAGGER_ENABLED === 'true';
+  if (!isEnabled) {
+    return res.status(403).json({
+      success: false,
+      error: {
+        code: 'DOCS_DISABLED',
+        message: 'Interactive API documentation is disabled in the production environment.',
+        statusCode: 403
+      }
+    });
   }
-  .swagger-ui .topbar .topbar-wrapper a::before {
-    content: "📚 ";
-    font-size: 1.2rem;
+
+  if (process.env.SWAGGER_KEY) {
+    const providedKey = req.headers['x-swagger-key'] || req.query.key;
+    if (providedKey !== process.env.SWAGGER_KEY) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: 'UNAUTHORIZED_DOCS_ACCESS',
+          message: 'Valid documentation access key required in production.',
+          statusCode: 401
+        }
+      });
+    }
   }
-  .swagger-ui .info h2.title {
-    color: #173d2f;
-    font-family: inherit;
-  }
-  .swagger-ui .btn.authorize {
-    background-color: #245c46 !important;
-    border-color: #245c46 !important;
-    color: #ffffff !important;
-  }
-  .swagger-ui .btn.authorize svg {
-    fill: #ffffff !important;
-  }
-  .swagger-ui .opblock.opblock-post .opblock-summary-method {
-    background: #245c46 !important;
-  }
-  .swagger-ui .opblock.opblock-get .opblock-summary-method {
-    background: #0284c7 !important;
-  }
-`;
+
+  next();
+};
 
 const swaggerUiOptions = {
-  customCss,
+  customCss: customSwaggerCss,
   customSiteTitle: 'PJ Study — API Documentation & Explorer',
   swaggerOptions: {
     persistAuthorization: true,
@@ -52,15 +60,21 @@ const swaggerUiOptions = {
   }
 };
 
-// Raw OpenAPI JSON spec endpoint
-router.get('/docs.json', (req, res) => {
+// 1. Raw OpenAPI JSON spec endpoints
+router.get(['/api-docs.json', '/docs.json'], checkDocsAccess, (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(swaggerSpec);
 });
 
-// Interactive Swagger UI documentation explorer
-router.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
-router.get('/swagger', (req, res) => res.redirect('/api/docs/'));
-router.get('/swagger/*', (req, res) => res.redirect('/api/docs/'));
+// 2. Interactive Swagger UI explorer endpoints
+router.use(
+  ['/api-docs', '/docs'],
+  checkDocsAccess,
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, swaggerUiOptions)
+);
+
+// 3. User-friendly redirects for common aliases
+router.get(['/swagger', '/swagger/*'], (req, res) => res.redirect('/api-docs/'));
 
 export default router;

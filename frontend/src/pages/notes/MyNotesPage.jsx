@@ -405,7 +405,9 @@ export function MyNotesPage() {
                             {note.subject?.name || 'General Subject'}
                           </span>
                           <span className="dashboard-note-card__badge">
-                            {note.fileName ? note.fileName.split('.').pop()?.toUpperCase() : 'DOC'}
+                            {typeof note.fileName === 'string' && note.fileName.includes('.')
+                              ? note.fileName.split('.').pop()?.toUpperCase()
+                              : 'DOC'}
                           </span>
                         </div>
 

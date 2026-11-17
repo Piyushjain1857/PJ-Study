@@ -15,6 +15,7 @@ import UnauthorizedPage from '../pages/UnauthorizedPage.jsx';
 
 import ProtectedRoute from '../components/common/ProtectedRoute.jsx';
 import GuestRoute from '../components/common/GuestRoute.jsx';
+import { RouteErrorBoundary } from '../components/common/ErrorBoundary.jsx';
 import { ROLES } from '../utils/permissions.js';
 
 // Accessible Route-Level Loading Fallback
@@ -91,6 +92,7 @@ export const router = createBrowserRouter(
     {
       path: '/',
       element: <AppLayout />,
+      errorElement: <RouteErrorBoundary />,
       children: [
         {
           path: 'dashboard',
@@ -501,6 +503,7 @@ export const router = createBrowserRouter(
     {
       path: '/',
       element: <PublicLayout />,
+      errorElement: <RouteErrorBoundary />,
       children: [
         {
           index: true,

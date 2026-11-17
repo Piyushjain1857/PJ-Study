@@ -551,13 +551,44 @@
    7. RESPONSIVE ADJUSTMENTS
    ============================================================================= */
 @media (max-width: 640px) {
+  .note-details__top-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .note-details__top-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .note-details__pill-btn {
+    min-height: 40px;
+    padding: 8px 14px;
+    touch-action: manipulation;
+  }
+
   .note-details__header,
   .note-details__content {
-    padding: 24px 18px;
+    padding: 20px 16px;
   }
 
   .note-details__title {
-    font-size: 1.625rem;
+    font-size: clamp(1.35rem, 5vw, 1.75rem);
+    letter-spacing: -0.02em;
+  }
+
+  .note-details__meta-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .note-details__counters {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .note-doc-hero {
@@ -571,9 +602,50 @@
 
   .note-doc-hero__download-btn {
     width: 100%;
+    min-height: 44px;
+  }
+
+  .note-doc-hero__footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 
   .note-doc-viewer-toolbar {
-    padding: 12px 16px;
+    padding: 12px 14px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .note-doc-viewer-toolbar__left {
+    width: 100%;
+  }
+
+  .note-doc-viewer-toolbar__actions {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  .note-doc-viewer-toolbar__actions button {
+    flex: 1;
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 360px) {
+  .note-details__header,
+  .note-details__content,
+  .note-doc-hero {
+    padding: 16px 12px;
+  }
+
+  .note-details__badges {
+    gap: 4px;
+  }
+
+  .note-details__crumb-curr {
+    max-width: 180px;
   }
 }

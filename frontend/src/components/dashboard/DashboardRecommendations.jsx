@@ -4,14 +4,16 @@ import noteService from '../../services/noteService.js';
 import Skeleton from '../common/Skeleton.jsx';
 
 function getFormatBadge(mimeType, fileName) {
-  const ext = fileName ? fileName.split('.').pop()?.toUpperCase() : '';
-  if (mimeType?.includes('pdf') || ext === 'PDF') {
+  const safeName = typeof fileName === 'string' ? fileName.trim() : '';
+  const safeMime = typeof mimeType === 'string' ? mimeType.trim().toLowerCase() : '';
+  const ext = safeName.includes('.') ? safeName.split('.').pop()?.toUpperCase() : '';
+  if (safeMime.includes('pdf') || ext === 'PDF') {
     return { label: 'PDF', variant: 'pdf' };
   }
-  if (mimeType?.includes('image') || ['PNG', 'JPG', 'JPEG', 'WEBP'].includes(ext)) {
+  if (safeMime.includes('image') || ['PNG', 'JPG', 'JPEG', 'WEBP'].includes(ext)) {
     return { label: ext || 'IMG', variant: 'image' };
   }
-  if (mimeType?.includes('text') || ['TXT', 'MD'].includes(ext)) {
+  if (safeMime.includes('text') || ['TXT', 'MD'].includes(ext)) {
     return { label: ext || 'TXT', variant: 'text' };
   }
   return { label: ext || 'DOC', variant: 'doc' };

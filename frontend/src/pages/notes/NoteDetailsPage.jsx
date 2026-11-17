@@ -223,14 +223,17 @@ export function NoteDetailsPage() {
       }
     : null;
 
-  const displayDate = new Date(note.publishedAt || note.createdAt).toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric'
-  });
+  const rawDate = note?.publishedAt || note?.createdAt;
+  const displayDate = rawDate
+    ? new Date(rawDate).toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      })
+    : 'Recently';
 
-  const formatInfo = getFileFormatInfo(note.fileName, note.mimeType);
-  const formattedSize = formatBytes(note.fileSize);
+  const formatInfo = getFileFormatInfo(note?.fileName, note?.mimeType);
+  const formattedSize = formatBytes(note?.fileSize);
 
   return (
     <div className="notes-page note-details-page">
