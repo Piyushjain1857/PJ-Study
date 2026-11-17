@@ -43,6 +43,7 @@ router.get(
 
 router.get('/:id', optionalAuth, noteController.getNoteById);
 router.get('/:id/file', optionalAuth, noteController.downloadFile);
+router.get('/:id/preview', optionalAuth, noteController.downloadFile);
 router.get('/:id/download', optionalAuth, noteController.downloadFile);
 
 // =============================================================================

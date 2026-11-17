@@ -259,6 +259,7 @@ model Note {
   content         String?     @db.LongText
   fileName        String?     @map("file_name") @db.VarChar(255)
   storageKey      String?     @unique @map("storage_key") @db.VarChar(512)
+  storageProvider String      @default("local") @map("storage_provider") @db.VarChar(50)
   fileSize        BigInt?     @map("file_size") // In bytes
   mimeType        String?     @default("application/pdf") @map("mime_type") @db.VarChar(100)
   pageCount       Int?        @map("page_count")

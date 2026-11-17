@@ -62,8 +62,10 @@ export function normalizeStatus(status) {
  */
 export function sanitizeNote(item) {
   if (!item) return null;
+  // Omit private storage key / Drive file ID from client response for security
+  const { storageKey, ...rest } = item;
   return {
-    ...item,
+    ...rest,
     fileSize: typeof item.fileSize === 'bigint' ? item.fileSize.toString() : item.fileSize,
     // Present normalized status alias for client consistency
     statusAlias: item.status === 'PENDING_REVIEW' ? 'PENDING' : item.status
@@ -201,6 +203,7 @@ export class NoteService {
       status: requestedStatus = 'PUBLISHED',
       fileName,
       storageKey,
+      storageProvider = 'local',
       fileSize,
       mimeType
     } = input;
@@ -376,27 +379,37 @@ export class NoteService {
     const shortId = crypto.randomBytes(4).toString('hex');
     const slug = `${slugify(title.trim())}-${shortId}`;
 
-    const note = await this.repo.create({
-      title: title.trim(),
-      slug,
-      description: description?.trim() || null,
-      content: content?.trim() || null,
-      fileName: fileName?.trim() || null,
-      storageKey: storageKey?.trim() || null,
-      fileSize: size,
-      mimeType: mimeType?.trim() || (hasFile ? 'application/pdf' : null),
-      universityId: finalUniversityId,
-      schoolId: finalSchoolId,
-      courseId,
-      subjectId,
-      categoryId: categoryId || null,
-      topicId: topicId || null,
-      semester,
-      academicYear: academicYear?.trim() || null,
-      uploadedById,
-      status: targetStatus,
-      publishedAt: targetStatus === 'PUBLISHED' ? new Date() : null
-    });
+    let note;
+    try {
+      note = await this.repo.create({
+        title: title.trim(),
+        slug,
+        description: description?.trim() || null,
+        content: content?.trim() || null,
+        fileName: fileName?.trim() || null,
+        storageKey: storageKey?.trim() || null,
+        storageProvider: storageProvider || 'local',
+        fileSize: size,
+        mimeType: mimeType?.trim() || (hasFile ? 'application/pdf' : null),
+        universityId: finalUniversityId,
+        schoolId: finalSchoolId,
+        courseId,
+        subjectId,
+        categoryId: categoryId || null,
+        topicId: topicId || null,
+        semester,
+        academicYear: academicYear?.trim() || null,
+        uploadedById,
+        status: targetStatus,
+        publishedAt: targetStatus === 'PUBLISHED' ? new Date() : null
+      });
+    } catch (err) {
+      // Compensating transaction: Clean up uploaded file from storage if DB write fails
+      if (storageKey) {
+        await this.storage.deleteFile(storageKey, storageProvider || 'local').catch(() => {});
+      }
+      throw err;
+    }
 
     return sanitizeNote(note);
   }
@@ -477,9 +490,10 @@ export class NoteService {
     if (data.storageKey && data.fileName) {
       // Unlink previous file if present and different
       if (note.storageKey && note.storageKey !== data.storageKey) {
-        this.storage.deleteFile(note.storageKey).catch(() => {});
+        this.storage.deleteFile(note.storageKey, note.storageProvider || 'local').catch(() => {});
       }
       updatePayload.storageKey = data.storageKey;
+      updatePayload.storageProvider = data.storageProvider || 'local';
       updatePayload.fileName = data.fileName;
       updatePayload.fileSize =
         typeof data.fileSize === 'bigint' ? data.fileSize : BigInt(data.fileSize || 0);
@@ -523,7 +537,7 @@ export class NoteService {
 
     // Delete stored file if exists
     if (note.storageKey) {
-      await this.storage.deleteFile(note.storageKey).catch(() => {});
+      await this.storage.deleteFile(note.storageKey, note.storageProvider || 'local').catch(() => {});
     }
 
     await this.repo.delete(noteId);
@@ -1094,7 +1108,24 @@ export class NoteService {
    * @param {object|null} currentUser
    * @returns {Promise<{ stream: any, fileName: string, mimeType: string, size: number }>}
    */
-  async getNoteFileForDownload(noteId, currentUser = null) {
+  /**
+   * Resolves file streaming payload for downloading or previewing a note manuscript.
+   *
+   * @param {string} noteId
+   * @param {object|null} currentUser
+   * @param {object|null} [rangeOptions]
+   * @returns {Promise<{
+   *   stream: import('stream').Readable,
+   *   fileName: string,
+   *   mimeType: string,
+   *   size: number,
+   *   totalSize?: number,
+   *   isRange?: boolean,
+   *   start?: number,
+   *   end?: number
+   * }>}
+   */
+  async getNoteFileForDownload(noteId, currentUser = null, rangeOptions = null) {
     const note = await this.repo.findById(noteId);
     if (!note) {
       const error = new Error(`Note with ID "${noteId}" was not found.`);
@@ -1129,22 +1160,31 @@ export class NoteService {
       throw error;
     }
 
-    // Increment download count
-    if (PUBLISHED_STATUSES.includes(note.status)) {
+    // Increment download count (only for full download, not chunked byte range requests)
+    if (PUBLISHED_STATUSES.includes(note.status) && (!rangeOptions || !rangeOptions.start)) {
       await this.repo.incrementDownloadCount(noteId).catch(() => {});
     }
 
     // Record user download history if authenticated
-    if (currentUser && currentUser.id) {
+    if (currentUser && currentUser.id && (!rangeOptions || !rangeOptions.start)) {
       await this.repo.recordDownloadHistory(currentUser.id, noteId).catch(() => {});
     }
 
-    const { stream, size } = await this.storage.getFileStream(note.storageKey);
+    const streamResult = await this.storage.getFileStream(
+      note.storageKey,
+      note.storageProvider || 'local',
+      rangeOptions
+    );
+
     return {
-      stream,
-      fileName: note.fileName || 'study-document.pdf',
-      mimeType: note.mimeType || 'application/pdf',
-      size
+      stream: streamResult.stream,
+      fileName: note.fileName || streamResult.fileName || 'study-document.pdf',
+      mimeType: note.mimeType || streamResult.mimeType || 'application/pdf',
+      size: streamResult.size,
+      totalSize: streamResult.totalSize || streamResult.size,
+      isRange: Boolean(streamResult.isRange),
+      start: streamResult.start,
+      end: streamResult.end
     };
   }
 

@@ -1,7 +1,7 @@
-import fs from 'fs';
 import path from 'path';
-import crypto from 'crypto';
 import env from '../../config/env.js';
+import { localStorageProvider, LocalStorageProvider } from './local.provider.js';
+import { googleDriveProvider, GoogleDriveStorageProvider } from './googleDrive.provider.js';
 
 /**
  * Supported educational document formats and their standard MIME types.
@@ -62,7 +62,7 @@ export const ALLOWED_DOCUMENT_TYPES = Object.freeze({
 /**
  * Dangerous executable and script file extensions strictly forbidden on PJ Study.
  */
-const FORBIDDEN_EXTENSIONS = new Set([
+export const FORBIDDEN_EXTENSIONS = new Set([
   '.exe',
   '.bat',
   '.cmd',
@@ -136,30 +136,38 @@ export function validateFileSignature(buffer, ext) {
 }
 
 /**
- * Storage service abstraction supporting local filesystem and cloud providers.
+ * Unified Storage Service Facade.
+ * Routes uploads, downloads, streaming previews, and deletions to either
+ * Google Drive (production private cloud) or Local Storage (development/fallback/legacy).
  */
 export class StorageService {
-  constructor(baseDir = env.uploadDir) {
-    this.baseDir = path.resolve(baseDir);
-    this.ensureBaseDirectory();
+  constructor(local = localStorageProvider, drive = googleDriveProvider) {
+    this.local = local;
+    this.drive = drive;
   }
 
   /**
-   * Guarantees that the base upload directory exists on disk.
+   * Identifies the current active storage provider for new uploads.
+   *
+   * @returns {'google_drive' | 'local'}
    */
-  ensureBaseDirectory() {
-    try {
-      if (!fs.existsSync(this.baseDir)) {
-        fs.mkdirSync(this.baseDir, { recursive: true });
+  getActiveProvider() {
+    if (env.storageProvider === 'google_drive') {
+      if (this.drive.isConfigured()) {
+        return 'google_drive';
       }
-    } catch (err) {
       // eslint-disable-next-line no-console
-      console.error(`Failed to create upload directory at ${this.baseDir}:`, err.message);
+      console.warn(
+        '⚠️ [StorageService] STORAGE_PROVIDER is set to "google_drive" but Google OAuth credentials are not fully configured. ' +
+        'Falling back to local disk storage.'
+      );
+      return 'local';
     }
+    return 'local';
   }
 
   /**
-   * Validates and saves an uploaded file buffer to secure storage.
+   * Validates document and routes save operation to active storage provider.
    *
    * @param {{
    *   buffer: Buffer,
@@ -167,14 +175,16 @@ export class StorageService {
    *   mimetype?: string,
    *   size?: number
    * }} file
+   * @param {object} [academicMetadata] Academic context for Drive folder organization
    * @returns {Promise<{
    *   storageKey: string,
    *   fileName: string,
    *   fileSize: bigint,
-   *   mimeType: string
+   *   mimeType: string,
+   *   storageProvider: string
    * }>}
    */
-  async saveFile(file) {
+  async saveFile(file, academicMetadata = {}) {
     if (!file || !file.buffer) {
       const error = new Error('No valid file payload received.');
       error.statusCode = 400;
@@ -233,108 +243,128 @@ export class StorageService {
       throw error;
     }
 
-    // 4. Generate cryptographically random, safe storage key (prevents path traversal)
-    const randomHash = crypto.randomBytes(16).toString('hex');
-    const storageKey = `${Date.now()}-${randomHash}${ext}`;
-    const destinationPath = path.join(this.baseDir, storageKey);
-
-    await fs.promises.writeFile(destinationPath, file.buffer);
-
     const detectedMime =
       file.mimetype ||
       ALLOWED_DOCUMENT_TYPES[allowedFormatKey]?.mimeType ||
       'application/octet-stream';
 
-    return {
-      storageKey,
-      fileName: originalName,
-      fileSize: BigInt(file.buffer.length),
-      mimeType: detectedMime
-    };
+    // 4. Dispatch to provider
+    const activeProvider = this.getActiveProvider();
+    if (activeProvider === 'google_drive') {
+      return this.drive.saveFile(file, ext, detectedMime, academicMetadata);
+    }
+
+    return this.local.saveFile(file, ext, detectedMime);
   }
 
   /**
-   * Resolves safe local path for a storage key, preventing path traversal attacks.
+   * Retrieves readable stream for downloading or previewing a file from its provider.
    *
    * @param {string} storageKey
-   * @returns {string} Safe absolute path
+   * @param {string} [provider='local'] 'google_drive' | 'local'
+   * @param {{ start?: number, end?: number }} [rangeOptions]
+   * @returns {Promise<{
+   *   stream: import('stream').Readable,
+   *   size: number,
+   *   totalSize?: number,
+   *   isRange?: boolean,
+   *   start?: number,
+   *   end?: number,
+   *   mimeType?: string
+   * }>}
    */
-  resolveSafePath(storageKey) {
-    if (!storageKey || typeof storageKey !== 'string') {
-      const error = new Error('Invalid storage key identifier.');
+  async getFileStream(storageKey, provider = 'local', rangeOptions = null) {
+    if (!storageKey) {
+      const error = new Error('Storage key identifier is required.');
       error.statusCode = 400;
       throw error;
     }
 
-    // Strip any path traversal characters (e.g. ../ or /)
-    const safeBaseName = path.basename(storageKey);
-    const resolved = path.join(this.baseDir, safeBaseName);
-
-    // Verify resolved path stays strictly inside this.baseDir
-    if (
-      !resolved.startsWith(this.baseDir) ||
-      resolved.includes('..') ||
-      safeBaseName !== storageKey
-    ) {
-      const error = new Error('Malicious path traversal detected.');
-      error.statusCode = 403;
-      error.code = 'INVALID_STORAGE_PATH';
-      throw error;
+    if (provider === 'google_drive') {
+      try {
+        return await this.drive.getFileStream(storageKey, rangeOptions);
+      } catch (err) {
+        // Fallback to local if file exists locally
+        if (this.local.fileExists(storageKey)) {
+          return this.local.getFileStream(storageKey, rangeOptions);
+        }
+        throw err;
+      }
     }
 
-    return resolved;
+    // Default to local, with fallback to Google Drive if Drive is configured
+    try {
+      return await this.local.getFileStream(storageKey, rangeOptions);
+    } catch (err) {
+      if (this.drive.isConfigured()) {
+        try {
+          return await this.drive.getFileStream(storageKey, rangeOptions);
+        } catch {
+          throw err;
+        }
+      }
+      throw err;
+    }
   }
 
   /**
    * Checks if stored file exists.
    *
    * @param {string} storageKey
+   * @param {string|null} [provider=null]
    * @returns {Promise<boolean>}
    */
-  async fileExists(storageKey) {
-    try {
-      const filePath = this.resolveSafePath(storageKey);
-      await fs.promises.access(filePath, fs.constants.R_OK);
-      return true;
-    } catch {
-      return false;
+  async fileExists(storageKey, provider = null) {
+    if (!storageKey) return false;
+    const targetProvider = provider || this.getActiveProvider();
+    if (targetProvider === 'google_drive') {
+      try {
+        await this.drive.getFileMetadata(storageKey);
+        return true;
+      } catch {
+        return this.local.fileExists(storageKey);
+      }
     }
+    return this.local.fileExists(storageKey);
   }
 
   /**
-   * Retrieves readable stream for downloading or previewing a file.
+   * Resolves safe local path for local storage backward compatibility.
    *
    * @param {string} storageKey
-   * @returns {Promise<{ stream: fs.ReadStream, size: number }>}
+   * @returns {string} Safe absolute path
    */
-  async getFileStream(storageKey) {
-    const filePath = this.resolveSafePath(storageKey);
-    try {
-      const stat = await fs.promises.stat(filePath);
-      const stream = fs.createReadStream(filePath);
-      return { stream, size: stat.size };
-    } catch {
-      const error = new Error('Stored study material file was not found.');
-      error.statusCode = 404;
-      error.code = 'FILE_NOT_FOUND';
-      throw error;
-    }
+  resolveSafePath(storageKey) {
+    return this.local.resolveSafePath(storageKey);
   }
 
   /**
-   * Deletes a file from storage.
+   * Deletes a file from its designated storage provider.
    *
    * @param {string} storageKey
+   * @param {string|null} [provider=null]
    * @returns {Promise<boolean>}
    */
-  async deleteFile(storageKey) {
-    try {
-      const filePath = this.resolveSafePath(storageKey);
-      await fs.promises.unlink(filePath);
-      return true;
-    } catch {
-      return false;
+  async deleteFile(storageKey, provider = null) {
+    if (!storageKey) return false;
+    const targetProvider = provider || this.getActiveProvider();
+    if (targetProvider === 'google_drive') {
+      const deleted = await this.drive.deleteFile(storageKey);
+      if (deleted) return true;
+      return this.local.deleteFile(storageKey);
     }
+    return this.local.deleteFile(storageKey);
+  }
+
+  /**
+   * Checks overall storage health.
+   */
+  async checkHealth() {
+    const activeProvider = this.getActiveProvider();
+    if (activeProvider === 'google_drive') {
+      return this.drive.checkHealth();
+    }
+    return this.local.checkHealth();
   }
 }
 

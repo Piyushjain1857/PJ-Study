@@ -53,7 +53,20 @@ function validateAndLoadConfig() {
   // File Storage configurations
   const maxFileSizeMb = parseInt(process.env.MAX_FILE_SIZE_MB || '25', 10);
   const uploadDir = process.env.UPLOAD_DIR || path.resolve(__dirname, '../../../uploads/notes');
-  const storageProvider = process.env.STORAGE_PROVIDER || 'local';
+
+  // Google Drive Cloud Storage configurations
+  const googleClientId = process.env.GOOGLE_CLIENT_ID || '';
+  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+  const googleRefreshToken = process.env.GOOGLE_REFRESH_TOKEN || '';
+  const googleDriveFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID || '';
+  const googleRedirectUri =
+    process.env.GOOGLE_REDIRECT_URI || `http://localhost:${port}/api/v1/storage/google/oauth/callback`;
+
+  const isGoogleDriveConfigured = Boolean(
+    googleClientId && googleClientSecret && googleRefreshToken
+  );
+  const storageProvider =
+    process.env.STORAGE_PROVIDER || (isGoogleDriveConfigured ? 'google_drive' : 'local');
 
   const errors = [];
 
@@ -101,6 +114,12 @@ function validateAndLoadConfig() {
     maxFileSizeMb,
     uploadDir,
     storageProvider,
+    googleClientId,
+    googleClientSecret,
+    googleRefreshToken,
+    googleDriveFolderId,
+    googleRedirectUri,
+    isGoogleDriveConfigured,
     isProduction: nodeEnv === 'production',
     isDevelopment: nodeEnv === 'development',
     isTest: nodeEnv === 'test'

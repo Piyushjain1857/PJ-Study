@@ -69,9 +69,13 @@ export class NoteController {
 
       // Handle optional uploaded file
       if (req.file) {
-        const stored = await this.storage.saveFile(req.file);
+        const stored = await this.storage.saveFile(req.file, {
+          courseName: req.body.courseName,
+          semester: req.body.semester
+        });
         payload.fileName = stored.fileName;
         payload.storageKey = stored.storageKey;
+        payload.storageProvider = stored.storageProvider;
         payload.fileSize = stored.fileSize;
         payload.mimeType = stored.mimeType;
       }
@@ -96,9 +100,13 @@ export class NoteController {
       const updateData = { ...req.body };
 
       if (req.file) {
-        const stored = await this.storage.saveFile(req.file);
+        const stored = await this.storage.saveFile(req.file, {
+          courseName: req.body.courseName,
+          semester: req.body.semester
+        });
         updateData.fileName = stored.fileName;
         updateData.storageKey = stored.storageKey;
+        updateData.storageProvider = stored.storageProvider;
         updateData.fileSize = stored.fileSize;
         updateData.mimeType = stored.mimeType;
       }
@@ -221,27 +229,53 @@ export class NoteController {
 
   /**
    * Securely streams note file for download or browser preview.
+   * Supports HTTP Range requests for large PDF streaming.
    */
   downloadFile = async (req, res, next) => {
     try {
-      const { stream, fileName, mimeType, size } = await this.service.getNoteFileForDownload(
-        req.params.id,
-        req.user || null
-      );
-
-      const isInline = req.query.inline === 'true';
+      const isInline = req.query.inline === 'true' || req.path.endsWith('/preview');
       const disposition = isInline ? 'inline' : 'attachment';
 
-      res.setHeader('Content-Type', mimeType);
-      res.setHeader(
-        'Content-Disposition',
-        `${disposition}; filename="${encodeURIComponent(fileName)}"`
-      );
-      if (size) {
-        res.setHeader('Content-Length', size);
+      let rangeOptions = null;
+      if (req.headers.range) {
+        const parts = req.headers.range.replace(/bytes=/, '').split('-');
+        rangeOptions = {
+          start: parseInt(parts[0], 10),
+          end: parts[1] ? parseInt(parts[1], 10) : undefined
+        };
       }
 
-      stream.pipe(res);
+      const fileData = await this.service.getNoteFileForDownload(
+        req.params.id,
+        req.user || null,
+        rangeOptions
+      );
+
+      res.setHeader('Content-Type', fileData.mimeType);
+      res.setHeader(
+        'Content-Disposition',
+        `${disposition}; filename="${encodeURIComponent(fileData.fileName)}"`
+      );
+      res.setHeader('Accept-Ranges', 'bytes');
+
+      if (fileData.isRange) {
+        res.status(206);
+        res.setHeader(
+          'Content-Range',
+          `bytes ${fileData.start}-${fileData.end}/${fileData.totalSize}`
+        );
+        res.setHeader('Content-Length', fileData.size);
+      } else if (fileData.size) {
+        res.setHeader('Content-Length', fileData.size);
+      }
+
+      fileData.stream.on('error', (err) => {
+        if (!res.headersSent) {
+          next(err);
+        }
+      });
+
+      fileData.stream.pipe(res);
     } catch (err) {
       return next(err);
     }

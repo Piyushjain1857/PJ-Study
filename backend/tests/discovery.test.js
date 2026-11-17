@@ -144,6 +144,7 @@ test('Advanced Notes Discovery, Search, Filtering & Student Library Suite', asyn
         publishedAt: new Date(Date.now() - 3600000 * 2), // 2 hours ago
         fileName: 'algorithms_cheatsheet.pdf',
         storageKey: stored.storageKey,
+        storageProvider: stored.storageProvider || 'local',
         fileSize: BigInt(stored.fileSize),
         mimeType: stored.mimeType,
         downloadCount: 42,

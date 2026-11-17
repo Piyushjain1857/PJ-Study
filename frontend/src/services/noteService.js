@@ -56,7 +56,7 @@ export const noteService = {
    * @returns {string}
    */
   getFilePreviewUrl(id) {
-    return `${API_BASE_URL}/notes/${encodeURIComponent(id)}/file?inline=true`;
+    return `${API_BASE_URL}/notes/${encodeURIComponent(id)}/preview`;
   },
 
   /**

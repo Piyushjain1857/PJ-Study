@@ -15,6 +15,7 @@ import profileRoutes from '../modules/profile/profile.routes.js';
 import contributorRoutes from '../modules/profile/contributor.routes.js';
 import notificationRoutes from '../modules/notifications/notification.routes.js';
 import seoRoutes from '../modules/seo/seo.routes.js';
+import storageRoutes from '../modules/storage/storage.routes.js';
 import { publicConfigRouter, adminConfigRouter } from '../modules/platformConfig/platformConfig.routes.js';
 import { requireAuth } from '../auth/requireAuth.js';
 import noteController from '../modules/notes/note.controller.js';
@@ -169,6 +170,12 @@ router.use('/notifications', notificationRoutes);
  * /api/v1/sitemap.xml, /api/v1/robots.txt
  */
 router.use('/', seoRoutes);
+
+/**
+ * Cloud and Local Storage Infrastructure routes.
+ * /api/v1/storage/...
+ */
+router.use('/storage', storageRoutes);
 
 /**
  * User personal resources shortcut (/api/v1/users/me/notes)
