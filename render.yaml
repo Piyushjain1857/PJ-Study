@@ -1,0 +1,120 @@
+# ==============================================================================
+# PJ STUDY — RENDER INFRASTRUCTURE AS CODE (BLUEPRINT SPECIFICATION)
+# Professional Production Deployment for PJ Study Platform
+# ==============================================================================
+
+databases:
+  # Managed PostgreSQL Database Instance (PostgreSQL 16)
+  - name: pj-study-postgres
+    databaseName: pj_study
+    user: pj_study_admin
+    region: oregon # or frankfurt, ohio, singapore
+    plan: starter # Starter ($7/mo) provides daily automated backups & persistent storage
+    postgresMajorVersion: 16
+    ipAllowList: [] # Allow connections from all Render services
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. FRONTEND: React + Vite Single Page Application (Static Site)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: pj-study-frontend
+    env: static
+    region: oregon
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    pullRequestPreviewsEnabled: false
+
+    # Single Page Application (SPA) Client-Side Route Handling
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+    # Production Performance & Security Headers for Static Assets
+    headers:
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache, no-store, must-revalidate
+
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false # e.g. https://pj-study-backend.onrender.com/api/v1
+      - key: VITE_PUBLIC_APP_URL
+        sync: false # e.g. https://pjstudy.com or https://pj-study-frontend.onrender.com
+
+  # ----------------------------------------------------------------------------
+  # 2. BACKEND: Node.js + Express + Prisma ORM (Web Service)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: pj-study-backend
+    env: node
+    region: oregon
+    plan: starter # Starter ($7/mo) ensures 24/7 uptime without free-tier cold-starts
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate
+    startCommand: node src/server.js
+    healthCheckPath: /health/ready
+
+    envVars:
+      # Server Runtime Configuration
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+
+      # Database Connection (Automatically wired from managed PostgreSQL)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pj-study-postgres
+          property: connectionString
+
+      # Frontend Origins & Cross-Origin Resource Sharing (CORS)
+      - key: FRONTEND_URL
+        sync: false # e.g. https://pjstudy.com,https://pj-study-frontend.onrender.com
+      - key: PUBLIC_APP_URL
+        sync: false # e.g. https://pjstudy.com
+
+      # Cryptographic Session & JWT Configuration
+      - key: JWT_ACCESS_SECRET
+        generateValue: true # Render generates an entropy-rich 256-bit secret
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 15m
+      - key: REFRESH_TOKEN_EXPIRES_IN
+        value: 7d
+      - key: PASSWORD_RESET_TOKEN_EXPIRES_IN
+        value: 15m
+      - key: EMAIL_VERIFICATION_TOKEN_EXPIRES_IN
+        value: 24h
+
+      # Private Google Drive Cloud Storage Integration
+      - key: STORAGE_PROVIDER
+        value: google_drive
+      - key: MAX_FILE_SIZE_MB
+        value: 25
+      - key: GOOGLE_CLIENT_ID
+        sync: false # Obtain from Google Cloud Console
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false # Obtain from Google Cloud Console
+      - key: GOOGLE_REFRESH_TOKEN
+        sync: false # Generated via npm run gdrive:auth
+      - key: GOOGLE_DRIVE_FOLDER_ID
+        sync: false # Dedicated private Google Drive folder ID
+      - key: GOOGLE_REDIRECT_URI
+        sync: false # e.g. https://pj-study-backend.onrender.com/api/v1/storage/google/oauth/callback
+
+      # Transactional Email Service
+      - key: EMAIL_PROVIDER
+        value: console # or smtp, sendgrid, resend
+      - key: EMAIL_FROM
+        value: noreply@pjstudy.com
+      - key: EMAIL_API_KEY
+        sync: false
+
+      # Swagger API Documentation Security (Disabled in Production by Default)
+      - key: ENABLE_SWAGGER
+        value: "false"

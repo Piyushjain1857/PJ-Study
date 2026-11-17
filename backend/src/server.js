@@ -24,13 +24,15 @@ async function startServer() {
     );
   }
 
-  const server = app.listen(env.port, () => {
+  const host = process.env.HOST || '0.0.0.0';
+  const server = app.listen(env.port, host, () => {
     console.log(`===============================================`);
     console.log(`  PJ Study API Server running`);
     console.log(`  Environment : ${env.nodeEnv}`);
+    console.log(`  Host        : ${host}`);
     console.log(`  Port        : ${env.port}`);
-    console.log(`  Health Check: http://localhost:${env.port}/api/v1/health`);
-    console.log(`  Swagger API : http://localhost:${env.port}/api/docs`);
+    console.log(`  Health Check: http://${host === '0.0.0.0' ? 'localhost' : host}:${env.port}/api/v1/health`);
+    console.log(`  Swagger API : http://${host === '0.0.0.0' ? 'localhost' : host}:${env.port}/api/docs`);
     console.log(`===============================================`);
   });
 

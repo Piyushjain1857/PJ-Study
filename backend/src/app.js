@@ -37,6 +37,12 @@ export function createApp() {
   // Enable reverse proxy trust for correct client IP detection in rate limiting
   app.set('trust proxy', 1);
 
+  // Extract allowed CORS origins (supports single origin or comma-separated origins)
+  const configuredOrigins = (env.frontendUrl || '')
+    .split(',')
+    .map((o) => o.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
+
   // Enterprise Security Headers
   app.use(
     helmet({
@@ -47,7 +53,7 @@ export function createApp() {
           styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
           fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
           imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-          connectSrc: ["'self'", env.frontendUrl, 'http://localhost:5173', 'http://localhost:5001'],
+          connectSrc: ["'self'", ...configuredOrigins, 'http://localhost:5173', 'http://localhost:5001'],
           objectSrc: ["'none'"],
           mediaSrc: ["'self'", 'blob:'],
           frameSrc: ["'none'"],
@@ -72,8 +78,8 @@ export function createApp() {
         if (!origin || !env.isProduction) {
           return callback(null, true);
         }
-        const allowedOrigins = [env.frontendUrl];
-        if (allowedOrigins.includes(origin)) {
+        const normalizedOrigin = origin.replace(/\/+$/, '');
+        if (configuredOrigins.includes(normalizedOrigin)) {
           return callback(null, true);
         }
         return callback(new Error('CORS policy: origin not allowed by Access-Control-Allow-Origin.'));

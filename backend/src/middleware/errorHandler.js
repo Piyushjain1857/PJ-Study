@@ -41,7 +41,7 @@ export function errorHandler(err, req, res, _next) {
     code = 'DATABASE_UNAVAILABLE';
     message = env.isProduction
       ? 'Database service is currently unavailable. Please try again shortly.'
-      : 'Unable to connect to the MySQL database server. Please verify MySQL is running at localhost:3306.';
+      : 'Unable to connect to the database server. Please verify the database service is running and DATABASE_URL is configured in backend/.env.';
   }
 
   // Friendly interception for database authentication issues (e.g. Prisma P1000)
