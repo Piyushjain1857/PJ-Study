@@ -22,6 +22,15 @@ export function getRefreshCookieOptions() {
   };
 }
 
+export function getClearCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: env.isProduction,
+    sameSite: 'lax',
+    path: '/api/v1/auth'
+  };
+}
+
 /**
  * Controller handling HTTP requests for user authentication, token rotation, and profile recovery.
  */
@@ -108,7 +117,7 @@ export class AuthController {
       );
     } catch (err) {
       // Clear invalid cookie on failure
-      res.clearCookie(REFRESH_COOKIE_NAME, getRefreshCookieOptions());
+      res.clearCookie(REFRESH_COOKIE_NAME, getClearCookieOptions());
       return next(err);
     }
   };
@@ -121,10 +130,10 @@ export class AuthController {
       const token = req.cookies?.[REFRESH_COOKIE_NAME] || req.body?.refreshToken;
       await this.service.logout(token);
 
-      res.clearCookie(REFRESH_COOKIE_NAME, getRefreshCookieOptions());
+      res.clearCookie(REFRESH_COOKIE_NAME, getClearCookieOptions());
       return sendSuccess(res, null, 200, 'Successfully logged out');
     } catch (err) {
-      res.clearCookie(REFRESH_COOKIE_NAME, getRefreshCookieOptions());
+      res.clearCookie(REFRESH_COOKIE_NAME, getClearCookieOptions());
       return next(err);
     }
   };
@@ -172,7 +181,7 @@ export class AuthController {
   resetPassword = async (req, res, next) => {
     try {
       const result = await this.service.resetPassword(req.body);
-      res.clearCookie(REFRESH_COOKIE_NAME, getRefreshCookieOptions());
+      res.clearCookie(REFRESH_COOKIE_NAME, getClearCookieOptions());
       return sendSuccess(res, null, 200, result.message);
     } catch (err) {
       return next(err);
@@ -190,7 +199,7 @@ export class AuthController {
         newPassword: req.body.newPassword
       });
 
-      res.clearCookie(REFRESH_COOKIE_NAME, getRefreshCookieOptions());
+      res.clearCookie(REFRESH_COOKIE_NAME, getClearCookieOptions());
       return sendSuccess(res, null, 200, result.message);
     } catch (err) {
       return next(err);
