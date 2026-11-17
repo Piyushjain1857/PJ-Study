@@ -98,7 +98,14 @@ export function NotificationDropdown({ onClose }) {
       await markAsRead(notif.id);
     }
     onClose();
-    if (notif.targetUrl) {
+    const isSafeUrl =
+      typeof notif.targetUrl === 'string' &&
+      notif.targetUrl.startsWith('/') &&
+      !notif.targetUrl.startsWith('//') &&
+      !notif.targetUrl.startsWith('/\\') &&
+      !notif.targetUrl.includes(':');
+
+    if (isSafeUrl) {
       navigate(notif.targetUrl);
     } else {
       navigate('/notifications');

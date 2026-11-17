@@ -54,8 +54,19 @@ export function LoginPage() {
         password: formData.password
       });
       const userRole = result?.user?.role;
-      let targetPath = location.state?.from?.pathname;
-      if (!targetPath || targetPath === '/dashboard' || targetPath === '/admin' || targetPath === '/admin-workspace') {
+      const searchParams = new URLSearchParams(location.search);
+      const queryRedirect = searchParams.get('redirect');
+      let targetPath = queryRedirect || location.state?.from?.pathname;
+
+      // Strict open-redirect guard: target must be a valid relative path starting with '/' and not '//' or '/\'
+      const isSafeRelativePath =
+        typeof targetPath === 'string' &&
+        targetPath.startsWith('/') &&
+        !targetPath.startsWith('//') &&
+        !targetPath.startsWith('/\\') &&
+        !targetPath.includes(':');
+
+      if (!isSafeRelativePath || targetPath === '/dashboard' || targetPath === '/admin' || targetPath === '/admin-workspace') {
         if (userRole === 'SUPER_ADMIN') {
           targetPath = '/admin';
         } else if (userRole === 'ADMIN' || userRole === 'MODERATOR') {
