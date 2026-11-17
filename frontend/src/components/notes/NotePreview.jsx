@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import noteService from '../../services/noteService.js';
 import Button from '../common/Button.jsx';
 import { formatBytes, getFileFormatInfo } from '../../utils/fileUtils.js';
@@ -17,6 +17,20 @@ import './NotePreview.css';
 export function NotePreview({ note, onClose = null, hideHeader = false }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasPreviewError, setHasPreviewError] = useState(false);
+
+  // Keyboard shortcut: Escape exits fullscreen mode cleanly
+  useEffect(() => {
+    if (!isFullscreen) return;
+
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') {
+        setIsFullscreen(false);
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
 
   if (!note) return null;
 
@@ -63,30 +77,105 @@ export function NotePreview({ note, onClose = null, hideHeader = false }) {
           </div>
 
           <div className="note-preview-root__actions">
-            <Button variant="primary" size="sm" onClick={handleDownload}>
-              📥 Download File
-            </Button>
+            <button
+              type="button"
+              className="note-preview-root__action-btn note-preview-root__action-btn--primary"
+              onClick={handleDownload}
+              title={`Download ${fileName || 'manuscript'}`}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span>Download</span>
+            </button>
 
             {(isPdf || isImage) && (
               <button
                 type="button"
-                className="btn btn--outline btn--sm"
+                className="note-preview-root__action-btn note-preview-root__action-btn--outline"
                 onClick={() => setIsFullscreen((prev) => !prev)}
-                title={isFullscreen ? 'Exit full screen' : 'Expand full screen'}
-                aria-label={isFullscreen ? 'Exit full screen' : 'Expand full screen'}
+                title={isFullscreen ? 'Exit full screen (Esc)' : 'Expand to full screen'}
+                aria-label={isFullscreen ? 'Exit full screen' : 'Expand to full screen'}
               >
-                {isFullscreen ? '⤓ Collapse' : '⤢ Expand'}
+                {isFullscreen ? (
+                  <>
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <polyline points="4 14 10 14 10 20" />
+                      <polyline points="20 10 14 10 14 4" />
+                      <line x1="14" y1="10" x2="21" y2="3" />
+                      <line x1="3" y1="21" x2="10" y2="14" />
+                    </svg>
+                    <span className="note-preview-root__action-btn-text">Collapse</span>
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <polyline points="15 3 21 3 21 9" />
+                      <polyline points="9 21 3 21 3 15" />
+                      <line x1="21" y1="3" x2="14" y2="10" />
+                      <line x1="3" y1="21" x2="10" y2="14" />
+                    </svg>
+                    <span className="note-preview-root__action-btn-text">Expand</span>
+                  </>
+                )}
               </button>
             )}
 
-            {onClose && (
+            {/* Close button (✕): Appears ONLY when in fullscreen mode */}
+            {isFullscreen && (
               <button
                 type="button"
-                className="btn btn--ghost btn--sm"
-                onClick={onClose}
-                aria-label="Close preview"
+                className="note-preview-root__action-btn note-preview-root__action-btn--close"
+                onClick={() => setIsFullscreen(false)}
+                title="Exit full screen (Esc)"
+                aria-label="Exit full screen"
               >
-                ✕
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             )}
           </div>

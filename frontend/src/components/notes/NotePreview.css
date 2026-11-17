@@ -104,6 +104,95 @@
   flex-shrink: 0;
 }
 
+.note-preview-root__action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-md, 8px);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  border: 1px solid transparent;
+  line-height: 1;
+  text-decoration: none;
+  user-select: none;
+}
+
+.note-preview-root__action-btn svg {
+  flex-shrink: 0;
+}
+
+.note-preview-root__action-btn--primary {
+  background-color: var(--color-primary, #1e3a29);
+  color: #ffffff;
+  border-color: var(--color-primary, #1e3a29);
+}
+
+.note-preview-root__action-btn--primary:hover {
+  background-color: var(--color-primary-hover, #284c36);
+  border-color: var(--color-primary-hover, #284c36);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.note-preview-root__action-btn--outline {
+  background-color: var(--color-bg-surface, #ffffff);
+  color: var(--color-text-primary, #1e293b);
+  border-color: var(--color-border, #cbd5e1);
+}
+
+.note-preview-root__action-btn--outline:hover {
+  background-color: var(--color-bg-subtle, #f8fafc);
+  border-color: var(--color-text-muted, #94a3b8);
+  color: var(--color-primary, #1e3a29);
+  transform: translateY(-1px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.note-preview-root__action-btn--close {
+  width: 32px;
+  padding: 0;
+  background-color: var(--color-bg-surface, #ffffff);
+  color: var(--color-text-secondary, #64748b);
+  border-color: var(--color-border, #cbd5e1);
+}
+
+.note-preview-root__action-btn--close:hover {
+  background-color: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+  transform: translateY(-1px);
+}
+
+.note-preview-root__action-btn:active {
+  transform: translateY(0);
+}
+
+/* Fullscreen mode header overrides */
+.note-preview-root--fullscreen .note-preview-root__action-btn--outline,
+.note-preview-root--fullscreen .note-preview-root__action-btn--close {
+  background-color: #272d28;
+  color: #e2e8f0;
+  border-color: #3f4740;
+}
+
+.note-preview-root--fullscreen .note-preview-root__action-btn--outline:hover {
+  background-color: #363d37;
+  color: #ffffff;
+  border-color: #555f56;
+}
+
+.note-preview-root--fullscreen .note-preview-root__action-btn--close:hover {
+  background-color: rgba(220, 38, 38, 0.25);
+  color: #fca5a5;
+  border-color: #dc2626;
+}
+
 /* Viewport Area */
 .note-preview-root__viewport {
   position: relative;

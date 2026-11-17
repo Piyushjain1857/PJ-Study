@@ -13,7 +13,6 @@ export function RecommendedNotesPage() {
   const [personalizedData, setPersonalizedData] = useState(null);
   const [subjectData, setSubjectData] = useState(null);
   const [popularNotes, setPopularNotes] = useState([]);
-  const [recentNotes, setRecentNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -21,17 +20,15 @@ export function RecommendedNotesPage() {
     setLoading(true);
     setError(null);
     try {
-      const [personalized, subjects, popular, recent] = await Promise.all([
+      const [personalized, subjects, popular] = await Promise.all([
         recommendationService.getPersonalizedRecommendations({ limit: 6 }).catch(() => null),
         recommendationService.getSubjectRecommendations(6).catch(() => null),
-        recommendationService.getPopularRecommendations(6).catch(() => null),
-        recommendationService.getRecentRecommendations(6).catch(() => null)
+        recommendationService.getPopularRecommendations(6).catch(() => null)
       ]);
 
       setPersonalizedData(personalized);
       setSubjectData(subjects);
       setPopularNotes(popular?.recommendations || []);
-      setRecentNotes(recent?.recommendations || []);
     } catch (err) {
       if (!isCancellation(err)) {
         setError(err.message || 'Failed to load recommendations.');
@@ -126,15 +123,6 @@ export function RecommendedNotesPage() {
         items={popularNotes}
         loading={loading}
         emptyMessage="No trending notes recorded yet."
-      />
-
-      {/* 4. Recently Added */}
-      <RecommendationSection
-        title="Recently Added & Approved"
-        subtitle="Fresh academic contributions verified by campus administrators"
-        items={recentNotes}
-        loading={loading}
-        emptyMessage="No recently approved notes."
       />
     </div>
   );
