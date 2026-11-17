@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import prisma from '../../config/database.js';
+import prisma, { isPostgresDatabase } from '../../config/database.js';
 import noteRepository, { NoteRepository } from './note.repository.js';
 import userRepository from '../users/user.repository.js';
 import courseRepository from '../courses/course.repository.js';
@@ -921,11 +921,12 @@ export class NoteService {
     if (query.search && typeof query.search === 'string') {
       const trimmedSearch = query.search.trim().slice(0, 100);
       if (trimmedSearch.length > 0) {
+        const searchMode = isPostgresDatabase() ? { mode: 'insensitive' } : {};
         where.OR = [
-          { title: { contains: trimmedSearch } },
-          { description: { contains: trimmedSearch } },
-          { subject: { name: { contains: trimmedSearch } } },
-          { course: { name: { contains: trimmedSearch } } }
+          { title: { contains: trimmedSearch, ...searchMode } },
+          { description: { contains: trimmedSearch, ...searchMode } },
+          { subject: { name: { contains: trimmedSearch, ...searchMode } } },
+          { course: { name: { contains: trimmedSearch, ...searchMode } } }
         ];
       }
     }

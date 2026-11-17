@@ -35,9 +35,11 @@ export class SubjectController {
           take: 200,
           where
         });
+        res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
         return sendSuccess(res, items);
       }
 
+      res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
       const result = await this.service.listSubjects(req.query);
       return sendSuccess(res, result);
     } catch (err) {

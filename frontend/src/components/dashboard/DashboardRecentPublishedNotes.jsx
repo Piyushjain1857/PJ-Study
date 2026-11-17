@@ -33,7 +33,7 @@ function getFormatBadge(mimeType, fileName) {
  * Editorial Recently Published Notes Component (Section F).
  * Displays recently added academic manuscripts in a compact, highly functional row/card design.
  */
-export function DashboardRecentPublishedNotes({
+export const DashboardRecentPublishedNotes = React.memo(function DashboardRecentPublishedNotes({
   notes = [],
   loading = false,
   onPreviewNote = null,
@@ -235,6 +235,6 @@ export function DashboardRecentPublishedNotes({
       )}
     </section>
   );
-}
+});
 
 export default DashboardRecentPublishedNotes;

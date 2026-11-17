@@ -39,9 +39,11 @@ export class CourseController {
           if (idxB !== -1) return 1;
           return a.name.localeCompare(b.name);
         });
+        res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
         return sendSuccess(res, sortedItems);
       }
 
+      res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
       const result = await this.service.listCourses(req.query);
       return sendSuccess(res, result);
     } catch (err) {

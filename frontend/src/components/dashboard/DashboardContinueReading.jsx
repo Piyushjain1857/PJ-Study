@@ -48,7 +48,7 @@ function getFormatBadge(mimeType, fileName) {
  * Continue Reading Section (Section C).
  * Highlights the student's recently accessed manuscripts with last viewed time and 1-click resume.
  */
-export function DashboardContinueReading({
+export const DashboardContinueReading = React.memo(function DashboardContinueReading({
   views = [],
   loading = false,
   onPreviewNote = null
@@ -199,6 +199,6 @@ export function DashboardContinueReading({
       )}
     </section>
   );
-}
+});
 
 export default DashboardContinueReading;

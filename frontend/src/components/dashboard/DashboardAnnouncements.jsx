@@ -6,7 +6,7 @@ import Skeleton from '../common/Skeleton.jsx';
  * Displays genuine, administrator-published academic notices.
  * Never generates fabricated or placeholder university notices.
  */
-export function DashboardAnnouncements({
+export const DashboardAnnouncements = React.memo(function DashboardAnnouncements({
   announcements = [],
   loading = false
 }) {
@@ -73,6 +73,6 @@ export function DashboardAnnouncements({
       </div>
     </section>
   );
-}
+});
 
 export default DashboardAnnouncements;

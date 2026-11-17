@@ -42,7 +42,7 @@ function resolveAvatarUrl(src) {
  *   className?: string
  * }} props
  */
-export function Avatar({ src, alt = 'Avatar', name = '', size = 'md', className = '' }) {
+export const Avatar = React.memo(function Avatar({ src, alt = 'Avatar', name = '', size = 'md', className = '' }) {
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
@@ -75,6 +75,6 @@ export function Avatar({ src, alt = 'Avatar', name = '', size = 'md', className 
       )}
     </div>
   );
-}
+});
 
 export default Avatar;

@@ -23,7 +23,7 @@ function getFormatBadge(mimeType, fileName) {
  * Editorial Recommended Notes Component (Section E).
  * Highlights notes prioritizing the student's enrolled course, semester, and curriculum subjects.
  */
-export function DashboardRecommendations({
+export const DashboardRecommendations = React.memo(function DashboardRecommendations({
   recommendedNotes = [],
   loading = false,
   onPreviewNote = null,
@@ -218,6 +218,6 @@ export function DashboardRecommendations({
       )}
     </section>
   );
-}
+});
 
 export default DashboardRecommendations;

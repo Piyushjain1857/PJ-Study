@@ -33,6 +33,15 @@ export function StudentDashboardPage() {
   // Document preview modal state
   const [previewNote, setPreviewNote] = useState(null);
 
+  // Stabilized modal preview callbacks
+  const handlePreviewNote = useCallback((note) => {
+    setPreviewNote(note);
+  }, []);
+
+  const handleClosePreview = useCallback(() => {
+    setPreviewNote(null);
+  }, []);
+
   const fetchOverview = useCallback(async () => {
     try {
       setLoadingOverview(true);
@@ -94,7 +103,7 @@ export function StudentDashboardPage() {
       <DashboardContinueReading
         views={overview?.recentViews || []}
         loading={loadingOverview}
-        onPreviewNote={(note) => setPreviewNote(note)}
+        onPreviewNote={handlePreviewNote}
       />
 
       {/* SECTION D — YOUR SUBJECTS */}
@@ -109,7 +118,7 @@ export function StudentDashboardPage() {
       <DashboardRecommendations
         recommendedNotes={overview?.recommendedNotes || []}
         loading={loadingOverview}
-        onPreviewNote={(note) => setPreviewNote(note)}
+        onPreviewNote={handlePreviewNote}
         onBookmarkChanged={fetchOverview}
       />
 
@@ -117,7 +126,7 @@ export function StudentDashboardPage() {
       <DashboardRecentPublishedNotes
         notes={overview?.recentPublishedNotes || []}
         loading={loadingOverview}
-        onPreviewNote={(note) => setPreviewNote(note)}
+        onPreviewNote={handlePreviewNote}
         onBookmarkChanged={fetchOverview}
       />
 
@@ -133,13 +142,13 @@ export function StudentDashboardPage() {
       {previewNote && (
         <Modal
           isOpen={Boolean(previewNote)}
-          onClose={() => setPreviewNote(null)}
+          onClose={handleClosePreview}
           title={`Document Preview: ${previewNote.title}`}
           maxWidth="780px"
         >
           <NotePreview
             note={previewNote}
-            onClose={() => setPreviewNote(null)}
+            onClose={handleClosePreview}
           />
         </Modal>
       )}

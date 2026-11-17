@@ -338,6 +338,15 @@ export class NoteController {
         res.setHeader('Content-Length', fileData.size);
       }
 
+      // Clean up storage stream if client aborts or disconnects early
+      req.on('close', () => {
+        if (!res.writableEnded && fileData?.stream) {
+          if (typeof fileData.stream.destroy === 'function') {
+            fileData.stream.destroy();
+          }
+        }
+      });
+
       fileData.stream.on('error', (err) => {
         if (!res.headersSent) {
           next(err);

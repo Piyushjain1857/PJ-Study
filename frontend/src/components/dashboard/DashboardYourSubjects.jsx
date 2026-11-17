@@ -6,7 +6,7 @@ import Skeleton from '../common/Skeleton.jsx';
  * Enrolled Subjects Browsing Area (Section D).
  * Displays genuine enrolled curriculum subjects with active note counts and 1-click exploration.
  */
-export function DashboardYourSubjects({
+export const DashboardYourSubjects = React.memo(function DashboardYourSubjects({
   subjects = [],
   userCourseName,
   userSemester,
@@ -122,6 +122,6 @@ export function DashboardYourSubjects({
       )}
     </section>
   );
-}
+});
 
 export default DashboardYourSubjects;

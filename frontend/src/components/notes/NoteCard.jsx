@@ -6,8 +6,9 @@ import './NoteCard.css';
 
 /**
  * Editorial note card displaying curriculum metadata, author details, and file stats.
+ * Memoized to prevent cascading re-renders during search filtering & pagination.
  */
-export function NoteCard({
+export const NoteCard = React.memo(function NoteCard({
   note,
   showStatus = false,
   actions = null,
@@ -228,6 +229,6 @@ export function NoteCard({
       )}
     </article>
   );
-}
+});
 
 export default NoteCard;

@@ -1,12 +1,12 @@
 // PJ Study Database Architecture Schema
-// MySQL + Prisma ORM Relational Foundation
+// PostgreSQL + Prisma ORM Relational Foundation
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -256,7 +256,7 @@ model Note {
   title           String      @db.VarChar(255)
   slug            String?     @db.VarChar(255)
   description     String?     @db.Text
-  content         String?     @db.LongText
+  content         String?     @db.Text
   fileName        String?     @map("file_name") @db.VarChar(255)
   storageKey      String?     @unique @map("storage_key") @db.VarChar(512)
   storageProvider String      @default("local") @map("storage_provider") @db.VarChar(50)
@@ -296,10 +296,13 @@ model Note {
   reports       Report[]
 
   @@index([status, publishedAt])
+  @@index([status, createdAt])
   @@index([status, downloadCount])
   @@index([status, viewCount])
   @@index([status, courseId])
+  @@index([status, courseId, semester])
   @@index([status, subjectId])
+  @@index([status, subjectId, createdAt])
   @@index([status, semester])
   @@index([courseId, subjectId])
   @@index([subjectId, semester])
@@ -325,6 +328,7 @@ model Bookmark {
 
   @@unique([userId, noteId], name: "user_note_bookmark_unique")
   @@index([userId])
+  @@index([userId, createdAt])
   @@index([noteId])
   @@map("bookmarks")
 }
@@ -334,7 +338,7 @@ model Review {
   id        String       @id @default(uuid())
   userId    String       @map("user_id")
   noteId    String       @map("note_id")
-  rating    Int          @db.TinyInt // 1 to 5 enforced at service & DB layer
+  rating    Int          @db.SmallInt // 1 to 5 enforced at service & DB layer
   comment   String?      @db.Text
   status    ReviewStatus @default(VISIBLE)
   createdAt DateTime     @default(now()) @map("created_at")
@@ -557,7 +561,7 @@ model NoteViewHistory {
 }
 
 // =============================================================================
-// STEP 14: NOTIFICATIONS & ACTIVITY CENTER MODELS
+// NOTIFICATIONS & ACTIVITY CENTER MODELS
 // =============================================================================
 
 /// NotificationCategory classifies notifications into high-level user preferences and filters.

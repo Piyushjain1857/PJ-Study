@@ -6,7 +6,7 @@ import './NoteStatusBadge.css';
  *
  * @param {{ status: 'DRAFT' | 'PENDING' | 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | 'ARCHIVED' }} props
  */
-export function NoteStatusBadge({ status }) {
+export const NoteStatusBadge = React.memo(function NoteStatusBadge({ status }) {
   const normalized = (status || 'DRAFT').toUpperCase();
 
   let variant = 'default';
@@ -45,6 +45,6 @@ export function NoteStatusBadge({ status }) {
       {label}
     </span>
   );
-}
+});
 
 export default NoteStatusBadge;

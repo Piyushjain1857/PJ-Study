@@ -55,6 +55,10 @@ export async function requireAuth(req, res, next) {
       );
     }
 
+    // Invariant: Never allow caching of private authenticated responses
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+
     // Attach verified user with database-authoritative role
     req.user = {
       id: user.id,

@@ -2,16 +2,6 @@ import React, { lazy, Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import PublicLayout from '../layouts/PublicLayout.jsx';
 import AppLayout from '../layouts/AppLayout.jsx';
-import HomePage from '../pages/HomePage.jsx';
-import NotFoundPage from '../pages/NotFoundPage.jsx';
-
-// Auth Pages & Route Guards
-import LoginPage from '../pages/auth/LoginPage.jsx';
-import RegisterPage from '../pages/auth/RegisterPage.jsx';
-import VerifyEmailPage from '../pages/auth/VerifyEmailPage.jsx';
-import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage.jsx';
-import ResetPasswordPage from '../pages/auth/ResetPasswordPage.jsx';
-import UnauthorizedPage from '../pages/UnauthorizedPage.jsx';
 
 import ProtectedRoute from '../components/common/ProtectedRoute.jsx';
 import GuestRoute from '../components/common/GuestRoute.jsx';
@@ -62,7 +52,17 @@ const withLazy = (Component) => (props) => (
   </Suspense>
 );
 
+import UnauthorizedPage from '../pages/UnauthorizedPage.jsx';
+
 // Route-Level Code Splitting for heavy views (drastically reduces initial JS bundle)
+const HomePage = withLazy(lazy(() => import('../pages/HomePage.jsx')));
+const NotFoundPage = withLazy(lazy(() => import('../pages/NotFoundPage.jsx')));
+const LoginPage = withLazy(lazy(() => import('../pages/auth/LoginPage.jsx')));
+const RegisterPage = withLazy(lazy(() => import('../pages/auth/RegisterPage.jsx')));
+const VerifyEmailPage = withLazy(lazy(() => import('../pages/auth/VerifyEmailPage.jsx')));
+const ForgotPasswordPage = withLazy(lazy(() => import('../pages/auth/ForgotPasswordPage.jsx')));
+const ResetPasswordPage = withLazy(lazy(() => import('../pages/auth/ResetPasswordPage.jsx')));
+
 const AdminDashboardPage = withLazy(lazy(() => import('../pages/admin/AdminDashboardPage.jsx')));
 const AdminWorkspacePage = withLazy(lazy(() => import('../pages/admin/AdminWorkspacePage.jsx')));
 const DesignSystemPage = withLazy(lazy(() => import('../pages/DesignSystemPage.jsx')));

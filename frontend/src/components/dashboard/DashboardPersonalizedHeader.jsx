@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
  * Greets the student naturally without decorative promotional banners.
  * Displays real course, semester, and institution metadata.
  */
-export function DashboardPersonalizedHeader({ user }) {
+export const DashboardPersonalizedHeader = React.memo(function DashboardPersonalizedHeader({ user }) {
   // Natural time-of-day greeting
   const hour = new Date().getHours();
   let timeGreeting = 'Good evening';
@@ -69,6 +69,6 @@ export function DashboardPersonalizedHeader({ user }) {
       </div>
     </header>
   );
-}
+});
 
 export default DashboardPersonalizedHeader;

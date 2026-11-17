@@ -8,6 +8,7 @@ export class CategoryController {
 
   listCategories = async (req, res, next) => {
     try {
+      res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
       const categories = await this.service.listCategories();
       return sendSuccess(res, categories);
     } catch (err) {

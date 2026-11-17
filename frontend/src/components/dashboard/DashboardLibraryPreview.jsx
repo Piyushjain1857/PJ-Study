@@ -6,7 +6,7 @@ import Skeleton from '../common/Skeleton.jsx';
  * Editorial Academic Library Shortcuts (Section G).
  * Provides fast access to the student's bookmarked notes, collection binders, and reading history.
  */
-export function DashboardLibraryPreview({
+export const DashboardLibraryPreview = React.memo(function DashboardLibraryPreview({
   bookmarks = [],
   collections = [],
   stats = {},
@@ -153,6 +153,6 @@ export function DashboardLibraryPreview({
       )}
     </section>
   );
-}
+});
 
 export default DashboardLibraryPreview;
