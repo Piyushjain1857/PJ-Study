@@ -1,4 +1,4 @@
-import prisma from '../../config/database.js';
+import prisma, { isPostgresDatabase } from '../../config/database.js';
 import env from '../../config/env.js';
 import userRepository, { USER_SAFE_SELECT } from '../users/user.repository.js';
 import authRepository from '../auth/auth.repository.js';
@@ -516,25 +516,47 @@ export class AdminService {
     startDate.setUTCDate(startDate.getUTCDate() - (days - 1));
     startDate.setUTCHours(0, 0, 0, 0);
 
+    const isPg = isPostgresDatabase();
     const [regRaw, notesRaw, downloadsRaw, topNotes, categories, statusGroup] = await Promise.all([
-      prisma.$queryRaw`
-        SELECT DATE_FORMAT(created_at, '%Y-%m-%d') as date, COUNT(*) as count
-        FROM users
-        WHERE created_at >= ${startDate} AND created_at <= ${endDate}
-        GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
-      `,
-      prisma.$queryRaw`
-        SELECT DATE_FORMAT(created_at, '%Y-%m-%d') as date, COUNT(*) as count
-        FROM notes
-        WHERE created_at >= ${startDate} AND created_at <= ${endDate}
-        GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
-      `,
-      prisma.$queryRaw`
-        SELECT DATE_FORMAT(downloaded_at, '%Y-%m-%d') as date, COUNT(*) as count
-        FROM download_history
-        WHERE downloaded_at >= ${startDate} AND downloaded_at <= ${endDate}
-        GROUP BY DATE_FORMAT(downloaded_at, '%Y-%m-%d')
-      `,
+      isPg
+        ? prisma.$queryRaw`
+            SELECT TO_CHAR(created_at, 'YYYY-MM-DD') as date, COUNT(*)::int as count
+            FROM users
+            WHERE created_at >= ${startDate} AND created_at <= ${endDate}
+            GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD')
+          `
+        : prisma.$queryRaw`
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') as date, COUNT(*) as count
+            FROM users
+            WHERE created_at >= ${startDate} AND created_at <= ${endDate}
+            GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
+          `,
+      isPg
+        ? prisma.$queryRaw`
+            SELECT TO_CHAR(created_at, 'YYYY-MM-DD') as date, COUNT(*)::int as count
+            FROM notes
+            WHERE created_at >= ${startDate} AND created_at <= ${endDate}
+            GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD')
+          `
+        : prisma.$queryRaw`
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') as date, COUNT(*) as count
+            FROM notes
+            WHERE created_at >= ${startDate} AND created_at <= ${endDate}
+            GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
+          `,
+      isPg
+        ? prisma.$queryRaw`
+            SELECT TO_CHAR(downloaded_at, 'YYYY-MM-DD') as date, COUNT(*)::int as count
+            FROM download_history
+            WHERE downloaded_at >= ${startDate} AND downloaded_at <= ${endDate}
+            GROUP BY TO_CHAR(downloaded_at, 'YYYY-MM-DD')
+          `
+        : prisma.$queryRaw`
+            SELECT DATE_FORMAT(downloaded_at, '%Y-%m-%d') as date, COUNT(*) as count
+            FROM download_history
+            WHERE downloaded_at >= ${startDate} AND downloaded_at <= ${endDate}
+            GROUP BY DATE_FORMAT(downloaded_at, '%Y-%m-%d')
+          `,
       prisma.note.findMany({
         where: { status: { in: ['APPROVED', 'PUBLISHED'] } },
         orderBy: [{ downloadCount: 'desc' }, { viewCount: 'desc' }],

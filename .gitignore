@@ -42,4 +42,8 @@ tmp/
 temp/
 uploads/
 backend/uploads/
+backups/
+backend/backups/
+*.sql
+*.dump
 

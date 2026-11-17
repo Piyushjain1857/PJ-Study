@@ -48,8 +48,18 @@ export async function disconnectDatabase() {
     await prisma.$disconnect();
     console.log('Database connection closed.');
   } catch (error) {
-    console.error('Error disconnecting from database:', error.message);
+    console.error('Error closing database connection:', error.message);
   }
+}
+
+/**
+ * Checks whether the active database connection is PostgreSQL.
+ *
+ * @returns {boolean}
+ */
+export function isPostgresDatabase() {
+  const url = process.env.DATABASE_URL || env.databaseUrl || '';
+  return url.startsWith('postgres');
 }
 
 export { prisma };

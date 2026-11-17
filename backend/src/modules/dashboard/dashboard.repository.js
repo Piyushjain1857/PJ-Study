@@ -1,4 +1,4 @@
-import prisma from '../../config/database.js';
+import prisma, { isPostgresDatabase } from '../../config/database.js';
 
 /**
  * Format note record for JSON responses, converting BigInt fileSize to number/string.
@@ -517,37 +517,73 @@ export class DashboardRepository {
    * @param {Date} endDate
    */
   async getActivityTimeline(userId, startDate, endDate) {
+    const isPg = isPostgresDatabase();
     const [bookmarksRaw, downloadsRaw, uploadsRaw, collectionsRaw, viewsRaw] = await Promise.all([
-      prisma.$queryRaw`
-        SELECT DATE_FORMAT(created_at, '%Y-%m-%d') as date, COUNT(*) as count
-        FROM bookmarks
-        WHERE user_id = ${userId} AND created_at >= ${startDate} AND created_at <= ${endDate}
-        GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
-      `,
-      prisma.$queryRaw`
-        SELECT DATE_FORMAT(downloaded_at, '%Y-%m-%d') as date, COUNT(*) as count
-        FROM download_history
-        WHERE user_id = ${userId} AND downloaded_at >= ${startDate} AND downloaded_at <= ${endDate}
-        GROUP BY DATE_FORMAT(downloaded_at, '%Y-%m-%d')
-      `,
-      prisma.$queryRaw`
-        SELECT DATE_FORMAT(created_at, '%Y-%m-%d') as date, COUNT(*) as count
-        FROM notes
-        WHERE uploaded_by_id = ${userId} AND created_at >= ${startDate} AND created_at <= ${endDate}
-        GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
-      `,
-      prisma.$queryRaw`
-        SELECT DATE_FORMAT(created_at, '%Y-%m-%d') as date, COUNT(*) as count
-        FROM study_collections
-        WHERE user_id = ${userId} AND created_at >= ${startDate} AND created_at <= ${endDate}
-        GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
-      `,
-      prisma.$queryRaw`
-        SELECT DATE_FORMAT(viewed_at, '%Y-%m-%d') as date, COUNT(*) as count
-        FROM note_view_history
-        WHERE user_id = ${userId} AND viewed_at >= ${startDate} AND viewed_at <= ${endDate}
-        GROUP BY DATE_FORMAT(viewed_at, '%Y-%m-%d')
-      `
+      isPg
+        ? prisma.$queryRaw`
+            SELECT TO_CHAR(created_at, 'YYYY-MM-DD') as date, COUNT(*)::int as count
+            FROM bookmarks
+            WHERE user_id = ${userId} AND created_at >= ${startDate} AND created_at <= ${endDate}
+            GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD')
+          `
+        : prisma.$queryRaw`
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') as date, COUNT(*) as count
+            FROM bookmarks
+            WHERE user_id = ${userId} AND created_at >= ${startDate} AND created_at <= ${endDate}
+            GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
+          `,
+      isPg
+        ? prisma.$queryRaw`
+            SELECT TO_CHAR(downloaded_at, 'YYYY-MM-DD') as date, COUNT(*)::int as count
+            FROM download_history
+            WHERE user_id = ${userId} AND downloaded_at >= ${startDate} AND downloaded_at <= ${endDate}
+            GROUP BY TO_CHAR(downloaded_at, 'YYYY-MM-DD')
+          `
+        : prisma.$queryRaw`
+            SELECT DATE_FORMAT(downloaded_at, '%Y-%m-%d') as date, COUNT(*) as count
+            FROM download_history
+            WHERE user_id = ${userId} AND downloaded_at >= ${startDate} AND downloaded_at <= ${endDate}
+            GROUP BY DATE_FORMAT(downloaded_at, '%Y-%m-%d')
+          `,
+      isPg
+        ? prisma.$queryRaw`
+            SELECT TO_CHAR(created_at, 'YYYY-MM-DD') as date, COUNT(*)::int as count
+            FROM notes
+            WHERE uploaded_by_id = ${userId} AND created_at >= ${startDate} AND created_at <= ${endDate}
+            GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD')
+          `
+        : prisma.$queryRaw`
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') as date, COUNT(*) as count
+            FROM notes
+            WHERE uploaded_by_id = ${userId} AND created_at >= ${startDate} AND created_at <= ${endDate}
+            GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
+          `,
+      isPg
+        ? prisma.$queryRaw`
+            SELECT TO_CHAR(created_at, 'YYYY-MM-DD') as date, COUNT(*)::int as count
+            FROM study_collections
+            WHERE user_id = ${userId} AND created_at >= ${startDate} AND created_at <= ${endDate}
+            GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD')
+          `
+        : prisma.$queryRaw`
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') as date, COUNT(*) as count
+            FROM study_collections
+            WHERE user_id = ${userId} AND created_at >= ${startDate} AND created_at <= ${endDate}
+            GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
+          `,
+      isPg
+        ? prisma.$queryRaw`
+            SELECT TO_CHAR(viewed_at, 'YYYY-MM-DD') as date, COUNT(*)::int as count
+            FROM note_view_history
+            WHERE user_id = ${userId} AND viewed_at >= ${startDate} AND viewed_at <= ${endDate}
+            GROUP BY TO_CHAR(viewed_at, 'YYYY-MM-DD')
+          `
+        : prisma.$queryRaw`
+            SELECT DATE_FORMAT(viewed_at, '%Y-%m-%d') as date, COUNT(*) as count
+            FROM note_view_history
+            WHERE user_id = ${userId} AND viewed_at >= ${startDate} AND viewed_at <= ${endDate}
+            GROUP BY DATE_FORMAT(viewed_at, '%Y-%m-%d')
+          `
     ]);
 
     // Build lookup maps by date string YYYY-MM-DD

@@ -21,6 +21,7 @@ test('Student Dashboard & Personalized Learning Analytics Suite', async (t) => {
   let studentANote;
 
   t.before(async () => {
+    try {
     server = createServer(app);
     await new Promise((resolve) => server.listen(0, resolve));
     const port = server.address().port;
@@ -178,6 +179,11 @@ test('Student Dashboard & Personalized Learning Analytics Suite', async (t) => {
         noteId: approvedNote.id
       }
     });
+    } catch (err) {
+      console.error('BEFORE ERROR IN DASHBOARD TEST:', err);
+      if (server) await new Promise((resolve) => server.close(resolve));
+      throw err;
+    }
   });
 
   t.after(async () => {

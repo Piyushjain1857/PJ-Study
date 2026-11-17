@@ -19,6 +19,11 @@
     "seed:verify": "node prisma/seed.js --verify",
     "seed:dry-run": "node prisma/seed.js --dry-run",
     "gdrive:auth": "node scripts/gdrive-auth.js",
+    "db:backup": "node scripts/backup-mysql.js",
+    "db:migrate:postgres": "node scripts/migrate-mysql-to-postgres.js",
+    "db:verify": "node scripts/verify-migration-integrity.js",
+    "db:cutover": "node scripts/cutover-to-postgres.js",
+    "db:rollback": "node scripts/rollback-to-mysql.js",
     "test": "node --test --test-concurrency=1 tests/**/*.test.js"
   },
   "dependencies": {
@@ -34,6 +39,8 @@
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.0",
     "multer": "^2.5.0",
+    "mysql2": "^3.24.6",
+    "pg": "^8.23.1",
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
