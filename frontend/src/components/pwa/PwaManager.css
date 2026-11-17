@@ -1,0 +1,268 @@
+/* ==============================================================================
+   PJ STUDY — PWA MANAGER & MOBILE EXPERIENCE STYLES
+   Safe areas, mobile app navigation, offline indicator, install banner
+   ============================================================================== */
+
+/* 1. Network Status Banners (Offline & Restored) */
+.pwa-network-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) 16px 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  animation: pwaSlideDown 0.25s ease-out;
+}
+
+@keyframes pwaSlideDown {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.pwa-network-banner--offline {
+  background-color: #991b1b;
+  color: #ffffff;
+}
+
+.pwa-network-banner--online {
+  background-color: #065f46;
+  color: #ffffff;
+}
+
+.pwa-network-banner__icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* 2. PWA Update Toast */
+.pwa-update-toast {
+  position: fixed;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  right: 20px;
+  z-index: 9999;
+  background: #ffffff;
+  border: 1px solid #245c46;
+  border-left: 4px solid #245c46;
+  border-radius: 12px;
+  padding: 16px 20px;
+  max-width: 420px;
+  width: calc(100vw - 40px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: pwaSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes pwaSlideUp {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.pwa-update-toast__badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #245c46;
+  background: #e8f3ee;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  margin-bottom: 4px;
+}
+
+.pwa-update-toast__message {
+  font-size: 0.88rem;
+  color: #202620;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.pwa-update-toast__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* 3. Install Banners (Android/Chrome & iOS) */
+.pwa-install-banner {
+  position: fixed;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9998;
+  background: #ffffff;
+  border: 1px solid #e2e1db;
+  border-radius: 14px;
+  padding: 12px 16px;
+  width: calc(100vw - 32px);
+  max-width: 520px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+  animation: pwaSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pwa-install-banner__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.pwa-install-banner__logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #245c46 0%, #174332 100%);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 1.05rem;
+  border-radius: 8px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(36, 92, 70, 0.25);
+}
+
+.pwa-install-banner__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pwa-install-banner__title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #202620;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pwa-install-banner__desc {
+  font-size: 0.78rem;
+  color: #57635a;
+  line-height: 1.3;
+}
+
+.pwa-install-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pwa-ios-icon {
+  display: inline-block;
+  padding: 1px 4px;
+  background: #f0f0eb;
+  border-radius: 4px;
+  font-weight: 700;
+  color: #245c46;
+}
+
+/* 4. Action Buttons with Touch Targets >= 44px */
+.pwa-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 38px;
+  padding: 0 14px;
+  border: none;
+}
+
+.pwa-btn--sm {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 0.82rem;
+}
+
+.pwa-btn--primary {
+  background: #245c46;
+  color: #ffffff;
+}
+
+.pwa-btn--primary:hover {
+  background: #1b4736;
+}
+
+.pwa-btn--ghost {
+  background: transparent;
+  color: #57635a;
+}
+
+.pwa-btn--ghost:hover {
+  background: #f5f4f0;
+  color: #202620;
+}
+
+.pwa-btn--close {
+  background: transparent;
+  color: #8c978f;
+  font-size: 1.35rem;
+  line-height: 1;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pwa-btn--close:hover {
+  background: #f5f4f0;
+  color: #202620;
+}
+
+/* 5. Mobile Adjustments */
+@media (max-width: 640px) {
+  .pwa-install-banner {
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    width: calc(100vw - 20px);
+    padding: 10px 12px;
+  }
+  .pwa-install-banner__logo {
+    width: 36px;
+    height: 36px;
+    font-size: 0.95rem;
+  }
+  .pwa-update-toast {
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    right: 10px;
+    left: 10px;
+    width: calc(100vw - 20px);
+  }
+}

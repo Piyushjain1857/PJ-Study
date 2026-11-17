@@ -7,6 +7,7 @@ import categoryService from '../../services/categoryService.js';
 import NoteForm from '../../components/notes/NoteForm.jsx';
 import Container from '../../components/layout/Container.jsx';
 import Skeleton from '../../components/common/Skeleton.jsx';
+import SEO from '../../components/common/SEO.jsx';
 import '../../styles/notes.css';
 
 /**
@@ -106,6 +107,7 @@ export function EditNotePage() {
 
   return (
     <div className="notes-page">
+      <SEO title="Edit Note Manuscript" noindex={true} />
       <Container size="md">
         <header className="notes-page__header">
           <span className="notes-page__eyebrow">Manuscript Revision</span>

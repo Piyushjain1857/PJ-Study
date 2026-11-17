@@ -7,6 +7,7 @@ import categoryService from '../../services/categoryService.js';
 import NoteForm from '../../components/notes/NoteForm.jsx';
 import Container from '../../components/layout/Container.jsx';
 import Button from '../../components/common/Button.jsx';
+import SEO from '../../components/common/SEO.jsx';
 import '../../styles/notes.css';
 
 /**
@@ -75,6 +76,7 @@ export function CreateNotePage() {
 
   return (
     <div className="notes-page">
+      <SEO title="Upload Study Note" noindex={true} />
       <Container size="md">
         <header className="notes-page__header">
           <span className="notes-page__eyebrow">Academic Desk</span>

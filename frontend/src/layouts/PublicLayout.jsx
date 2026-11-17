@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Navbar from '../components/layout/Navbar.jsx';
 import Footer from '../components/layout/Footer.jsx';
+import PwaManager from '../components/pwa/PwaManager.jsx';
 
 /**
  * PublicLayout shell for landing pages, design system showcase, and public exploration.
@@ -17,6 +18,7 @@ export function PublicLayout() {
         <Outlet />
       </main>
       <Footer />
+      <PwaManager />
     </div>
   );
 }

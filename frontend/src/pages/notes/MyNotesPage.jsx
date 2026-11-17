@@ -8,6 +8,7 @@ import NotePreview from '../../components/notes/NotePreview.jsx';
 import Container from '../../components/layout/Container.jsx';
 import EmptyState from '../../components/common/EmptyState.jsx';
 import Skeleton from '../../components/common/Skeleton.jsx';
+import SEO from '../../components/common/SEO.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import '../../styles/notes.css';
 
@@ -180,6 +181,7 @@ export function MyNotesPage() {
 
   return (
     <div className="notes-page">
+      <SEO title={isStaff ? 'My Uploaded Notes' : 'My Study Library'} noindex={true} />
       <Container>
         {/* Header Ribbon */}
         <div

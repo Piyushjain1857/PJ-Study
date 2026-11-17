@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import adminWorkspaceService from '../../services/adminWorkspaceService.js';
+import SEO from '../../components/common/SEO.jsx';
 import './AdminWorkspacePage.css';
 
 export default function AdminWorkspacePage() {
@@ -122,6 +123,7 @@ export default function AdminWorkspacePage() {
 
   return (
     <div className="admin-workspace">
+      <SEO title="Admin Workspace" noindex={true} />
       {/* Header */}
       <div className="admin-workspace__header">
         <div>

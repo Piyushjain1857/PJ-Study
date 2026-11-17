@@ -3,6 +3,7 @@ import recommendationService from '../../services/recommendationService.js';
 import { isCancellation } from '../../services/api.js';
 import RecommendationSection from '../../components/recommendations/RecommendationSection.jsx';
 import Button from '../../components/common/Button.jsx';
+import SEO from '../../components/common/SEO.jsx';
 import '../../components/recommendations/recommendations.css';
 
 /**
@@ -46,6 +47,7 @@ export function RecommendedNotesPage() {
 
   return (
     <div className="container rec-page">
+      <SEO title="Recommended Notes" noindex={true} />
       {/* Editorial Header Banner */}
       <div className="rec-header-banner">
         <div className="rec-header-kicker">

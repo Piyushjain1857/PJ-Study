@@ -6,6 +6,7 @@ import Badge from '../components/common/Badge.jsx';
 import NotificationBell from '../components/notifications/NotificationBell.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { usePlatformConfig } from '../context/PlatformConfigContext.jsx';
+import PwaManager from '../components/pwa/PwaManager.jsx';
 import './AppLayout.css';
 
 /**
@@ -1271,6 +1272,7 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
+      <PwaManager />
     </div>
   );
 }

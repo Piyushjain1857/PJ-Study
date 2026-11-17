@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#245C46" />
+    <title>Offline | PJ Study</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      :root {
+        --color-bg: #f5f4f0;
+        --color-surface: #ffffff;
+        --color-primary: #245c46;
+        --color-primary-hover: #1b4736;
+        --color-text: #202620;
+        --color-text-secondary: #57635a;
+        --color-border: #e2e1db;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', 'Inter', 'Segoe UI', Roboto, sans-serif;
+        background-color: var(--color-bg);
+        color: var(--color-text);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        text-align: center;
+        -webkit-font-smoothing: antialiased;
+      }
+      .offline-card {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: 16px;
+        padding: 40px 32px;
+        max-width: 480px;
+        width: 100%;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      }
+      .brand-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, #245c46 0%, #174332 100%);
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 24px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 12px rgba(36, 92, 70, 0.25);
+      }
+      .offline-icon {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 16px auto;
+        color: #8c978f;
+      }
+      h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+        color: var(--color-text);
+      }
+      p {
+        font-size: 0.95rem;
+        line-height: 1.5;
+        color: var(--color-text-secondary);
+        margin-bottom: 24px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: var(--color-primary);
+        color: #ffffff;
+        font-size: 0.95rem;
+        font-weight: 600;
+        padding: 12px 24px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        transition: background 0.15s ease, transform 0.1s ease;
+        text-decoration: none;
+        width: 100%;
+      }
+      .btn:hover {
+        background: var(--color-primary-hover);
+        transform: translateY(-1px);
+      }
+      .btn:active {
+        transform: translateY(0);
+      }
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: #b45309;
+        background: #fef3c7;
+        padding: 4px 12px;
+        border-radius: 9999px;
+        margin-bottom: 20px;
+      }
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #f59e0b;
+      }
+      .footer-note {
+        margin-top: 24px;
+        font-size: 0.8rem;
+        color: #8c978f;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="offline-card">
+      <div class="brand-badge" aria-hidden="true">PJ</div>
+      <div class="status-pill" id="statusPill">
+        <span class="status-dot"></span>
+        <span id="statusText">You are currently offline</span>
+      </div>
+      <svg class="offline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="1" y1="1" x2="23" y2="23"></line>
+        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+        <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+        <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+        <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+        <line x1="12" y1="20" x2="12.01" y2="20"></line>
+      </svg>
+      <h1>Connection Lost</h1>
+      <p>
+        PJ Study requires an active internet connection to authenticate and browse cloud study materials. Please check your network connection and try again.
+      </p>
+      <button class="btn" onclick="window.location.reload()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        Retry Connection
+      </button>
+      <div class="footer-note">PJ Study · Your Entire Study World, One Place.</div>
+    </div>
+
+    <script>
+      window.addEventListener('online', function() {
+        var pill = document.getElementById('statusPill');
+        var text = document.getElementById('statusText');
+        if (pill && text) {
+          pill.style.background = '#d1fae5';
+          pill.style.color = '#065f46';
+          text.textContent = 'Connection restored! Reloading...';
+        }
+        setTimeout(function() {
+          window.location.reload();
+        }, 800);
+      });
+    </script>
+  </body>
+</html>

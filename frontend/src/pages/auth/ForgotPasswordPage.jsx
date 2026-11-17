@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import authService from '../../services/authService.js';
 import { Input } from '../../components/common/Input.jsx';
 import { Button } from '../../components/common/Button.jsx';
+import SEO from '../../components/common/SEO.jsx';
 import './Auth.css';
 
 /**
@@ -31,6 +32,7 @@ export function ForgotPasswordPage() {
 
   return (
     <div className="auth-wrapper">
+      <SEO title="Reset Password" noindex={true} />
       <div className="auth-card">
         <div className="auth-card__header">
           <span className="auth-card__badge">Account Recovery</span>

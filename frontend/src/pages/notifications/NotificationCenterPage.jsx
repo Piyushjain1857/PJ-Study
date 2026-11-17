@@ -7,6 +7,7 @@ import { Button } from '../../components/common/Button.jsx';
 import { Badge } from '../../components/common/Badge.jsx';
 import { EmptyState } from '../../components/common/EmptyState.jsx';
 import { Skeleton } from '../../components/common/Skeleton.jsx';
+import SEO from '../../components/common/SEO.jsx';
 import { formatRelativeTime } from '../../utils/formatTime.js';
 import './NotificationCenterPage.css';
 
@@ -62,6 +63,7 @@ export function NotificationCenterPage() {
 
   return (
     <div className="notif-center">
+      <SEO title="Notification Center" noindex={true} />
       <div className="container">
         {/* Header */}
         <header className="notif-center__header">

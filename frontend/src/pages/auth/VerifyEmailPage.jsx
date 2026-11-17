@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import authService from '../../services/authService.js';
 import { Button } from '../../components/common/Button.jsx';
 import { Input } from '../../components/common/Input.jsx';
+import SEO from '../../components/common/SEO.jsx';
 import './Auth.css';
 
 /**
@@ -70,6 +71,7 @@ export function VerifyEmailPage() {
 
   return (
     <div className="auth-wrapper">
+      <SEO title="Verify Email" noindex={true} />
       <div className="auth-card">
         {status === 'verifying' && (
           <div className="verify-status">
