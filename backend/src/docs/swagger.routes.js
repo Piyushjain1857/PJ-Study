@@ -47,7 +47,8 @@ const swaggerUiOptions = {
     persistAuthorization: true,
     displayRequestDuration: true,
     docExpansion: 'list',
-    filter: true
+    filter: true,
+    validatorUrl: null
   }
 };
 
@@ -59,5 +60,7 @@ router.get('/docs.json', (req, res) => {
 
 // Interactive Swagger UI documentation explorer
 router.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
+router.get('/swagger', (req, res) => res.redirect('/api/docs/'));
+router.get('/swagger/*', (req, res) => res.redirect('/api/docs/'));
 
 export default router;

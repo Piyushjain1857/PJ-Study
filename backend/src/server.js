@@ -30,6 +30,7 @@ async function startServer() {
     console.log(`  Environment : ${env.nodeEnv}`);
     console.log(`  Port        : ${env.port}`);
     console.log(`  Health Check: http://localhost:${env.port}/api/v1/health`);
+    console.log(`  Swagger API : http://localhost:${env.port}/api/docs`);
     console.log(`===============================================`);
   });
 

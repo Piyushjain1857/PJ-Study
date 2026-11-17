@@ -44,13 +44,17 @@ test('PJ Study Swagger & OpenAPI 3.0 Documentation Suite', async (t) => {
     assert.ok(html.includes('PJ Study'));
   });
 
-  await t.test('3. Top-level redirects (/docs and /api/v1/docs) route to /api/docs', async () => {
+  await t.test('3. Top-level redirects (/docs, /swagger, /api/v1/docs) route to /api/docs/', async () => {
     const res1 = await fetch(`${baseUrl}/docs`, { redirect: 'manual' });
     assert.equal(res1.status, 302);
-    assert.equal(res1.headers.get('location'), '/api/docs');
+    assert.equal(res1.headers.get('location'), '/api/docs/');
 
     const res2 = await fetch(`${baseUrl}/api/v1/docs`, { redirect: 'manual' });
     assert.equal(res2.status, 302);
-    assert.equal(res2.headers.get('location'), '/api/docs');
+    assert.equal(res2.headers.get('location'), '/api/docs/');
+
+    const res3 = await fetch(`${baseUrl}/swagger`, { redirect: 'manual' });
+    assert.equal(res3.status, 302);
+    assert.equal(res3.headers.get('location'), '/api/docs/');
   });
 });
