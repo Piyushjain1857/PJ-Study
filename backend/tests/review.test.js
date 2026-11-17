@@ -239,6 +239,11 @@ test('Notes Ratings, Reviews & Quality Feedback Suite', async (t) => {
         }
       }
     });
+    await prisma.user.deleteMany({
+      where: {
+        id: { in: [authorUser.id, studentA.id, studentB.id, studentC.id, moderatorUser.id] }
+      }
+    }).catch(() => {});
     if (server) {
       await new Promise((resolve) => server.close(resolve));
     }

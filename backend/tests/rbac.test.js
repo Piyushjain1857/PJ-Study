@@ -540,7 +540,19 @@ test('HTTP API RBAC Endpoint Protection & Invariants', async (t) => {
       await prisma.note.deleteMany({ where: { id: rbacCreatedNoteId } });
     }
     await prisma.user.deleteMany({
-      where: { email: { in: ['scholar_strictly_student@test.com', 'secondary_admin@test.com'] } }
+      where: {
+        email: {
+          in: [
+            'scholar_strictly_student@test.com',
+            'secondary_admin@test.com',
+            'rbac_student@test.com',
+            'rbac_mod@test.com',
+            'rbac_admin@test.com',
+            'rbac_super@test.com',
+            'rbac_suspended@test.com'
+          ]
+        }
+      }
     });
   });
 });

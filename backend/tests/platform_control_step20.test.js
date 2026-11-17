@@ -68,6 +68,10 @@ test('Super Admin Platform Owner Control & Customization Suite', async (t) => {
   });
 
   t.after(async () => {
+    // Delete any test notes created by this suite so test artifacts never persist
+    await prisma.note.deleteMany({
+      where: { title: 'Platform Control Verified Note' }
+    }).catch(() => {});
     if (server) await new Promise((resolve) => server.close(resolve));
     await prisma.$disconnect();
   });
@@ -399,5 +403,10 @@ test('Super Admin Platform Owner Control & Customization Suite', async (t) => {
     assert.equal(uploadRes.status, 201);
     const uploadBody = await uploadRes.json();
     assert.equal(uploadBody.data.status, 'PUBLISHED');
+
+    // Clean up created note immediately to keep dev database pristine
+    if (uploadBody.data?.id) {
+      await prisma.note.delete({ where: { id: uploadBody.data.id } }).catch(() => {});
+    }
   });
 });

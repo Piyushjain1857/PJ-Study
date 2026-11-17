@@ -134,6 +134,9 @@ test('Scholar Study Library & Bookmarks API Verification Suite', async (t) => {
     if (testCategory) {
       await prisma.category.deleteMany({ where: { id: testCategory.id } });
     }
+    await prisma.user.deleteMany({
+      where: { email: { in: ['library_scholar@pjstudy.com', 'library_admin@pjstudy.com'] } }
+    }).catch(() => {});
   });
 
   // 1. Unauthenticated request to /notes/bookmarks must fail with 401

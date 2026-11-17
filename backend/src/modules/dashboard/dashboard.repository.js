@@ -98,6 +98,110 @@ export class DashboardRepository {
   }
 
   /**
+   * Retrieves student's enrolled or curriculum academic subjects with active note counts.
+   *
+   * @param {string} userId
+   * @param {number} limit
+   */
+  async getStudentSubjects(userId, limit = 8) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { courseId: true, semester: true }
+    });
+
+    let whereClause = { isActive: true };
+    if (user?.courseId) {
+      whereClause.courseId = user.courseId;
+      if (user?.semester) {
+        whereClause.semester = user.semester;
+      }
+    }
+
+    let subjects = await prisma.subject.findMany({
+      where: whereClause,
+      take: limit,
+      orderBy: [{ semester: 'asc' }, { name: 'asc' }],
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        slug: true,
+        semester: true,
+        description: true,
+        course: { select: { id: true, name: true, slug: true } },
+        _count: {
+          select: {
+            notes: {
+              where: { status: { in: ['PUBLISHED', 'APPROVED'] } }
+            }
+          }
+        }
+      }
+    });
+
+    // If student has a course selected but no subjects in current semester, broaden to their course
+    if (subjects.length === 0 && user?.courseId && user?.semester) {
+      subjects = await prisma.subject.findMany({
+        where: { courseId: user.courseId, isActive: true },
+        take: limit,
+        orderBy: [{ semester: 'asc' }, { name: 'asc' }],
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          slug: true,
+          semester: true,
+          description: true,
+          course: { select: { id: true, name: true, slug: true } },
+          _count: {
+            select: {
+              notes: {
+                where: { status: { in: ['PUBLISHED', 'APPROVED'] } }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Fallback: If user has no course yet, fetch top active curriculum subjects
+    if (subjects.length === 0) {
+      subjects = await prisma.subject.findMany({
+        where: { isActive: true },
+        take: limit,
+        orderBy: [{ semester: 'asc' }, { name: 'asc' }],
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          slug: true,
+          semester: true,
+          description: true,
+          course: { select: { id: true, name: true, slug: true } },
+          _count: {
+            select: {
+              notes: {
+                where: { status: { in: ['PUBLISHED', 'APPROVED'] } }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    return subjects.map((s) => ({
+      id: s.id,
+      name: s.name,
+      code: s.code,
+      slug: s.slug,
+      semester: s.semester,
+      description: s.description,
+      course: s.course,
+      notesCount: s._count?.notes ?? 0
+    }));
+  }
+
+  /**
    * Retrieves active platform announcements visible to students/scholars.
    *
    * @param {number} limit
@@ -137,13 +241,17 @@ export class DashboardRepository {
             slug: true,
             description: true,
             status: true,
+            fileName: true,
+            fileSize: true,
+            mimeType: true,
+            semester: true,
             downloadCount: true,
             viewCount: true,
             createdAt: true,
-            subject: { select: { name: true, slug: true } },
-            course: { select: { name: true, slug: true } },
-            category: { select: { name: true, slug: true } },
-            uploadedBy: { select: { name: true } }
+            subject: { select: { id: true, name: true, code: true, slug: true } },
+            course: { select: { id: true, name: true, slug: true } },
+            category: { select: { id: true, name: true, slug: true } },
+            uploadedBy: { select: { id: true, name: true } }
           }
         }
       }
@@ -157,7 +265,7 @@ export class DashboardRepository {
         unique.push({
           id: v.id,
           viewedAt: v.viewedAt,
-          note: v.note
+          note: sanitizeNoteFile(v.note)
         });
         if (unique.length >= limit) break;
       }
@@ -184,13 +292,17 @@ export class DashboardRepository {
             slug: true,
             description: true,
             status: true,
+            fileName: true,
+            fileSize: true,
+            mimeType: true,
+            semester: true,
             downloadCount: true,
             viewCount: true,
             createdAt: true,
-            subject: { select: { name: true, slug: true } },
-            course: { select: { name: true, slug: true } },
-            category: { select: { name: true, slug: true } },
-            uploadedBy: { select: { name: true } }
+            subject: { select: { id: true, name: true, code: true, slug: true } },
+            course: { select: { id: true, name: true, slug: true } },
+            category: { select: { id: true, name: true, slug: true } },
+            uploadedBy: { select: { id: true, name: true } }
           }
         }
       }
@@ -199,7 +311,7 @@ export class DashboardRepository {
     return bookmarks.map((b) => ({
       id: b.id,
       bookmarkedAt: b.createdAt,
-      note: b.note
+      note: sanitizeNoteFile(b.note)
     }));
   }
 
@@ -292,54 +404,109 @@ export class DashboardRepository {
   }
 
   /**
-   * Retrieves top recommended approved study notes.
+   * Retrieves top recommended approved study notes tailored to the student's academic course & semester.
    *
    * @param {string} userId
    * @param {number} limit
    */
-  async getRecommendedNotes(userId, limit = 4) {
+  async getRecommendedNotes(userId, limit = 6) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { courseId: true, semester: true }
+    });
+
+    const whereClause = {
+      status: { in: ['PUBLISHED', 'APPROVED'] },
+      uploadedById: { not: userId },
+      ...(user?.courseId ? { courseId: user.courseId } : {}),
+      ...(user?.semester ? { semester: user.semester } : {})
+    };
+
     let notes = await prisma.note.findMany({
-      where: {
-        status: { in: ['PUBLISHED', 'APPROVED'] },
-        uploadedById: { not: userId }
-      },
-      orderBy: [{ downloadCount: 'desc' }, { viewCount: 'desc' }],
+      where: whereClause,
+      orderBy: [{ downloadCount: 'desc' }, { viewCount: 'desc' }, { createdAt: 'desc' }],
       take: limit,
       select: {
         id: true,
         title: true,
         slug: true,
         description: true,
+        fileName: true,
+        fileSize: true,
+        mimeType: true,
+        semester: true,
         downloadCount: true,
         viewCount: true,
-        subject: { select: { name: true, slug: true } },
-        course: { select: { name: true, slug: true } },
-        category: { select: { name: true, slug: true } },
-        uploadedBy: { select: { name: true } }
+        createdAt: true,
+        subject: { select: { id: true, name: true, code: true, slug: true } },
+        course: { select: { id: true, name: true, slug: true } },
+        category: { select: { id: true, name: true, slug: true } },
+        uploadedBy: { select: { id: true, name: true } }
       }
     });
 
-    if (notes.length < limit) {
-      notes = await prisma.note.findMany({
-        where: { status: { in: ['PUBLISHED', 'APPROVED'] } },
+    // If candidate set is sparse for exact semester, broaden across student's enrolled course
+    if (notes.length < limit && user?.courseId) {
+      const moreNotes = await prisma.note.findMany({
+        where: {
+          status: { in: ['PUBLISHED', 'APPROVED'] },
+          courseId: user.courseId,
+          id: { notIn: notes.map((n) => n.id) }
+        },
         orderBy: [{ downloadCount: 'desc' }, { viewCount: 'desc' }],
-        take: limit,
+        take: limit - notes.length,
         select: {
           id: true,
           title: true,
           slug: true,
           description: true,
+          fileName: true,
+          fileSize: true,
+          mimeType: true,
+          semester: true,
           downloadCount: true,
           viewCount: true,
-          subject: { select: { name: true, slug: true } },
-          course: { select: { name: true, slug: true } },
-          category: { select: { name: true, slug: true } },
-          uploadedBy: { select: { name: true } }
+          createdAt: true,
+          subject: { select: { id: true, name: true, code: true, slug: true } },
+          course: { select: { id: true, name: true, slug: true } },
+          category: { select: { id: true, name: true, slug: true } },
+          uploadedBy: { select: { id: true, name: true } }
         }
       });
+      notes = notes.concat(moreNotes);
     }
 
-    return notes;
+    // Fallback: If still sparse, broaden across catalog
+    if (notes.length < limit) {
+      const catalogNotes = await prisma.note.findMany({
+        where: {
+          status: { in: ['PUBLISHED', 'APPROVED'] },
+          id: { notIn: notes.map((n) => n.id) }
+        },
+        orderBy: [{ downloadCount: 'desc' }, { viewCount: 'desc' }],
+        take: limit - notes.length,
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          description: true,
+          fileName: true,
+          fileSize: true,
+          mimeType: true,
+          semester: true,
+          downloadCount: true,
+          viewCount: true,
+          createdAt: true,
+          subject: { select: { id: true, name: true, code: true, slug: true } },
+          course: { select: { id: true, name: true, slug: true } },
+          category: { select: { id: true, name: true, slug: true } },
+          uploadedBy: { select: { id: true, name: true } }
+        }
+      });
+      notes = notes.concat(catalogNotes);
+    }
+
+    return notes.map(sanitizeNoteFile);
   }
 
   /**

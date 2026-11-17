@@ -46,9 +46,9 @@ export function NoteCard({
 
   // Derive file badge label
   let fileBadge = null;
-  if (fileName) {
-    const ext = fileName.split('.').pop()?.toUpperCase() || 'FILE';
-    fileBadge = ext;
+  if (typeof fileName === 'string' && fileName.trim()) {
+    const ext = fileName.includes('.') ? fileName.split('.').pop()?.toUpperCase() : '';
+    fileBadge = ext || 'FILE';
   } else if (content) {
     fileBadge = 'TEXT';
   }

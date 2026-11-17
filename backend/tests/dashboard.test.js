@@ -348,16 +348,16 @@ test('Student Dashboard & Personalized Learning Analytics Suite', async (t) => {
 
   t.after(async () => {
     await prisma.downloadHistory.deleteMany({
-      where: { user: { email: { in: ['dash-student-a@test.com', 'dash-student-b@test.com'] } } }
+      where: { user: { email: { in: ['dash_student_a@pjstudy.com', 'dash_student_b@pjstudy.com', 'dash-student-a@test.com', 'dash-student-b@test.com'] } } }
     });
     await prisma.note.deleteMany({
-      where: { uploadedBy: { email: { in: ['dash-student-a@test.com', 'dash-student-b@test.com'] } } }
+      where: { uploadedBy: { email: { in: ['dash_student_a@pjstudy.com', 'dash_student_b@pjstudy.com', 'dash-student-a@test.com', 'dash-student-b@test.com'] } } }
     });
     await prisma.subject.deleteMany({ where: { slug: 'dash-algorithms' } });
     await prisma.category.deleteMany({ where: { slug: 'dash-lecture-notes' } });
     await prisma.course.deleteMany({ where: { slug: 'dash-cs-course' } });
     await prisma.user.deleteMany({
-      where: { email: { in: ['dash-student-a@test.com', 'dash-student-b@test.com'] } }
+      where: { email: { in: ['dash_student_a@pjstudy.com', 'dash_student_b@pjstudy.com', 'dash-student-a@test.com', 'dash-student-b@test.com'] } }
     });
     if (server) {
       await new Promise((resolve) => server.close(resolve));

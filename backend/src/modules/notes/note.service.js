@@ -208,7 +208,22 @@ export class NoteService {
       mimeType
     } = input;
 
-    // 0. Strict Authentication & Role Invariant: Only Admin / Super Admin can upload notes
+    // 1. Title validation
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      const error = new Error('Note title is required.');
+      error.statusCode = 400;
+      error.code = 'TITLE_REQUIRED';
+      throw error;
+    }
+
+    if (fileSize !== undefined && Number(fileSize) <= 0) {
+      const error = new Error('File size must be greater than zero bytes.');
+      error.statusCode = 400;
+      error.code = 'INVALID_FILE_SIZE';
+      throw error;
+    }
+
+    // 2. Strict Authentication & Role Invariant: Only Admin / Super Admin can upload notes
     if (!uploadedById) {
       const error = new Error('Authentication required: uploadedById must be provided.');
       error.statusCode = 401;
@@ -234,14 +249,6 @@ export class NoteService {
       );
       error.statusCode = 403;
       error.code = 'UPLOAD_FORBIDDEN';
-      throw error;
-    }
-
-    // 1. Title validation
-    if (!title || typeof title !== 'string' || title.trim().length === 0) {
-      const error = new Error('Note title is required.');
-      error.statusCode = 400;
-      error.code = 'TITLE_REQUIRED';
       throw error;
     }
 
@@ -385,6 +392,10 @@ export class NoteService {
     const shortId = crypto.randomBytes(4).toString('hex');
     const slug = `${slugify(title.trim())}-${shortId}`;
 
+    const opId = input.opId || `op_${crypto.randomBytes(6).toString('hex')}`;
+    const source = input.source || 'HTTP_REQUEST';
+    const callingModule = input.callingModule || 'note.service.js';
+
     let note;
     try {
       note = await this.repo.create({
@@ -414,13 +425,18 @@ export class NoteService {
       if (storageKey) {
         await this.storage.deleteFile(storageKey, storageProvider || 'local').catch(() => {});
       }
+      // Safe diagnostic audit logging of failure
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[AUDIT:NOTE_CREATE_FAILED] opId=${opId} timestamp=${new Date().toISOString()} source=${source} callingModule=${callingModule} actorId=${uploadedById} errorCode=${err.code || 'ERROR'} message="${err.message}" result=FAILURE`
+      );
       throw err;
     }
 
     // Safe diagnostic audit logging (no passwords or sensitive tokens)
     // eslint-disable-next-line no-console
     console.log(
-      `[AUDIT:NOTE_CREATED] Note ID: ${note.id}, Title: "${note.title.slice(0, 40)}", Provider: ${note.storageProvider}, UploaderId: ${uploadedById}, Role: ${uploader.role}, Timestamp: ${new Date().toISOString()}`
+      `[AUDIT:NOTE_CREATED] opId=${opId} timestamp=${new Date().toISOString()} source=${source} callingModule=${callingModule} actorId=${uploadedById} actorRole=${uploader.role} noteId=${note.id} status=${note.status} storageProvider=${note.storageProvider} hasFile=${Boolean(note.fileName)} result=SUCCESS`
     );
 
     return sanitizeNote(note);

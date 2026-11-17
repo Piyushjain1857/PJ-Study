@@ -135,6 +135,9 @@ test('PJ Study Direct Publishing & Workflow Removal Suite', async (t) => {
     if (testCategory) {
       await prisma.category.deleteMany({ where: { id: testCategory.id } });
     }
+    await prisma.user.deleteMany({
+      where: { email: { in: ['pub_scholar@pjstudy.com', 'pub_admin@pjstudy.com', 'pub_superadmin@pjstudy.com'] } }
+    }).catch(() => {});
   });
 
   // 1. Scholar cannot upload notes

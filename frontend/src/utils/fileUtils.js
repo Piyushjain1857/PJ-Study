@@ -11,7 +11,7 @@
  * @returns {string} e.g. "19.9 KB", "2.4 MB"
  */
 export function formatBytes(bytes) {
-  if (!bytes) return '';
+  if (bytes === null || bytes === undefined || bytes === '') return '';
   const num = Number(bytes);
   if (isNaN(num) || num <= 0) return '';
   const k = 1024;
@@ -22,14 +22,34 @@ export function formatBytes(bytes) {
 
 /**
  * Inspects file extension and MIME type to return structured format presentation.
+ * Safely handles null, undefined, empty strings, and non-string inputs.
  *
- * @param {string} [fileName='']
- * @param {string} [mimeType='']
+ * @param {string|null} [fileName='']
+ * @param {string|null} [mimeType='']
  * @returns {object}
  */
 export function getFileFormatInfo(fileName = '', mimeType = '') {
-  const ext = (fileName.split('.').pop() || '').toLowerCase();
-  const lowerMime = (mimeType || '').toLowerCase();
+  const safeName = typeof fileName === 'string' ? fileName.trim() : '';
+  const safeMime = typeof mimeType === 'string' ? mimeType.trim().toLowerCase() : '';
+
+  const ext = (safeName.includes('.') ? safeName.split('.').pop() || '' : '').toLowerCase();
+  const lowerMime = safeMime;
+
+  // Case 0: No file attachment or empty metadata (written manuscript)
+  if (!safeName && !safeMime) {
+    return {
+      ext: 'TXT',
+      label: 'Academic Manuscript',
+      friendlyType: 'Text Manuscript',
+      badgeText: 'TEXT',
+      appHint: 'Written manuscript content available',
+      color: '#0D9488',
+      bgColor: '#F0FDFA',
+      borderColor: '#99F6E4',
+      iconType: 'text',
+      canPreviewInline: true
+    };
+  }
 
   // 1. PDF Documents
   if (ext === 'pdf' || lowerMime === 'application/pdf') {

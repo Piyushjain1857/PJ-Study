@@ -1,47 +1,34 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import Skeleton from '../common/Skeleton.jsx';
-import recommendationService from '../../services/recommendationService.js';
 import noteService from '../../services/noteService.js';
+import Skeleton from '../common/Skeleton.jsx';
+
+function getFormatBadge(mimeType, fileName) {
+  const ext = fileName ? fileName.split('.').pop()?.toUpperCase() : '';
+  if (mimeType?.includes('pdf') || ext === 'PDF') {
+    return { label: 'PDF', variant: 'pdf' };
+  }
+  if (mimeType?.includes('image') || ['PNG', 'JPG', 'JPEG', 'WEBP'].includes(ext)) {
+    return { label: ext || 'IMG', variant: 'image' };
+  }
+  if (mimeType?.includes('text') || ['TXT', 'MD'].includes(ext)) {
+    return { label: ext || 'TXT', variant: 'text' };
+  }
+  return { label: ext || 'DOC', variant: 'doc' };
+}
 
 /**
- * Curated faculty & curriculum recommendations for the student.
+ * Editorial Recommended Notes Component (Section E).
+ * Highlights notes prioritizing the student's enrolled course, semester, and curriculum subjects.
  */
 export function DashboardRecommendations({
   recommendedNotes = [],
   loading = false,
-  title,
-  subtitle,
-  onPreviewNote = null
+  onPreviewNote = null,
+  onBookmarkChanged = null
 }) {
-  const [smartRecs, setSmartRecs] = useState([]);
-  const [isSmartLoading, setIsSmartLoading] = useState(false);
-  const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
   const [downloadingId, setDownloadingId] = useState(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    async function loadSmartRecommendations() {
-      setIsSmartLoading(true);
-      try {
-        const data = await recommendationService.getPersonalizedRecommendations({ limit: 4 });
-        if (isMounted && data?.recommendations?.length > 0) {
-          setSmartRecs(data.recommendations);
-        }
-      } catch {
-        // Fallback to overview recommendedNotes if API errors
-      } finally {
-        if (isMounted) {
-          setIsSmartLoading(false);
-        }
-      }
-    }
-
-    loadSmartRecommendations();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
 
   const handleDownload = async (e, note) => {
     e.preventDefault();
@@ -76,129 +63,151 @@ export function DashboardRecommendations({
           return next;
         });
       }
+      onBookmarkChanged?.();
     } catch (err) {
-      console.error('Bookmark error:', err);
+      console.error('Bookmark toggle error:', err);
     }
   };
 
-  const isLoading = loading || isSmartLoading;
-  const displayItems =
-    smartRecs.length > 0 ? smartRecs : recommendedNotes.map((n) => ({ note: n }));
-
   return (
-    <section style={{ marginBottom: '28px' }} aria-labelledby="recommendations-heading">
+    <section className="dash-section" aria-labelledby="curated-recs-heading">
       <div className="dash-section-header">
         <div>
-          <h2 id="recommendations-heading" className="dash-section-header__title">
-            {title || 'Recommended for You'}
+          <h2 id="curated-recs-heading" className="dash-section-title">
+            Recommended for You
           </h2>
-          <p className="dash-section-header__sub">
-            {subtitle || 'Hand-picked manuscripts aligned to your enrolled curriculum and active semester'}
+          <p className="dash-section-subtitle">
+            Curated manuscripts aligned to your enrolled curriculum and active semester
           </p>
         </div>
-        <Link to="/notes/recommended" className="dash-section-header__link">
-          Explore All Recommendations →
+        <Link to="/notes/explore" className="dash-section-link">
+          Explore All →
         </Link>
       </div>
 
-      {isLoading ? (
-        <div className="dash-notes-grid">
+      {loading ? (
+        <div className="dash-cards-grid">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="dash-note-card">
-              <Skeleton width="100px" height="18px" />
-              <div style={{ marginTop: '10px' }}>
-                <Skeleton width="100%" height="20px" />
-                <Skeleton width="70%" height="20px" />
+            <div key={i} className="dash-resource-card">
+              <Skeleton width="70px" height="20px" rounded="sm" />
+              <div style={{ marginTop: '12px' }}>
+                <Skeleton width="100%" height="22px" />
+                <Skeleton width="75%" height="16px" style={{ marginTop: '6px' }} />
               </div>
-              <div style={{ marginTop: '14px' }}>
-                <Skeleton width="100%" height="32px" />
+              <div style={{ marginTop: '16px' }}>
+                <Skeleton width="100%" height="32px" rounded="sm" />
               </div>
             </div>
           ))}
         </div>
-      ) : displayItems.length === 0 ? (
-        <div className="dash-empty-box" style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-          <span style={{ fontSize: '30px' }}>⭐</span>
-          <h3 className="dash-empty-title">Recommendations In Progress</h3>
+      ) : recommendedNotes.length === 0 ? (
+        <div className="dash-empty-state">
+          <div className="dash-empty-icon-wrap" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+          </div>
+          <h3 className="dash-empty-title">Curriculum Recommendations Pending</h3>
           <p className="dash-empty-desc">
-            As faculty publish notes for your course and semester, personalized recommendations will appear here.
+            As faculty approve study materials for your semester, personalized recommendations will appear here.
           </p>
-          <Link to="/notes/explore" className="btn btn--primary btn--sm" style={{ marginTop: '8px' }}>
-            Browse Full Catalog
+          <Link to="/notes/explore" className="dash-empty-action">
+            Browse All Published Notes →
           </Link>
         </div>
       ) : (
-        <div className="dash-notes-grid">
-          {displayItems.slice(0, 3).map((item, idx) => {
+        <div className="dash-cards-grid">
+          {recommendedNotes.map((item, idx) => {
             const note = item.note || item;
+            const format = getFormatBadge(note.mimeType, note.fileName);
             const isSaved = bookmarkedIds.has(note.id);
 
             return (
-              <article key={note.id || idx} className="dash-note-card">
-                <div className="dash-note-card__top">
-                  <div className="dash-note-card__tags">
-                    <span className="dash-note-card__tag dash-note-card__tag--subject">
-                      ⭐ Recommended
-                    </span>
+              <article key={note.id || idx} className="dash-resource-card">
+                <div className="dash-card-header">
+                  <span className={`dash-file-badge dash-file-badge--${format.variant}`}>
+                    {format.label}
+                  </span>
+                  <button
+                    type="button"
+                    className={`dash-card-bookmark-btn ${isSaved ? 'dash-card-bookmark-btn--saved' : ''}`}
+                    onClick={(e) => handleToggleBookmark(e, note.id)}
+                    title={isSaved ? 'Remove from bookmarks' : 'Save to bookmarks'}
+                    aria-label={isSaved ? 'Remove bookmark' : 'Bookmark this note'}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="dash-card-body">
+                  <Link
+                    to={`/notes/${note.id}`}
+                    className="dash-card-title"
+                    title={note.title}
+                  >
+                    {note.title}
+                  </Link>
+
+                  <div className="dash-card-academic-meta">
                     {note.subject?.name && (
-                      <span className="dash-note-card__tag">
+                      <span className="dash-meta-tag dash-meta-tag--subject">
                         {note.subject.name}
                       </span>
                     )}
                     {note.semester && (
-                      <span className="dash-note-card__tag">
+                      <span className="dash-meta-tag">
                         Sem {note.semester}
                       </span>
                     )}
+                    {note.course?.name && (
+                      <span className="dash-meta-tag">
+                        {note.course.name}
+                      </span>
+                    )}
                   </div>
-                  <button
-                    type="button"
-                    className={`dash-note-card__bookmark-btn ${isSaved ? 'dash-note-card__bookmark-btn--active' : ''}`}
-                    onClick={(e) => handleToggleBookmark(e, note.id)}
-                    title={isSaved ? 'Remove bookmark' : 'Bookmark this note'}
-                    aria-label={isSaved ? 'Remove bookmark' : 'Bookmark this note'}
-                  >
-                    {isSaved ? '🔖' : '🤍'}
-                  </button>
+
+                  {note.description && (
+                    <p className="dash-card-desc">
+                      {note.description}
+                    </p>
+                  )}
                 </div>
 
-                <Link to={`/notes/${note.id}`} className="dash-note-card__title">
-                  {note.title}
-                </Link>
+                <div className="dash-card-footer">
+                  <div className="dash-card-stats">
+                    <span>{note.viewCount ?? 0} views</span>
+                    <span>•</span>
+                    <span>{note.downloadCount ?? 0} downloads</span>
+                  </div>
 
-                <p className="dash-note-card__desc">
-                  {note.description || 'Highly rated curriculum manuscript for course revision and exam preparation.'}
-                </p>
+                  <div className="dash-card-actions">
+                    <button
+                      type="button"
+                      className="dash-btn dash-btn--outline dash-btn--sm"
+                      onClick={() => {
+                        if (onPreviewNote) {
+                          onPreviewNote(note);
+                        } else {
+                          window.location.href = `/notes/${note.id}`;
+                        }
+                      }}
+                      title="Quick preview document"
+                    >
+                      Preview
+                    </button>
 
-                <div className="dash-note-card__meta-row">
-                  <span>👁️ {note.viewCount || 0} reads</span>
-                  <span style={{ color: '#0f766e', fontWeight: 700 }}>
-                    📥 {note.downloadCount || 0} downloads
-                  </span>
-                </div>
-
-                <div className="dash-note-card__actions">
-                  <button
-                    type="button"
-                    className="dash-note-card__btn dash-note-card__btn--preview"
-                    onClick={() => {
-                      if (onPreviewNote) {
-                        onPreviewNote(note);
-                      } else {
-                        window.location.href = `/notes/${note.id}`;
-                      }
-                    }}
-                  >
-                    👁️ Preview
-                  </button>
-                  <button
-                    type="button"
-                    className="dash-note-card__btn dash-note-card__btn--download"
-                    onClick={(e) => handleDownload(e, note)}
-                    disabled={downloadingId === note.id}
-                  >
-                    {downloadingId === note.id ? 'Saving...' : '📥 Download'}
-                  </button>
+                    <button
+                      type="button"
+                      className="dash-btn dash-btn--primary dash-btn--sm"
+                      onClick={(e) => handleDownload(e, note)}
+                      disabled={downloadingId === note.id}
+                      title="Download document file"
+                    >
+                      {downloadingId === note.id ? 'Saving...' : 'Download'}
+                    </button>
+                  </div>
                 </div>
               </article>
             );

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'fs';
 import { createServer } from 'http';
 import { execSync } from 'child_process';
 import prisma from '../src/config/database.js';
@@ -103,14 +104,11 @@ test('PJ Study — Unauthorized Automatic User & Note Creation Prevention Suite'
   // ---------------------------------------------------------------------------
   await t.test('1. Database seeding halts safely when executed without --confirm-seed', () => {
     let output = '';
+    const seedPath = fs.existsSync('prisma/seed.js') ? 'node prisma/seed.js' : 'node backend/prisma/seed.js';
     try {
-      execSync('node backend/prisma/seed.js', { encoding: 'utf-8', stdio: 'pipe' });
+      output = execSync(`${seedPath} 2>&1`, { encoding: 'utf-8' });
     } catch (e) {
       output = `${e.stdout || ''}\n${e.stderr || ''}`;
-    }
-    if (!output) {
-      // If exited 0 cleanly, read from child process with combined stdout/stderr
-      output = execSync('node backend/prisma/seed.js 2>&1', { encoding: 'utf-8' });
     }
     assert.ok(output.includes('[SEED GUARD]'), 'Expected SEED GUARD message in output');
     assert.ok(output.includes('strictly opt-in'), 'Expected opt-in explanation in output');
@@ -248,5 +246,83 @@ test('PJ Study — Unauthorized Automatic User & Note Creation Prevention Suite'
 
     assert.strictEqual(usersAfter, usersBefore);
     assert.strictEqual(notesAfter, notesBefore);
+  });
+
+  // ---------------------------------------------------------------------------
+  // 6. Read-Only Invariant Suite (Dashboard, Details, Downloads)
+  // ---------------------------------------------------------------------------
+  await t.test('8. GET /dashboard/overview does not create notes or users', async () => {
+    const usersBefore = await prisma.user.count();
+    const notesBefore = await prisma.note.count();
+
+    const res = await fetch(`${baseUrl}/dashboard/overview`, {
+      headers: { Authorization: `Bearer ${scholarToken}` }
+    });
+    assert.strictEqual(res.status, 200);
+
+    const usersAfter = await prisma.user.count();
+    const notesAfter = await prisma.note.count();
+
+    assert.strictEqual(usersAfter, usersBefore, 'Dashboard load must be strictly read-only');
+    assert.strictEqual(notesAfter, notesBefore, 'Zero notes created on dashboard load');
+  });
+
+  await t.test('9. GET /recommendations/notes does not create notes or users', async () => {
+    const usersBefore = await prisma.user.count();
+    const notesBefore = await prisma.note.count();
+
+    const res = await fetch(`${baseUrl}/recommendations/notes`, {
+      headers: { Authorization: `Bearer ${scholarToken}` }
+    });
+    assert.strictEqual(res.status, 200);
+
+    const usersAfter = await prisma.user.count();
+    const notesAfter = await prisma.note.count();
+
+    assert.strictEqual(usersAfter, usersBefore);
+    assert.strictEqual(notesAfter, notesBefore);
+  });
+
+  await t.test('10. Super Admin note upload creates exactly 1 note and cleans up safely', async () => {
+    const initialNotesCount = await prisma.note.count();
+
+    const superAdminUser = await prisma.user.findFirst({
+      where: { role: 'SUPER_ADMIN', isActive: true }
+    });
+    const superToken = generateAccessToken(superAdminUser);
+
+    const res = await fetch(`${baseUrl}/notes`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${superToken}`
+      },
+      body: JSON.stringify({
+        title: 'Super Admin Single Note Verification',
+        content: 'Verification manuscript content.',
+        subjectId: testSubject.id,
+        courseId: testCourse.id,
+        semester: 1
+      })
+    });
+
+    assert.strictEqual(res.status, 201);
+    const body = await res.json();
+    assert.strictEqual(body.success, true);
+    assert.strictEqual(body.data.status, 'PUBLISHED');
+
+    const createdId = body.data.id;
+    assert.ok(createdId);
+
+    // Verify exactly 1 note incremented
+    const afterUploadCount = await prisma.note.count();
+    assert.strictEqual(afterUploadCount, initialNotesCount + 1);
+
+    // Clean up created note
+    await prisma.note.delete({ where: { id: createdId } });
+
+    // Verify count returned to exact original
+    const postCleanupCount = await prisma.note.count();
+    assert.strictEqual(postCleanupCount, initialNotesCount);
   });
 });

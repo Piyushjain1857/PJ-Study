@@ -3,9 +3,6 @@ import { Link } from 'react-router-dom';
 import noteService from '../../services/noteService.js';
 import Skeleton from '../common/Skeleton.jsx';
 
-/**
- * Format bytes to readable size
- */
 function formatBytes(bytes) {
   if (!bytes) return '';
   const num = Number(bytes);
@@ -16,14 +13,27 @@ function formatBytes(bytes) {
   return `${parseFloat((num / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
+function getFormatBadge(mimeType, fileName) {
+  const ext = fileName ? fileName.split('.').pop()?.toUpperCase() : '';
+  if (mimeType?.includes('pdf') || ext === 'PDF') {
+    return { label: 'PDF', variant: 'pdf' };
+  }
+  if (mimeType?.includes('image') || ['PNG', 'JPG', 'JPEG', 'WEBP'].includes(ext)) {
+    return { label: ext || 'IMG', variant: 'image' };
+  }
+  if (mimeType?.includes('text') || ['TXT', 'MD'].includes(ext)) {
+    return { label: ext || 'TXT', variant: 'text' };
+  }
+  return { label: ext || 'DOC', variant: 'doc' };
+}
+
 /**
- * Section displaying the latest curriculum manuscripts published to PJ Study.
+ * Editorial Recently Published Notes Component (Section F).
+ * Displays recently added academic manuscripts in a compact, highly functional row/card design.
  */
 export function DashboardRecentPublishedNotes({
   notes = [],
   loading = false,
-  title,
-  subtitle,
   onPreviewNote = null,
   onBookmarkChanged = null
 }) {
@@ -70,109 +80,130 @@ export function DashboardRecentPublishedNotes({
   };
 
   return (
-    <section style={{ marginBottom: '28px' }} aria-labelledby="recent-notes-heading">
+    <section className="dash-section" aria-labelledby="recently-added-heading">
       <div className="dash-section-header">
         <div>
-          <h2 id="recent-notes-heading" className="dash-section-header__title">
-            {title || 'Recently Added Notes'}
+          <h2 id="recently-added-heading" className="dash-section-title">
+            Recently Added
           </h2>
-          <p className="dash-section-header__sub">
-            {subtitle || 'Latest curriculum manuscripts uploaded and published to the catalog'}
+          <p className="dash-section-subtitle">
+            Fresh academic manuscripts uploaded and published to the university catalog
           </p>
         </div>
-        <Link to="/notes/explore" className="dash-section-header__link">
-          View All Notes →
+        <Link to="/notes/explore?sort=newest" className="dash-section-link">
+          Catalog New Releases →
         </Link>
       </div>
 
       {loading ? (
-        <div className="dash-notes-grid">
+        <div className="dash-compact-list">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="dash-note-card">
-              <Skeleton width="120px" height="18px" />
-              <div style={{ marginTop: '12px' }}>
-                <Skeleton width="100%" height="22px" />
-                <Skeleton width="80%" height="22px" />
+            <div key={i} className="dash-compact-row">
+              <Skeleton width="48px" height="24px" rounded="sm" />
+              <div style={{ flex: 1, marginLeft: '12px' }}>
+                <Skeleton width="60%" height="18px" />
+                <Skeleton width="40%" height="14px" style={{ marginTop: '4px' }} />
               </div>
-              <div style={{ marginTop: '14px' }}>
-                <Skeleton width="100%" height="32px" />
-              </div>
+              <Skeleton width="120px" height="30px" rounded="sm" />
             </div>
           ))}
         </div>
       ) : notes.length === 0 ? (
-        <div className="dash-empty-box" style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-          <span style={{ fontSize: '32px' }}>📖</span>
-          <h3 className="dash-empty-title">No Notes Published Yet</h3>
+        <div className="dash-empty-state">
+          <div className="dash-empty-icon-wrap" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="16" rx="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+          </div>
+          <h3 className="dash-empty-title">No New Manuscripts</h3>
           <p className="dash-empty-desc">
-            Check back soon as faculty upload exam solutions and curriculum guides.
+            All newly published study notes will be chronologically listed here.
           </p>
-          <Link to="/notes/explore" className="btn btn--primary btn--sm" style={{ marginTop: '8px' }}>
-            Explore All Catalog Notes
+          <Link to="/notes/explore" className="dash-empty-action">
+            Search Catalog →
           </Link>
         </div>
       ) : (
-        <div className="dash-notes-grid">
+        <div className="dash-compact-list">
           {notes.map((note) => {
-            const ext = note.fileName ? note.fileName.split('.').pop()?.toUpperCase() : 'PDF';
+            const format = getFormatBadge(note.mimeType, note.fileName);
             const sizeStr = formatBytes(note.fileSize);
-            const uploadDate = new Date(note.createdAt).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric'
-            });
+            const dateStr = note.createdAt
+              ? new Date(note.createdAt).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric'
+                })
+              : '';
             const isSaved = bookmarkedIds.has(note.id);
 
             return (
-              <article key={note.id} className="dash-note-card">
-                <div className="dash-note-card__top">
-                  <div className="dash-note-card__tags">
-                    {note.subject?.name && (
-                      <span className="dash-note-card__tag dash-note-card__tag--subject">
-                        {note.subject.code ? `${note.subject.code} · ` : ''}{note.subject.name}
-                      </span>
-                    )}
-                    {note.course?.name && (
-                      <span className="dash-note-card__tag">
-                        {note.course.name}
-                      </span>
-                    )}
-                    {note.semester && (
-                      <span className="dash-note-card__tag">
-                        Sem {note.semester}
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    className={`dash-note-card__bookmark-btn ${isSaved ? 'dash-note-card__bookmark-btn--active' : ''}`}
-                    onClick={(e) => handleToggleBookmark(e, note.id)}
-                    title={isSaved ? 'Remove bookmark' : 'Bookmark this note'}
-                    aria-label={isSaved ? 'Remove bookmark' : 'Bookmark this note'}
-                  >
-                    {isSaved ? '🔖' : '🤍'}
-                  </button>
-                </div>
-
-                <Link to={`/notes/${note.id}`} className="dash-note-card__title">
-                  {note.title}
-                </Link>
-
-                <p className="dash-note-card__desc">
-                  {note.description || 'Curriculum manuscript published for student exam preparation and study.'}
-                </p>
-
-                <div className="dash-note-card__meta-row">
-                  <span>📅 {uploadDate}</span>
-                  <span style={{ fontWeight: 700, color: '#0f766e' }}>
-                    {ext} {sizeStr && `• ${sizeStr}`}
+              <article key={note.id} className="dash-compact-row">
+                <div className="dash-compact-row__format">
+                  <span className={`dash-file-badge dash-file-badge--${format.variant}`}>
+                    {format.label}
                   </span>
                 </div>
 
-                <div className="dash-note-card__actions">
+                <div className="dash-compact-row__content">
+                  <div className="dash-compact-row__title-line">
+                    <Link
+                      to={`/notes/${note.id}`}
+                      className="dash-compact-row__title"
+                      title={note.title}
+                    >
+                      {note.title}
+                    </Link>
+                    {dateStr && (
+                      <span className="dash-compact-row__date">
+                        {dateStr}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="dash-compact-row__meta">
+                    {note.subject?.name && (
+                      <span className="dash-compact-row__meta-item">
+                        {note.subject.name}
+                      </span>
+                    )}
+                    {note.semester && (
+                      <>
+                        <span className="dash-compact-row__bullet">•</span>
+                        <span className="dash-compact-row__meta-item">
+                          Sem {note.semester}
+                        </span>
+                      </>
+                    )}
+                    {sizeStr && (
+                      <>
+                        <span className="dash-compact-row__bullet">•</span>
+                        <span className="dash-compact-row__meta-item">
+                          {sizeStr}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="dash-compact-row__actions">
                   <button
                     type="button"
-                    className="dash-note-card__btn dash-note-card__btn--preview"
+                    className={`dash-icon-btn ${isSaved ? 'dash-icon-btn--saved' : ''}`}
+                    onClick={(e) => handleToggleBookmark(e, note.id)}
+                    title={isSaved ? 'Remove bookmark' : 'Bookmark note'}
+                    aria-label={isSaved ? 'Remove bookmark' : 'Bookmark note'}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                    </svg>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="dash-btn dash-btn--outline dash-btn--sm"
                     onClick={() => {
                       if (onPreviewNote) {
                         onPreviewNote(note);
@@ -180,16 +211,19 @@ export function DashboardRecentPublishedNotes({
                         window.location.href = `/notes/${note.id}`;
                       }
                     }}
+                    title="Quick preview manuscript"
                   >
-                    👁️ Preview
+                    Preview
                   </button>
+
                   <button
                     type="button"
-                    className="dash-note-card__btn dash-note-card__btn--download"
+                    className="dash-btn dash-btn--primary dash-btn--sm"
                     onClick={(e) => handleDownload(e, note)}
                     disabled={downloadingId === note.id}
+                    title="Download document"
                   >
-                    {downloadingId === note.id ? 'Saving...' : '📥 Download'}
+                    {downloadingId === note.id ? '...' : 'Download'}
                   </button>
                 </div>
               </article>

@@ -1,117 +1,157 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Skeleton from '../common/Skeleton.jsx';
 
 /**
- * My Library Preview for Student Dashboard 3.0.
- * Shows bookmarked notes, collection binders, and quick actions to access personal library.
+ * Editorial Academic Library Shortcuts (Section G).
+ * Provides fast access to the student's bookmarked notes, collection binders, and reading history.
  */
 export function DashboardLibraryPreview({
   bookmarks = [],
   collections = [],
-  loading = false,
-  title
+  stats = {},
+  loading = false
 }) {
+  const navigate = useNavigate();
+
+  const savedCount = stats.savedNotes ?? bookmarks.length;
+  const collectionsCount = stats.collections ?? collections.length;
+  const downloadsCount = stats.uniqueNotesDownloaded ?? stats.downloads ?? 0;
+
   return (
-    <div className="dash-library-box">
-      <div className="dash-section-header" style={{ marginBottom: '12px' }}>
+    <section className="dash-section" aria-labelledby="library-shortcuts-heading">
+      <div className="dash-section-header">
         <div>
-          <h3 className="dash-section-header__title">
-            {title || 'My Library Preview'}
-          </h3>
-          <p className="dash-section-header__sub">
-            Your saved manuscripts & course revision binders
+          <h2 id="library-shortcuts-heading" className="dash-section-title">
+            Your Library
+          </h2>
+          <p className="dash-section-subtitle">
+            Personal repository of saved study manuscripts, course binders, and downloads
           </p>
         </div>
-        <Link to="/my-notes" className="dash-section-header__link">
-          Go to My Library →
+        <Link to="/my-notes" className="dash-section-link">
+          Open Full Library →
         </Link>
       </div>
 
-      {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <Skeleton height="44px" count={3} />
-        </div>
-      ) : bookmarks.length === 0 && collections.length === 0 ? (
-        <div style={{ padding: '24px 12px', textAlign: 'center', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
-          <span style={{ fontSize: '26px' }}>🔖</span>
-          <p style={{ margin: '6px 0 2px', fontSize: '12px', fontWeight: 700, color: '#0f172a' }}>
-            No saved notes yet
-          </p>
-          <span style={{ fontSize: '11px', color: '#64748b' }}>
-            Click the bookmark icon on any note to save it to your library.
-          </span>
-          <div style={{ marginTop: '10px' }}>
-            <Link to="/notes/explore" className="btn btn--outline btn--sm">
-              Explore Notes
-            </Link>
+      {/* 3 Editorial Quick Nav Cards */}
+      <div className="dash-library-kpi-grid">
+        <div
+          className="dash-library-kpi-card"
+          onClick={() => navigate('/my-notes?tab=bookmarks')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              navigate('/my-notes?tab=bookmarks');
+            }
+          }}
+          title="View bookmarked study notes"
+        >
+          <div className="dash-library-kpi-top">
+            <span className="dash-library-kpi-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+              </svg>
+            </span>
+            <span className="dash-library-kpi-arrow">→</span>
           </div>
+          <div className="dash-library-kpi-value">{loading ? '...' : savedCount}</div>
+          <div className="dash-library-kpi-label">Bookmarked Notes</div>
+          <div className="dash-library-kpi-sub">Saved for revision</div>
         </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {/* Recent Saved Notes */}
+
+        <div
+          className="dash-library-kpi-card"
+          onClick={() => navigate('/my-notes?tab=collections')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              navigate('/my-notes?tab=collections');
+            }
+          }}
+          title="View personal study collections"
+        >
+          <div className="dash-library-kpi-top">
+            <span className="dash-library-kpi-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+              </svg>
+            </span>
+            <span className="dash-library-kpi-arrow">→</span>
+          </div>
+          <div className="dash-library-kpi-value">{loading ? '...' : collectionsCount}</div>
+          <div className="dash-library-kpi-label">Course Binders</div>
+          <div className="dash-library-kpi-sub">Curated collections</div>
+        </div>
+
+        <div
+          className="dash-library-kpi-card"
+          onClick={() => navigate('/my-notes?tab=downloads')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              navigate('/my-notes?tab=downloads');
+            }
+          }}
+          title="View download history"
+        >
+          <div className="dash-library-kpi-top">
+            <span className="dash-library-kpi-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </span>
+            <span className="dash-library-kpi-arrow">→</span>
+          </div>
+          <div className="dash-library-kpi-value">{loading ? '...' : downloadsCount}</div>
+          <div className="dash-library-kpi-label">Downloaded Files</div>
+          <div className="dash-library-kpi-sub">Device study copies</div>
+        </div>
+      </div>
+
+      {/* Recent Bookmarks and Binders Previews */}
+      {loading ? (
+        <div style={{ marginTop: '16px' }}>
+          <Skeleton height="40px" count={2} />
+        </div>
+      ) : bookmarks.length > 0 && (
+        <div className="dash-library-preview-list">
+          <div className="dash-library-preview-list-header">
+            <span>Recent Bookmarks</span>
+            <Link to="/my-notes?tab=bookmarks">View All ({savedCount}) →</Link>
+          </div>
           {bookmarks.slice(0, 3).map((b) => {
             const note = b.note || b;
             return (
               <Link
                 key={b.id || note.id}
                 to={`/notes/${note.id}`}
-                className="dash-library-item"
+                className="dash-library-preview-item"
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                  <span style={{ fontSize: '16px' }}>🔖</span>
-                  <div style={{ minWidth: 0 }}>
-                    <div className="dash-library-item__title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {note.title}
-                    </div>
-                    <div className="dash-library-item__sub">
-                      {note.subject?.name || 'Academic Subject'} · Sem {note.semester || 4}
-                    </div>
-                  </div>
+                <div className="dash-library-preview-item__left">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true" style={{ color: 'var(--color-primary, #245C46)', flexShrink: 0 }}>
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                  </svg>
+                  <span className="dash-library-preview-item__title">{note.title}</span>
                 </div>
-                <span style={{ fontSize: '11px', color: '#0f766e', fontWeight: 700, flexShrink: 0, paddingLeft: '8px' }}>
-                  Open →
-                </span>
+                <div className="dash-library-preview-item__meta">
+                  {note.subject?.name && <span>{note.subject.name}</span>}
+                  {note.semester && <span>Sem {note.semester}</span>}
+                </div>
               </Link>
             );
           })}
-
-          {/* Collections Binders */}
-          {collections.length > 0 && (
-            <div style={{ marginTop: '6px', paddingTop: '10px', borderTop: '1px solid #f1f5f9' }}>
-              <span style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '8px' }}>
-                Course Collections:
-              </span>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {collections.slice(0, 4).map((c) => (
-                  <Link
-                    key={c.id}
-                    to="/my-notes?tab=collections"
-                    style={{
-                      padding: '4px 10px',
-                      borderRadius: '6px',
-                      background: '#f1f5f9',
-                      border: '1px solid #e2e8f0',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      color: '#334155',
-                      textDecoration: 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px'
-                    }}
-                  >
-                    <span>📁</span>
-                    <span>{c.name}</span>
-                    <span style={{ fontSize: '10px', color: '#64748b' }}>({c.noteCount ?? 0})</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
-    </div>
+    </section>
   );
 }
 

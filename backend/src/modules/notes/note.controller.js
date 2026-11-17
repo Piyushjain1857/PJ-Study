@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import noteService, { NoteService } from './note.service.js';
 import storageService from '../../services/storage/storage.service.js';
 import { sendSuccess } from '../../utils/apiResponse.js';
@@ -66,8 +67,13 @@ export class NoteController {
    * Strictly enforces Admin / Super Admin authorization before processing files.
    */
   createNote = async (req, res, next) => {
+    const opId = req.headers['x-request-id'] || `req_${crypto.randomBytes(6).toString('hex')}`;
     try {
       if (!req.user || !req.user.id) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[AUDIT:UNAUTHENTICATED_UPLOAD_ATTEMPT] opId=${opId} timestamp=${new Date().toISOString()} source=HTTP_REQUEST route="POST /api/v1/notes" result=BLOCKED`
+        );
         const error = new Error('Authentication required to upload notes.');
         error.statusCode = 401;
         error.code = 'UNAUTHORIZED';
@@ -76,6 +82,10 @@ export class NoteController {
 
       const role = req.user.role;
       if (role !== ROLES.ADMIN && role !== ROLES.SUPER_ADMIN && role !== ROLES.MODERATOR) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[AUDIT:UNAUTHORIZED_SCHOLAR_UPLOAD_ATTEMPT] opId=${opId} timestamp=${new Date().toISOString()} source=HTTP_REQUEST route="POST /api/v1/notes" actorId=${req.user.id} actorRole=${role} result=BLOCKED`
+        );
         const error = new Error(
           'Only authenticated Admin and Super Admin users are authorized to upload notes. Scholars cannot upload notes.'
         );
@@ -84,7 +94,13 @@ export class NoteController {
         throw error;
       }
 
-      const payload = { ...req.body, uploadedById: req.user.id };
+      const payload = {
+        ...req.body,
+        uploadedById: req.user.id,
+        opId,
+        source: 'HTTP_REQUEST',
+        callingModule: 'POST /api/v1/notes'
+      };
 
       // Handle optional uploaded file
       if (req.file) {
@@ -97,6 +113,11 @@ export class NoteController {
         payload.storageProvider = stored.storageProvider;
         payload.fileSize = stored.fileSize;
         payload.mimeType = stored.mimeType;
+
+        // eslint-disable-next-line no-console
+        console.log(
+          `[AUDIT:FILE_UPLOAD] opId=${opId} timestamp=${new Date().toISOString()} source=HTTP_REQUEST route="POST /api/v1/notes" actorId=${req.user.id} actorRole=${role} fileName="${stored.fileName}" provider=${stored.storageProvider} size=${stored.fileSize} result=SUCCESS`
+        );
       }
 
       // Handle action shortcuts (e.g. action: 'submit' -> status: 'PENDING')

@@ -49,6 +49,21 @@ async function main() {
     }
   }
 
+  // Production environmental security block
+  const isProduction = process.env.NODE_ENV === 'production';
+  const dbUrl = process.env.DATABASE_URL || '';
+  const isRemoteDb = dbUrl.includes('rds.amazonaws.com') || dbUrl.includes('cloudsql') || dbUrl.includes('railway') || dbUrl.includes('render');
+
+  if ((isProduction || isRemoteDb) && (mode === 'demo' || mode === 'full') && !forceProduction) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `\n🚫 [SECURITY HALT] Seeding mode "${mode}" is strictly prohibited in production and cloud environments.\n` +
+      `   Automated demo data and demo notes cannot be inserted into production databases.\n` +
+      `   Operation terminated with zero database writes.\n`
+    );
+    process.exit(1);
+  }
+
   // eslint-disable-next-line no-console
   console.log(`[AUDIT:SEED] Database seeding engine explicitly authorized. Mode: "${mode}", DryRun: ${isDryRun}`);
 

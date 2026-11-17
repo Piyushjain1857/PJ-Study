@@ -107,6 +107,9 @@ test('Academic Hierarchy & Content Management Suite (Step 16)', async (t) => {
     if (createdCategory) {
       await prisma.category.deleteMany({ where: { id: createdCategory.id } });
     }
+    await prisma.user.deleteMany({
+      where: { email: { contains: 'step16' } }
+    }).catch(() => {});
     await new Promise((resolve) => server.close(resolve));
   });
 

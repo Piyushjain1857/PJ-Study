@@ -286,6 +286,12 @@ export class GoogleDriveStorageProvider {
           ? BigInt(response.data.size)
           : BigInt(file.buffer.length);
 
+        // Safe diagnostic audit logging (no tokens or credentials)
+        // eslint-disable-next-line no-console
+        console.log(
+          `[AUDIT:GDRIVE_FILE_SAVED] timestamp=${new Date().toISOString()} fileName="${originalName}" destinationFolderId="${destinationFolderId}" driveFileId="${fileId}" size=${size} provider=google_drive result=SUCCESS`
+        );
+
         return {
           storageKey: fileId,
           fileName: originalName,
@@ -295,6 +301,10 @@ export class GoogleDriveStorageProvider {
         };
       } catch (err) {
         lastError = err;
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[AUDIT:GDRIVE_UPLOAD_ATTEMPT_FAILED] timestamp=${new Date().toISOString()} fileName="${originalName}" attempt=${attempt + 1}/${maxRetries + 1} error="${err.message}"`
+        );
         // eslint-disable-next-line no-console
         console.warn(`[GoogleDrive] Upload attempt ${attempt + 1} failed: ${err.message}`);
         if (attempt < maxRetries) {
