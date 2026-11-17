@@ -103,7 +103,7 @@ export const strictAuthLimiter = rateLimit({
   max: env.isProduction ? 10 : 1000,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => env.isDevelopment,
+  skip: () => env.isDevelopment || env.isTest,
   handler: (req, res) => {
     return sendError(
       res,
@@ -122,7 +122,7 @@ export const generalAuthLimiter = rateLimit({
   max: env.isProduction ? 60 : 2000,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => env.isDevelopment,
+  skip: () => env.isDevelopment || env.isTest,
   handler: (req, res) => {
     return sendError(
       res,

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import env from '../config/env.js';
+import prisma from '../config/database.js';
 import authRoutes from '../modules/auth/auth.routes.js';
 import adminRoutes from '../modules/admin/admin.routes.js';
 import adminWorkspaceRoutes from '../modules/adminWorkspace/adminWorkspace.routes.js';
@@ -44,6 +45,45 @@ router.get('/health', (req, res) => {
     success: true,
     data: healthData
   });
+});
+
+/**
+ * Process liveness check.
+ * GET /api/v1/health/live
+ */
+router.get('/health/live', (req, res) => {
+  res.status(200).json({
+    success: true,
+    status: 'alive',
+    uptimeSeconds: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString()
+  });
+});
+
+/**
+ * Application & Database readiness check.
+ * Strictly read-only ping (SELECT 1) without modifying records or triggering seeds.
+ * GET /api/v1/health/ready
+ */
+router.get('/health/ready', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return res.status(200).json({
+      success: true,
+      status: 'ready',
+      database: 'connected',
+      uptimeSeconds: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    return res.status(503).json({
+      success: false,
+      status: 'degraded',
+      database: 'disconnected',
+      error: env.isProduction ? 'Database service unavailable' : err.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 /**

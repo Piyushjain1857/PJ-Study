@@ -84,7 +84,8 @@ export function errorHandler(err, req, res, _next) {
     error: {
       message,
       code,
-      statusCode
+      statusCode,
+      requestId: req.id || req.headers?.['x-request-id'] || undefined
     }
   };
 
@@ -96,9 +97,12 @@ export function errorHandler(err, req, res, _next) {
     }
   }
 
-  // Log server errors to stderr
+  // Log server errors to stderr with structured correlation
   if (statusCode >= 500) {
-    console.error(`[ERROR ${statusCode}] ${req.method} ${req.originalUrl}:`, err);
+    console.error(
+      `[ERROR ${statusCode}] reqId=${req.id || '-'} ${req.method} ${req.originalUrl}:`,
+      err
+    );
   }
 
   res.status(statusCode).json(response);

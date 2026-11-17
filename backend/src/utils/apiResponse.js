@@ -41,9 +41,13 @@ export function sendError(
     success: false,
     error: {
       message,
-      code
+      code,
+      statusCode
     }
   };
+  if (res?.req?.id) {
+    payload.error.requestId = res.req.id;
+  }
   if (errors !== undefined) {
     payload.error.errors = errors;
   }

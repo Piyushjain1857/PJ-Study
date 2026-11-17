@@ -42,6 +42,19 @@ const recentViewsCache = new Map();
 const VIEW_DEBOUNCE_MS = 2500;
 
 /**
+ * Short-lived in-memory cache for taxonomy explore filters.
+ * Greatly reduces database round-trips for high-traffic discovery browsing.
+ */
+let exploreFiltersCache = null;
+let exploreFiltersExpiry = 0;
+const EXPLORE_FILTERS_TTL_MS = 60000; // 60s TTL
+
+export function invalidateExploreFiltersCache() {
+  exploreFiltersCache = null;
+  exploreFiltersExpiry = 0;
+}
+
+/**
  * Normalizes input status strings so 'PENDING' and 'PENDING_REVIEW' are handled interchangeably.
  *
  * @param {string} status
@@ -439,6 +452,7 @@ export class NoteService {
       `[AUDIT:NOTE_CREATED] opId=${opId} timestamp=${new Date().toISOString()} source=${source} callingModule=${callingModule} actorId=${uploadedById} actorRole=${uploader.role} noteId=${note.id} status=${note.status} storageProvider=${note.storageProvider} hasFile=${Boolean(note.fileName)} result=SUCCESS`
     );
 
+    invalidateExploreFiltersCache();
     return sanitizeNote(note);
   }
 
@@ -529,6 +543,7 @@ export class NoteService {
     }
 
     const updated = await this.repo.update(noteId, updatePayload);
+    invalidateExploreFiltersCache();
     return sanitizeNote(updated);
   }
 
@@ -569,6 +584,7 @@ export class NoteService {
     }
 
     await this.repo.delete(noteId);
+    invalidateExploreFiltersCache();
     return true;
   }
 
@@ -615,6 +631,7 @@ export class NoteService {
       rejectionReason: null // clear previous feedback upon resubmission
     });
 
+    invalidateExploreFiltersCache();
     return sanitizeNote(updated);
   }
 
@@ -646,6 +663,7 @@ export class NoteService {
       status: 'ARCHIVED'
     });
 
+    invalidateExploreFiltersCache();
     return sanitizeNote(updated);
   }
 
@@ -695,6 +713,8 @@ export class NoteService {
       }
     });
 
+    invalidateExploreFiltersCache();
+    invalidateExploreFiltersCache();
     return sanitizeNote(updated);
   }
 
@@ -742,6 +762,7 @@ export class NoteService {
       }
     });
 
+    invalidateExploreFiltersCache();
     return sanitizeNote(updated);
   }
 
@@ -798,6 +819,7 @@ export class NoteService {
       }
     });
 
+    invalidateExploreFiltersCache();
     return sanitizeNote(updated);
   }
 
@@ -982,6 +1004,10 @@ export class NoteService {
    * }>}
    */
   async getExploreFilters() {
+    if (exploreFiltersCache && Date.now() < exploreFiltersExpiry) {
+      return exploreFiltersCache;
+    }
+
     const [universities, courses, categories, subjects, totalApprovedNotes] = await Promise.all([
       prisma.university.findMany({
         where: { isActive: true },
@@ -1017,7 +1043,7 @@ export class NoteService {
       return a.name.localeCompare(b.name);
     });
 
-    return {
+    const result = {
       universities,
       courses: sortedCourses.map((c) => ({
         id: c.id,
@@ -1045,6 +1071,10 @@ export class NoteService {
       semesters,
       totalApprovedNotes
     };
+
+    exploreFiltersCache = result;
+    exploreFiltersExpiry = Date.now() + EXPLORE_FILTERS_TTL_MS;
+    return result;
   }
 
   /**

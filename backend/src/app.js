@@ -9,6 +9,8 @@ import seoController from './modules/seo/seo.controller.js';
 import swaggerRoutes from './docs/swagger.routes.js';
 import notFound from './middleware/notFound.js';
 import errorHandler from './middleware/errorHandler.js';
+import requestId from './middleware/requestId.js';
+import prisma from './config/database.js';
 
 // Ensure BigInt values serialize cleanly to JSON across all API endpoints
 if (!BigInt.prototype.toJSON) {
@@ -28,6 +30,9 @@ export function createApp() {
 
   // Disable technology leakage header
   app.disable('x-powered-by');
+
+  // Correlate requests with structured Request IDs
+  app.use(requestId);
 
   // Enable reverse proxy trust for correct client IP detection in rate limiting
   app.set('trust proxy', 1);
@@ -109,6 +114,38 @@ export function createApp() {
         environment: env.nodeEnv
       }
     });
+  });
+
+  // Liveness probe (process uptime check)
+  app.get(['/health/live', '/live'], (req, res) => {
+    res.status(200).json({
+      success: true,
+      status: 'alive',
+      uptimeSeconds: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  // Readiness probe (verifies database connectivity with pure read-only ping)
+  app.get(['/health/ready', '/ready'], async (req, res) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      return res.status(200).json({
+        success: true,
+        status: 'ready',
+        database: 'connected',
+        uptimeSeconds: Math.floor(process.uptime()),
+        timestamp: new Date().toISOString()
+      });
+    } catch (err) {
+      return res.status(503).json({
+        success: false,
+        status: 'degraded',
+        database: 'disconnected',
+        error: env.isProduction ? 'Database service unavailable' : err.message,
+        timestamp: new Date().toISOString()
+      });
+    }
   });
 
   // Swagger OpenAPI Documentation and Explorer

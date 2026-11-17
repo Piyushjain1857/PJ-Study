@@ -87,10 +87,44 @@ export const passwordChangeLimiter = rateLimit({
   }
 });
 
+export const searchLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: env.isProduction ? 120 : 5000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => env.isTest || env.isDevelopment,
+  handler: (req, res) => {
+    return sendError(
+      res,
+      'Search rate limit exceeded. Please slow down requests.',
+      429,
+      'RATE_LIMIT_EXCEEDED'
+    );
+  }
+});
+
+export const fileDownloadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: env.isProduction ? 60 : 2000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => env.isTest || env.isDevelopment,
+  handler: (req, res) => {
+    return sendError(
+      res,
+      'File download limit reached. Please wait a few minutes before downloading more documents.',
+      429,
+      'RATE_LIMIT_EXCEEDED'
+    );
+  }
+});
+
 export default {
   fileUploadLimiter,
   reviewSubmissionLimiter,
   reportSubmissionLimiter,
   adminMutationLimiter,
-  passwordChangeLimiter
+  passwordChangeLimiter,
+  searchLimiter,
+  fileDownloadLimiter
 };

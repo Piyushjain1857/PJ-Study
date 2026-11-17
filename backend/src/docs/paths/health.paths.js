@@ -34,6 +34,60 @@ export const healthPaths = {
       }
     }
   },
+  '/health/live': {
+    get: {
+      tags: ['Health & System'],
+      summary: 'Liveness probe (process uptime)',
+      description: 'Container orchestrator liveness check indicating if process event loop is active.',
+      responses: {
+        200: {
+          description: 'Process is alive',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  success: { type: 'boolean', example: true },
+                  status: { type: 'string', example: 'alive' },
+                  uptimeSeconds: { type: 'integer', example: 1240 },
+                  timestamp: { type: 'string', format: 'date-time' }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  '/health/ready': {
+    get: {
+      tags: ['Health & System'],
+      summary: 'Readiness probe (database connectivity)',
+      description: 'Container orchestrator readiness probe verifying database connectivity via pure read-only ping.',
+      responses: {
+        200: {
+          description: 'Database is connected and ready to serve traffic',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  success: { type: 'boolean', example: true },
+                  status: { type: 'string', example: 'ready' },
+                  database: { type: 'string', example: 'connected' },
+                  uptimeSeconds: { type: 'integer', example: 1240 },
+                  timestamp: { type: 'string', format: 'date-time' }
+                }
+              }
+            }
+          }
+        },
+        503: {
+          description: 'Database service is degraded or unavailable'
+        }
+      }
+    }
+  },
   '/api/v1/health': {
     get: {
       tags: ['Health & System'],

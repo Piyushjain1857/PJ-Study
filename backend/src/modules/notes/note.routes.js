@@ -4,7 +4,7 @@ import { requireAuth, optionalAuth } from '../../auth/requireAuth.js';
 import { requirePermission } from '../../auth/requirePermission.js';
 import { PERMISSIONS } from '../../auth/permissions.js';
 import { noteUpload, handleUploadErrors } from './note.upload.js';
-import { fileUploadLimiter, reviewSubmissionLimiter } from '../../middleware/rateLimiters.js';
+import { fileUploadLimiter, reviewSubmissionLimiter, searchLimiter, fileDownloadLimiter } from '../../middleware/rateLimiters.js';
 import reviewController from '../reviews/review.controller.js';
 import {
   validateSubmitReview,
@@ -19,9 +19,9 @@ const router = Router();
 // =============================================================================
 
 // Public note reading & discovery (approved notes only)
-router.get('/', noteController.listNotes);
-router.get('/explore', noteController.exploreNotes);
-router.get('/explore/filters', noteController.getExploreFilters);
+router.get('/', searchLimiter, noteController.listNotes);
+router.get('/explore', searchLimiter, noteController.exploreNotes);
+router.get(['/explore/filters', '/filters'], noteController.getExploreFilters);
 
 // Current scholar's personal notes dashboard
 router.get('/me', requireAuth, noteController.getMyNotes);
@@ -42,9 +42,9 @@ router.get(
 // =============================================================================
 
 router.get('/:id', optionalAuth, noteController.getNoteById);
-router.get('/:id/file', optionalAuth, noteController.downloadFile);
-router.get('/:id/preview', optionalAuth, noteController.downloadFile);
-router.get('/:id/download', optionalAuth, noteController.downloadFile);
+router.get('/:id/file', fileDownloadLimiter, optionalAuth, noteController.downloadFile);
+router.get('/:id/preview', fileDownloadLimiter, optionalAuth, noteController.downloadFile);
+router.get('/:id/download', fileDownloadLimiter, optionalAuth, noteController.downloadFile);
 
 // =============================================================================
 // CREATION & MODIFICATION

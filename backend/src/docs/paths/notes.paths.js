@@ -144,6 +144,38 @@ export const notesPaths = {
       }
     }
   },
+  '/api/v1/notes/filters': {
+    get: {
+      tags: ['Notes & Manuscripts'],
+      summary: 'Get active academic taxonomy filter options (alias for /explore/filters)',
+      description: 'Returns available courses, subjects, categories, and semesters with active note counts.',
+      responses: {
+        200: {
+          description: 'Faceted filter options',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  success: { type: 'boolean', example: true },
+                  data: {
+                    type: 'object',
+                    properties: {
+                      courses: { type: 'array', items: { $ref: '#/components/schemas/Course' } },
+                      categories: { type: 'array', items: { $ref: '#/components/schemas/Category' } },
+                      subjects: { type: 'array', items: { $ref: '#/components/schemas/Subject' } },
+                      semesters: { type: 'array', items: { type: 'integer' } },
+                      totalApprovedNotes: { type: 'integer', example: 2 }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   '/api/v1/notes/{id}': {
     get: {
       tags: ['Notes & Manuscripts'],
