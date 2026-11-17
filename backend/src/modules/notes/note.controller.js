@@ -1,6 +1,7 @@
 import noteService, { NoteService } from './note.service.js';
 import storageService from '../../services/storage/storage.service.js';
 import { sendSuccess } from '../../utils/apiResponse.js';
+import { ROLES } from '../../auth/rolePermissions.js';
 
 /**
  * Controller handling HTTP requests for Notes management, uploads, and moderation.
@@ -62,9 +63,27 @@ export class NoteController {
 
   /**
    * Creates a new note manuscript with optional file upload.
+   * Strictly enforces Admin / Super Admin authorization before processing files.
    */
   createNote = async (req, res, next) => {
     try {
+      if (!req.user || !req.user.id) {
+        const error = new Error('Authentication required to upload notes.');
+        error.statusCode = 401;
+        error.code = 'UNAUTHORIZED';
+        throw error;
+      }
+
+      const role = req.user.role;
+      if (role !== ROLES.ADMIN && role !== ROLES.SUPER_ADMIN && role !== ROLES.MODERATOR) {
+        const error = new Error(
+          'Only authenticated Admin and Super Admin users are authorized to upload notes. Scholars cannot upload notes.'
+        );
+        error.statusCode = 403;
+        error.code = 'UPLOAD_FORBIDDEN';
+        throw error;
+      }
+
       const payload = { ...req.body, uploadedById: req.user.id };
 
       // Handle optional uploaded file
@@ -94,9 +113,27 @@ export class NoteController {
 
   /**
    * Updates note details with optional replacement file.
+   * Strictly enforces Admin / Super Admin authorization before processing files.
    */
   updateNote = async (req, res, next) => {
     try {
+      if (!req.user || !req.user.id) {
+        const error = new Error('Authentication required to update notes.');
+        error.statusCode = 401;
+        error.code = 'UNAUTHORIZED';
+        throw error;
+      }
+
+      const role = req.user.role;
+      if (role !== ROLES.ADMIN && role !== ROLES.SUPER_ADMIN && role !== ROLES.MODERATOR) {
+        const error = new Error(
+          'Only authenticated Admin and Super Admin users are authorized to modify notes.'
+        );
+        error.statusCode = 403;
+        error.code = 'NOTE_UPDATE_FORBIDDEN';
+        throw error;
+      }
+
       const updateData = { ...req.body };
 
       if (req.file) {

@@ -37,31 +37,8 @@ export async function runSeeder(prisma, options = {}) {
     }
   }
 
-  // 2. Core Mode Clean Slate: Purge all demo/dummy content to ensure a clean platform
-  if (mode === 'core' && !dryRun) {
-    await prisma.downloadHistory.deleteMany({});
-    await prisma.noteViewHistory.deleteMany({});
-    await prisma.reviewReport.deleteMany({});
-    await prisma.report.deleteMany({});
-    await prisma.reviewHelpfulVote.deleteMany({});
-    await prisma.review.deleteMany({});
-    await prisma.studyCollectionItem.deleteMany({});
-    await prisma.studyCollection.deleteMany({});
-    await prisma.bookmark.deleteMany({});
-    await prisma.note.deleteMany({});
-    await prisma.notification.deleteMany({});
-    await prisma.announcement.deleteMany({});
-
-    const uploadDir = env.uploadDir || path.resolve(process.cwd(), 'uploads/notes');
-    if (fs.existsSync(uploadDir)) {
-      const files = fs.readdirSync(uploadDir);
-      for (const f of files) {
-        if (f.startsWith('seed-')) {
-          try { fs.unlinkSync(path.join(uploadDir, f)); } catch {}
-        }
-      }
-    }
-  }
+  // 2. Data Safety Guard: Never purge notes or user-created content automatically.
+  // Preserves existing notes, users, files, relationships, and operational records across all seed invocations.
 
   // 2. Execution in dependency order
   // Phase A: Academic Catalog

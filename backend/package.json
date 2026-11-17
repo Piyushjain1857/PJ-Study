@@ -9,20 +9,17 @@
     "dev": "nodemon src/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
-    "prisma:seed": "node prisma/seed.js",
-    "seed": "node prisma/seed.js",
-    "seed:core": "node prisma/seed.js --mode=core",
-    "seed:fresh": "node prisma/seed.js --mode=core",
-    "seed:reset": "node prisma/seed.js --mode=core",
-    "seed:demo": "node prisma/seed.js --mode=demo",
-    "seed:full": "node prisma/seed.js --mode=full",
+    "prisma:seed": "node prisma/seed.js --confirm-seed",
+    "seed": "node prisma/seed.js --confirm-seed",
+    "seed:core": "node prisma/seed.js --mode=core --confirm-seed",
+    "seed:fresh": "node prisma/seed.js --mode=core --confirm-seed",
+    "seed:reset": "node prisma/seed.js --mode=core --confirm-seed",
+    "seed:demo": "node prisma/seed.js --mode=demo --confirm-seed",
+    "seed:full": "node prisma/seed.js --mode=full --confirm-seed",
     "seed:verify": "node prisma/seed.js --verify",
     "seed:dry-run": "node prisma/seed.js --dry-run",
     "gdrive:auth": "node scripts/gdrive-auth.js",
     "test": "node --test --test-concurrency=1 tests/**/*.test.js"
-  },
-  "prisma": {
-    "seed": "node prisma/seed.js"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",

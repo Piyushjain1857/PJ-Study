@@ -23,6 +23,21 @@ async function main() {
   const isVerifyOnly = args.includes('--verify');
   const isDryRun = args.includes('--dry-run');
   const forceProduction = args.includes('--force-production-seed');
+  const isConfirmed = args.includes('--confirm-seed') || process.env.ALLOW_DATABASE_SEED === 'true';
+
+  // Explicit opt-in safety guard: Never seed automatically on startup, migration, or deploy
+  if (!isVerifyOnly && !isDryRun && !isConfirmed) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '\n⚠️  [SEED GUARD] Database seeding was invoked without explicit authorization.\n' +
+      '   To prevent accidental or automated user creation, seeding is strictly opt-in.\n' +
+      '   To run seeding intentionally, provide the explicit confirmation flag:\n' +
+      '     npm run seed -- --confirm-seed\n' +
+      '   or set ALLOW_DATABASE_SEED=true in your environment.\n' +
+      '   Exiting cleanly with zero changes applied to the database.\n'
+    );
+    process.exit(0);
+  }
 
   let mode = 'core'; // Default to clean core start (starts completely from scratch)
   for (const arg of args) {
@@ -33,6 +48,9 @@ async function main() {
       }
     }
   }
+
+  // eslint-disable-next-line no-console
+  console.log(`[AUDIT:SEED] Database seeding engine explicitly authorized. Mode: "${mode}", DryRun: ${isDryRun}`);
 
   // 1. Standalone Verification Mode
   if (isVerifyOnly) {

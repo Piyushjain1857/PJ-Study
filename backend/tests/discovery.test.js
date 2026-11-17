@@ -23,6 +23,7 @@ test('Advanced Notes Discovery, Search, Filtering & Student Library Suite', asyn
   let pendingNote;
   let draftNote;
   let rejectedNote;
+  let stored;
 
   t.before(async () => {
     server = createServer(app);
@@ -117,14 +118,18 @@ test('Advanced Notes Discovery, Search, Filtering & Student Library Suite', asyn
       }
     });
 
-    // 5. Create test file in storage
+    // 5. Create test file in storage (strictly local for tests to avoid polluting cloud storage)
     const sampleBuffer = Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF');
-    const stored = await storageService.saveFile({
-      originalname: 'algorithms_cheatsheet.pdf',
-      buffer: sampleBuffer,
-      size: sampleBuffer.length,
-      mimetype: 'application/pdf'
-    });
+    stored = await storageService.local.saveFile(
+      {
+        originalname: 'algorithms_cheatsheet.pdf',
+        buffer: sampleBuffer,
+        size: sampleBuffer.length,
+        mimetype: 'application/pdf'
+      },
+      '.pdf',
+      'application/pdf'
+    );
 
     // 6. Setup Notes with various statuses and fields
     approvedNote1 = await prisma.note.create({
@@ -404,5 +409,29 @@ test('Advanced Notes Discovery, Search, Filtering & Student Library Suite', asyn
   await t.test('13. Unauthorized download of draft/pending note is blocked', async () => {
     const res = await fetch(`${baseUrl}/notes/${draftNote.id}/download`);
     assert.ok(res.status === 403 || res.status === 404, 'Draft download should be blocked with 403 or 404');
+  });
+
+  t.after(async () => {
+    // Clean up test notes created in this suite
+    const noteIds = [approvedNote1?.id, approvedNote2?.id, pendingNote?.id, draftNote?.id, rejectedNote?.id].filter(Boolean);
+    if (noteIds.length > 0) {
+      await prisma.downloadHistory.deleteMany({ where: { noteId: { in: noteIds } } }).catch(() => {});
+      await prisma.noteViewHistory.deleteMany({ where: { noteId: { in: noteIds } } }).catch(() => {});
+      await prisma.bookmark.deleteMany({ where: { noteId: { in: noteIds } } }).catch(() => {});
+      await prisma.review.deleteMany({ where: { noteId: { in: noteIds } } }).catch(() => {});
+      await prisma.note.deleteMany({ where: { id: { in: noteIds } } }).catch(() => {});
+    }
+
+    // Clean up test user
+    if (testUser?.id) {
+      await prisma.user.deleteMany({ where: { id: testUser.id } }).catch(() => {});
+    }
+
+    // Delete stored local test file
+    if (stored?.storageKey) {
+      await storageService.local.deleteFile(stored.storageKey).catch(() => {});
+    }
+
+    server.close();
   });
 });

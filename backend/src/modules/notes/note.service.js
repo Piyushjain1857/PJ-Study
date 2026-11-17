@@ -208,18 +208,33 @@ export class NoteService {
       mimeType
     } = input;
 
-    // 0. Scholar / Student upload restriction invariant
-    if (uploadedById) {
-      const uploader = await prisma.user.findUnique({
-        where: { id: uploadedById },
-        select: { role: true }
-      });
-      if (uploader && uploader.role === ROLES.STUDENT) {
-        const error = new Error('Scholars / Students are not authorized to upload notes.');
-        error.statusCode = 403;
-        error.code = 'UPLOAD_FORBIDDEN';
-        throw error;
-      }
+    // 0. Strict Authentication & Role Invariant: Only Admin / Super Admin can upload notes
+    if (!uploadedById) {
+      const error = new Error('Authentication required: uploadedById must be provided.');
+      error.statusCode = 401;
+      error.code = 'UNAUTHORIZED';
+      throw error;
+    }
+
+    const uploader = await prisma.user.findUnique({
+      where: { id: uploadedById },
+      select: { id: true, role: true, isActive: true }
+    });
+
+    if (!uploader || !uploader.isActive) {
+      const error = new Error('Uploader account was not found or is currently deactivated.');
+      error.statusCode = 403;
+      error.code = 'ACCOUNT_INACTIVE';
+      throw error;
+    }
+
+    if (uploader.role !== ROLES.ADMIN && uploader.role !== ROLES.SUPER_ADMIN && uploader.role !== ROLES.MODERATOR) {
+      const error = new Error(
+        'Only authenticated Admin and Super Admin users are authorized to upload notes. Scholars cannot upload notes.'
+      );
+      error.statusCode = 403;
+      error.code = 'UPLOAD_FORBIDDEN';
+      throw error;
     }
 
     // 1. Title validation
@@ -272,16 +287,7 @@ export class NoteService {
       throw error;
     }
 
-    const [uploader, subject] = await Promise.all([
-      userRepository.findById(uploadedById),
-      subjectRepository.findById(subjectId)
-    ]);
-
-    if (!uploader) {
-      const error = new Error(`Uploader with ID "${uploadedById}" was not found.`);
-      error.statusCode = 404;
-      throw error;
-    }
+    const subject = await subjectRepository.findById(subjectId);
 
     if (!subject) {
       const error = new Error(`Subject with ID "${subjectId}" was not found.`);
@@ -410,6 +416,12 @@ export class NoteService {
       }
       throw err;
     }
+
+    // Safe diagnostic audit logging (no passwords or sensitive tokens)
+    // eslint-disable-next-line no-console
+    console.log(
+      `[AUDIT:NOTE_CREATED] Note ID: ${note.id}, Title: "${note.title.slice(0, 40)}", Provider: ${note.storageProvider}, UploaderId: ${uploadedById}, Role: ${uploader.role}, Timestamp: ${new Date().toISOString()}`
+    );
 
     return sanitizeNote(note);
   }

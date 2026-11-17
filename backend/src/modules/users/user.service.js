@@ -79,7 +79,7 @@ export class UserService {
       throw error;
     }
 
-    return userRepository.create({
+    const created = await userRepository.create({
       name: name.trim(),
       email: email.trim(),
       passwordHash,
@@ -87,6 +87,15 @@ export class UserService {
       avatarUrl: avatarUrl?.trim() || null,
       bio: bio?.trim() || null
     });
+
+    // Safe diagnostic audit logging (no passwords or sensitive tokens)
+    const emailDomain = email.includes('@') ? `@${email.split('@')[1]}` : '@unknown';
+    // eslint-disable-next-line no-console
+    console.log(
+      `[AUDIT:USER_CREATED_BY_ADMIN] User ID: ${created.id}, Role: ${created.role}, EmailDomain: ${emailDomain}, Timestamp: ${new Date().toISOString()}`
+    );
+
+    return created;
   }
 
   /**

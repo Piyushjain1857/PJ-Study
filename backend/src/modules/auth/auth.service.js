@@ -58,6 +58,13 @@ export class AuthService {
       isActive: true
     });
 
+    // Safe diagnostic audit logging (no passwords or sensitive tokens)
+    const emailDomain = normalizedEmail.includes('@') ? `@${normalizedEmail.split('@')[1]}` : '@unknown';
+    // eslint-disable-next-line no-console
+    console.log(
+      `[AUDIT:USER_REGISTERED] User ID: ${newUser.id}, Role: ${newUser.role}, EmailDomain: ${emailDomain}, Timestamp: ${new Date().toISOString()}`
+    );
+
     // Generate single-use verification token
     const rawVerificationToken = generateRandomToken();
     const tokenHash = hashToken(rawVerificationToken);
