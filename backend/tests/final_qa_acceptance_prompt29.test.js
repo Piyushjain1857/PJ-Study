@@ -31,7 +31,10 @@ test('PJ Study — Prompt 29 Final Quality Assurance, E2E Workflows & Acceptance
     superAdminToken = generateAccessToken(authenticSuperAdmin || { id: 'sadm', email: 'superadmin@portal.com', role: 'SUPER_ADMIN' });
   });
 
-  t.after(() => {
+  t.after(async () => {
+    if (createdQaBaselineNoteId) {
+      await prisma.note.deleteMany({ where: { id: createdQaBaselineNoteId } }).catch(() => {});
+    }
     if (server) server.close();
   });
   // Capture baseline counts for critical invariant
@@ -41,10 +44,33 @@ test('PJ Study — Prompt 29 Final Quality Assurance, E2E Workflows & Acceptance
   // Find existing taxonomy for notes
   const subject = await prisma.subject.findFirst({ select: { id: true, courseId: true } });
   const category = await prisma.category.findFirst({ select: { id: true } });
-  const existingPublishedNote = await prisma.note.findFirst({
+  let existingPublishedNote = await prisma.note.findFirst({
     where: { status: { in: ['APPROVED', 'PUBLISHED'] } },
     select: { id: true, title: true, fileName: true }
   });
+
+  let createdQaBaselineNoteId = null;
+  if (!existingPublishedNote) {
+    const admin = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
+    if (subject && admin) {
+      existingPublishedNote = await prisma.note.create({
+        data: {
+          title: 'Advanced Operating Systems Notes',
+          content: 'Process synchronization and virtual memory management notes.',
+          status: 'PUBLISHED',
+          subjectId: subject.id,
+          uploadedById: admin.id,
+          fileName: 'operating-systems-notes.pdf',
+          mimeType: 'application/pdf',
+          fileSize: 2048576,
+          storageKey: 'local/operating-systems-notes.pdf',
+          storageProvider: 'local'
+        },
+        select: { id: true, title: true, fileName: true }
+      });
+      createdQaBaselineNoteId = existingPublishedNote.id;
+    }
+  }
 
   assert.ok(subject, 'Valid subject required for testing');
   assert.ok(category, 'Valid category required for testing');

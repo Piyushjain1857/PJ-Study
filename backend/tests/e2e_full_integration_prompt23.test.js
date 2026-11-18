@@ -68,9 +68,33 @@ test('PJ Study — Complete End-to-End User Journeys & Full Integration (Prompt 
   let createdScholarUserId;
   let createdAdminNoteId;
   let createdReviewId;
+  let createdBaselineNoteId;
 
   t.before(async () => {
-    // 1. Record baseline database counts
+    // 1. Ensure at least one baseline note exists for E2E tests
+    const existingNotes = await prisma.note.count();
+    if (existingNotes === 0) {
+      const subject = await prisma.subject.findFirst();
+      const admin = await prisma.user.findFirst({ where: { role: ROLES.ADMIN } });
+      if (subject && admin) {
+        const bn = await prisma.note.create({
+          data: {
+            title: 'Foundations of Computer Architecture',
+            content: 'Comprehensive lecture notes on memory hierarchies and cache coherence.',
+            status: 'PUBLISHED',
+            subjectId: subject.id,
+            uploadedById: admin.id,
+            fileName: 'lecture-architecture.pdf',
+            mimeType: 'application/pdf',
+            fileSize: 1048576,
+            storageKey: 'local/lecture-architecture.pdf',
+            storageProvider: 'local'
+          }
+        });
+        createdBaselineNoteId = bn.id;
+      }
+    }
+
     initialNoteCount = await prisma.note.count();
     initialUserCount = await prisma.user.count();
 
@@ -121,6 +145,9 @@ test('PJ Study — Complete End-to-End User Journeys & Full Integration (Prompt 
 
   t.after(async () => {
     // Teardown: Clean up any test records created during journeys
+    if (createdBaselineNoteId) {
+      await prisma.note.deleteMany({ where: { id: createdBaselineNoteId } }).catch(() => {});
+    }
     if (createdReviewId) {
       await prisma.review.deleteMany({ where: { id: createdReviewId } }).catch(() => {});
     }
