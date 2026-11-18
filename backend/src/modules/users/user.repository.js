@@ -1,5 +1,14 @@
 import prisma from '../../config/database.js';
 
+export const AUTH_USER_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  isEmailVerified: true,
+  isActive: true
+};
+
 /**
  * Standard user selection fields omitting sensitive credentials like passwordHash.
  */
@@ -45,6 +54,20 @@ export const USER_SAFE_SELECT = {
  * Repository handling database access for User records.
  */
 export class UserRepository {
+  /**
+   * Finds minimal authenticated user fields for auth middleware validation.
+   * Eliminates unnecessary joins and payload transfers on every authenticated request.
+   *
+   * @param {string} id
+   * @returns {Promise<any>}
+   */
+  async findAuthUserById(id) {
+    return prisma.user.findUnique({
+      where: { id },
+      select: AUTH_USER_SELECT
+    });
+  }
+
   /**
    * Finds a user by ID.
    *

@@ -35,6 +35,21 @@ export function createApp() {
   // Correlate requests with structured Request IDs
   app.use(requestId);
 
+  // High-resolution response timing & Server-Timing telemetry header
+  app.use((req, res, next) => {
+    const start = process.hrtime.bigint();
+    const originalWriteHead = res.writeHead;
+    res.writeHead = function (...args) {
+      if (!res.headersSent) {
+        const durationMs = (Number(process.hrtime.bigint() - start) / 1e6).toFixed(2);
+        res.setHeader('X-Response-Time', `${durationMs}ms`);
+        res.setHeader('Server-Timing', `total;dur=${durationMs}`);
+      }
+      return originalWriteHead.apply(this, args);
+    };
+    next();
+  });
+
   // Enable reverse proxy trust for correct client IP detection in rate limiting
   app.set('trust proxy', 1);
 

@@ -40,8 +40,8 @@ export async function requireAuth(req, res, next) {
   }
 
   try {
-    // Retrieve latest user state from database to ensure real-time role & active status
-    const user = await userRepository.findById(decoded.sub);
+    // Retrieve latest user state with lean auth selection (eliminates joins on every request)
+    const user = await userRepository.findAuthUserById(decoded.sub);
     if (!user) {
       return sendError(res, 'User account no longer exists.', 401, 'USER_NOT_FOUND');
     }
@@ -93,7 +93,7 @@ export async function optionalAuth(req, res, next) {
   const token = authHeader.substring(7).trim();
   try {
     const decoded = verifyAccessToken(token);
-    const user = await userRepository.findById(decoded.sub);
+    const user = await userRepository.findAuthUserById(decoded.sub);
     if (user && user.isActive) {
       req.user = {
         id: user.id,
