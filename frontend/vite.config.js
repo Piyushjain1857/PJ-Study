@@ -10,11 +10,7 @@ const __dirname = path.dirname(__filename);
 // https://vite.dev/config/
 export default defineConfig({
   resolve: {
-    dedupe: ['react', 'react-dom'],
-    alias: {
-      react: path.resolve(__dirname, './node_modules/react'),
-      'react-dom': path.resolve(__dirname, './node_modules/react-dom')
-    }
+    dedupe: ['react', 'react-dom']
   },
   plugins: [
     react(),
