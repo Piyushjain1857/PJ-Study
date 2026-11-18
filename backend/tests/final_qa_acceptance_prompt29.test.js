@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import app from '../src/app.js';
 import prisma from '../src/config/database.js';
+import storageService from '../src/services/storage/storage.service.js';
 import { generateAccessToken } from '../src/services/tokens/token.service.js';
 
 test('PJ Study — Prompt 29 Final Quality Assurance, E2E Workflows & Acceptance Suite', async (t) => {
@@ -32,14 +33,8 @@ test('PJ Study — Prompt 29 Final Quality Assurance, E2E Workflows & Acceptance
   });
 
   t.after(async () => {
-    if (createdQaBaselineNoteId) {
-      await prisma.note.deleteMany({ where: { id: createdQaBaselineNoteId } }).catch(() => {});
-    }
     if (server) server.close();
   });
-  // Capture baseline counts for critical invariant
-  const initialUserCount = await prisma.user.count();
-  const initialNoteCount = await prisma.note.count();
 
   // Find existing taxonomy for notes
   const subject = await prisma.subject.findFirst({ select: { id: true, courseId: true } });
@@ -53,6 +48,17 @@ test('PJ Study — Prompt 29 Final Quality Assurance, E2E Workflows & Acceptance
   if (!existingPublishedNote) {
     const admin = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
     if (subject && admin) {
+      const samplePdfBuffer = Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF');
+      const stored = await storageService.local.saveFile(
+        {
+          originalname: 'operating-systems-notes.pdf',
+          buffer: samplePdfBuffer,
+          size: samplePdfBuffer.length,
+          mimetype: 'application/pdf'
+        },
+        '.pdf',
+        'application/pdf'
+      );
       existingPublishedNote = await prisma.note.create({
         data: {
           title: 'Advanced Operating Systems Notes',
@@ -62,10 +68,10 @@ test('PJ Study — Prompt 29 Final Quality Assurance, E2E Workflows & Acceptance
           subjectId: subject.id,
           categoryId: category?.id,
           uploadedById: admin.id,
-          fileName: 'operating-systems-notes.pdf',
-          mimeType: 'application/pdf',
-          fileSize: 2048576,
-          storageKey: 'local/operating-systems-notes.pdf',
+          fileName: stored.fileName,
+          mimeType: stored.mimeType,
+          fileSize: stored.fileSize,
+          storageKey: stored.storageKey,
           storageProvider: 'local'
         },
         select: { id: true, title: true, fileName: true }
@@ -73,6 +79,10 @@ test('PJ Study — Prompt 29 Final Quality Assurance, E2E Workflows & Acceptance
       createdQaBaselineNoteId = existingPublishedNote.id;
     }
   }
+
+  // Capture baseline counts for critical invariant AFTER ensuring baseline note exists
+  const initialUserCount = await prisma.user.count();
+  const initialNoteCount = await prisma.note.count();
 
   assert.ok(subject, 'Valid subject required for testing');
   assert.ok(category, 'Valid category required for testing');

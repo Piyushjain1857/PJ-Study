@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createApp } from '../src/app.js';
 import prisma from '../src/config/database.js';
+import storageService from '../src/services/storage/storage.service.js';
 import { generateAccessToken } from '../src/services/tokens/token.service.js';
 import { ROLES } from '../src/auth/rolePermissions.js';
 import { DEFAULT_PAGE_CONFIGS } from '../src/modules/platformConfig/defaultConfigs.js';
@@ -77,6 +78,17 @@ test('PJ Study — Complete End-to-End User Journeys & Full Integration (Prompt 
       const subject = await prisma.subject.findFirst();
       const admin = await prisma.user.findFirst({ where: { role: ROLES.ADMIN } });
       if (subject && admin) {
+        const samplePdfBuffer = Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF');
+        const stored = await storageService.local.saveFile(
+          {
+            originalname: 'lecture-architecture.pdf',
+            buffer: samplePdfBuffer,
+            size: samplePdfBuffer.length,
+            mimetype: 'application/pdf'
+          },
+          '.pdf',
+          'application/pdf'
+        );
         const bn = await prisma.note.create({
           data: {
             title: 'Foundations of Computer Architecture',
@@ -85,10 +97,10 @@ test('PJ Study — Complete End-to-End User Journeys & Full Integration (Prompt 
             courseId: subject.courseId,
             subjectId: subject.id,
             uploadedById: admin.id,
-            fileName: 'lecture-architecture.pdf',
-            mimeType: 'application/pdf',
-            fileSize: 1048576,
-            storageKey: 'local/lecture-architecture.pdf',
+            fileName: stored.fileName,
+            mimeType: stored.mimeType,
+            fileSize: stored.fileSize,
+            storageKey: stored.storageKey,
             storageProvider: 'local'
           }
         });
@@ -146,9 +158,6 @@ test('PJ Study — Complete End-to-End User Journeys & Full Integration (Prompt 
 
   t.after(async () => {
     // Teardown: Clean up any test records created during journeys
-    if (createdBaselineNoteId) {
-      await prisma.note.deleteMany({ where: { id: createdBaselineNoteId } }).catch(() => {});
-    }
     if (createdReviewId) {
       await prisma.review.deleteMany({ where: { id: createdReviewId } }).catch(() => {});
     }

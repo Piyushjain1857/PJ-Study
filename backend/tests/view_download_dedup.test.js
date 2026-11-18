@@ -28,7 +28,7 @@ test('View and Download Deduplication & Debounce Protection', async (t) => {
             uploadedById: user.id,
             viewCount: 10,
             downloadCount: 5,
-            storageKey: 'local/test.pdf',
+            storageKey: 'test-dedup.pdf',
             storageProvider: 'local'
           }
         });
