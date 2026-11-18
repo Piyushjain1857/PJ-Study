@@ -1055,58 +1055,54 @@ export class AdminService {
    * Retrieves runtime configurable platform settings.
    */
   async getSettings() {
-    let settings = await prisma.platformSetting.findMany();
-
-    if (settings.length === 0) {
-      const defaults = [
-        {
-          key: 'platformName',
-          value: 'PJ Study',
-          category: 'BRANDING',
-          description: 'Official academic platform name'
-        },
-        {
-          key: 'tagline',
-          value: 'Your Entire Study World, One Place.',
-          category: 'BRANDING',
-          description: 'Platform tagline displayed on landing headers'
-        },
-        {
-          key: 'maxUploadSizeMb',
-          value: '25',
-          category: 'STORAGE',
-          description: 'Maximum allowable file upload size in megabytes'
-        },
-        {
-          key: 'allowedFileFormats',
-          value: 'application/pdf,image/jpeg,image/png',
-          category: 'STORAGE',
-          description: 'Comma-separated list of permitted MIME types'
-        },
-        {
-          key: 'autoModerationEnabled',
-          value: 'false',
-          category: 'MODERATION',
-          description: 'Whether uploaded notes bypass review queue (restricted)'
-        },
-        {
-          key: 'allowStudentReviews',
-          value: 'true',
-          category: 'COMMUNITY',
-          description: 'Permit student reviews and star ratings on approved notes'
-        }
-      ];
-
-      for (const d of defaults) {
-        await prisma.platformSetting.upsert({
-          where: { key: d.key },
-          update: {},
-          create: d
-        });
+    const defaults = [
+      {
+        key: 'platformName',
+        value: 'PJ Study',
+        category: 'BRANDING',
+        description: 'Official academic platform name'
+      },
+      {
+        key: 'tagline',
+        value: 'Your Entire Study World, One Place.',
+        category: 'BRANDING',
+        description: 'Platform tagline displayed on landing headers'
+      },
+      {
+        key: 'maxUploadSizeMb',
+        value: '25',
+        category: 'STORAGE',
+        description: 'Maximum allowable file upload size in megabytes'
+      },
+      {
+        key: 'allowedFileFormats',
+        value: 'application/pdf,image/jpeg,image/png',
+        category: 'STORAGE',
+        description: 'Comma-separated list of permitted MIME types'
+      },
+      {
+        key: 'autoModerationEnabled',
+        value: 'false',
+        category: 'MODERATION',
+        description: 'Whether uploaded notes bypass review queue (restricted)'
+      },
+      {
+        key: 'allowStudentReviews',
+        value: 'true',
+        category: 'COMMUNITY',
+        description: 'Permit student reviews and star ratings on approved notes'
       }
+    ];
 
-      settings = await prisma.platformSetting.findMany();
+    for (const d of defaults) {
+      await prisma.platformSetting.upsert({
+        where: { key: d.key },
+        update: {},
+        create: d
+      });
     }
+
+    const settings = await prisma.platformSetting.findMany();
 
     const settingsMap = {};
     for (const s of settings) {

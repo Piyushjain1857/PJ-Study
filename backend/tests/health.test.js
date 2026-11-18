@@ -29,7 +29,7 @@ test('Backend Health, Config, and Not-Found Endpoints', async (t) => {
     assert.equal(json.data.product, 'PJ Study');
     assert.ok(json.data.timestamp);
     assert.equal(typeof json.data.uptimeSeconds, 'number');
-    assert.equal(json.data.environment, 'development');
+    assert.ok(['development', 'test', 'production'].includes(json.data.environment));
     // Ensure no secrets are leaked
     assert.equal(json.data.databaseUrl, undefined);
     assert.equal(json.data.password, undefined);

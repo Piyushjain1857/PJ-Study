@@ -1,25 +1,45 @@
 import test from 'node:test';
 import assert from 'node:assert';
+import app from '../src/app.js';
 import prisma from '../src/config/database.js';
 import { checkDocsAccess } from '../src/docs/swagger.routes.js';
 import { validateFileSignature, FORBIDDEN_EXTENSIONS } from '../src/services/storage/storage.service.js';
 import { sanitizeString } from '../src/modules/platformConfig/componentRegistry.js';
 import { generateAccessToken } from '../src/services/tokens/token.service.js';
 
-const baseUrl = 'http://localhost:5001/api/v1';
-
 test('PJ Study — Prompt 28 Comprehensive Security Audit & Hardening Suite', async (t) => {
-  // Setup synthetic test tokens
-  const scholarToken = generateAccessToken({
-    id: 'a738ccce-a64f-48f1-97fa-1bff92c6b225',
-    email: 'student@portal.com',
-    role: 'STUDENT'
+  let server;
+  let baseUrl;
+  let scholarToken;
+  let adminToken;
+
+  t.before(async () => {
+    await new Promise((resolve) => {
+      server = app.listen(0, () => {
+        const { port } = server.address();
+        baseUrl = `http://127.0.0.1:${port}/api/v1`;
+        resolve();
+      });
+    });
+
+    const student = await prisma.user.findFirst({ where: { role: 'STUDENT', isActive: true } });
+    const admin = await prisma.user.findFirst({ where: { role: 'ADMIN', isActive: true } });
+
+    scholarToken = generateAccessToken({
+      id: student?.id || 'synthetic-student',
+      email: student?.email || 'student@portal.com',
+      role: 'STUDENT'
+    });
+
+    adminToken = generateAccessToken({
+      id: admin?.id || 'synthetic-admin',
+      email: admin?.email || 'admin@portal.com',
+      role: 'ADMIN'
+    });
   });
 
-  const adminToken = generateAccessToken({
-    id: '1c500b12-2100-41dc-9246-10aee8cfaacd',
-    email: 'admin@portal.com',
-    role: 'ADMIN'
+  t.after(() => {
+    if (server) server.close();
   });
 
   // 1. Mass Assignment Prevention on User Registration
