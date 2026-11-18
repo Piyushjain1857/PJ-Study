@@ -46,4 +46,5 @@ backups/
 backend/backups/
 *.sql
 *.dump
+!**/prisma/migrations/**/*.sql
 

@@ -297,13 +297,13 @@ model Note {
   reports       Report[]
 
   @@index([status, publishedAt])
-  @@index([status, createdAt])
+  @@index([status, createdAt(sort: Desc)])
   @@index([status, downloadCount])
   @@index([status, viewCount])
   @@index([status, courseId])
   @@index([status, courseId, semester])
   @@index([status, subjectId])
-  @@index([status, subjectId, createdAt])
+  @@index([status, subjectId, createdAt(sort: Desc)])
   @@index([status, semester])
   @@index([courseId, subjectId])
   @@index([subjectId, semester])
@@ -329,7 +329,7 @@ model Bookmark {
 
   @@unique([userId, noteId], name: "user_note_bookmark_unique")
   @@index([userId])
-  @@index([userId, createdAt])
+  @@index([userId, createdAt(sort: Desc)])
   @@index([noteId])
   @@map("bookmarks")
 }
