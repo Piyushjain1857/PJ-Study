@@ -18,6 +18,9 @@ export class DashboardService {
       throw error;
     }
 
+    // Resolve student academic context once to prevent redundant database round-trips
+    const userContext = await this.repo.getStudentContext(userId);
+
     const [
       stats,
       recentBookmarks,
@@ -30,16 +33,16 @@ export class DashboardService {
       announcements,
       studentSubjects
     ] = await Promise.all([
-      this.repo.getStudentCounts(userId),
+      this.repo.getStudentCounts(userId, userContext),
       this.repo.getRecentBookmarks(userId, 6),
       this.repo.getRecentUploads(userId, 6),
       this.repo.getRecentViews(userId, 6),
       this.repo.getRecentCollections(userId, 6),
       this.repo.getRecentDownloads(userId, 6),
-      this.repo.getRecommendedNotes(userId, 6),
+      this.repo.getRecommendedNotes(userId, 6, userContext),
       this.repo.getRecentPublishedNotes(6),
       this.repo.getRecentAnnouncements(4),
-      this.repo.getStudentSubjects(userId, 8)
+      this.repo.getStudentSubjects(userId, 8, userContext)
     ]);
 
     return {

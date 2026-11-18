@@ -30,6 +30,7 @@ jobs:
       NODE_ENV: test
       PORT: 5001
       DATABASE_URL: postgresql://pj_test_user:pj_test_password@localhost:5432/pj_study_test?schema=public
+      DIRECT_URL: postgresql://pj_test_user:pj_test_password@localhost:5432/pj_study_test?schema=public
       JWT_SECRET: e2e-ci-test-jwt-secret-key-minimum-32-chars-long!
       JWT_REFRESH_SECRET: e2e-ci-test-jwt-refresh-secret-key-minimum-32-chars-long!
       SESSION_SECRET: e2e-ci-test-session-secret-key-minimum-32-chars-long!

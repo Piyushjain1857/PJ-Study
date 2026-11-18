@@ -1,5 +1,8 @@
 import { PrismaClient } from '@prisma/client';
+import { AsyncLocalStorage } from 'async_hooks';
 import env from './env.js';
+
+const queryMetricsStorage = new AsyncLocalStorage();
 
 /**
  * Global PrismaClient instance singleton.
@@ -13,7 +16,30 @@ if (!globalThis.__pj_prisma) {
     log: isVerbosePrisma ? ['query', 'info', 'warn', 'error'] : ['error']
   });
 }
-const prisma = globalThis.__pj_prisma;
+
+if (!globalThis.__pj_prisma_extended) {
+  globalThis.__pj_prisma_extended = globalThis.__pj_prisma.$extends({
+    query: {
+      $allModels: {
+        async $allOperations({ query, args }) {
+          const start = process.hrtime.bigint();
+          try {
+            return await query(args);
+          } finally {
+            const store = queryMetricsStorage.getStore();
+            if (store) {
+              const durationMs = Number(process.hrtime.bigint() - start) / 1e6;
+              store.dbDurationMs += durationMs;
+              store.queryCount += 1;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+const prisma = globalThis.__pj_prisma_extended;
 
 /**
  * Connect to the database with retry or check.
@@ -55,5 +81,5 @@ export function isPostgresDatabase() {
   return url.startsWith('postgres');
 }
 
-export { prisma };
+export { prisma, queryMetricsStorage };
 export default prisma;

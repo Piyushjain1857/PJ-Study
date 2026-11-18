@@ -13,9 +13,23 @@ function sanitizeNoteFile(note) {
 
 export class DashboardRepository {
   /**
+   * Retrieves lightweight academic context for the student to avoid duplicate queries.
+   *
+   * @param {string} userId
+   * @returns {Promise<{ courseId: string|null, semester: number|null }|null>}
+   */
+  async getStudentContext(userId) {
+    return prisma.user.findUnique({
+      where: { id: userId },
+      select: { courseId: true, semester: true }
+    });
+  }
+
+  /**
    * Retrieves summary metric counts for the student.
    *
    * @param {string} userId
+   * @param {object|null} [userContext=null]
    * @returns {Promise<{
    *   savedNotesCount: number,
    *   collectionsCount: number,
@@ -24,11 +38,8 @@ export class DashboardRepository {
    *   uploadsCount: number
    * }>}
    */
-  async getStudentCounts(userId) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { courseId: true, semester: true }
-    });
+  async getStudentCounts(userId, userContext = null) {
+    const user = userContext !== null ? userContext : await this.getStudentContext(userId);
 
     const semesterFilter = {
       status: { in: ['PUBLISHED', 'APPROVED'] },
@@ -102,12 +113,10 @@ export class DashboardRepository {
    *
    * @param {string} userId
    * @param {number} limit
+   * @param {object|null} [userContext=null]
    */
-  async getStudentSubjects(userId, limit = 8) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { courseId: true, semester: true }
-    });
+  async getStudentSubjects(userId, limit = 8, userContext = null) {
+    const user = userContext !== null ? userContext : await this.getStudentContext(userId);
 
     let whereClause = { isActive: true };
     if (user?.courseId) {
@@ -408,12 +417,10 @@ export class DashboardRepository {
    *
    * @param {string} userId
    * @param {number} limit
+   * @param {object|null} [userContext=null]
    */
-  async getRecommendedNotes(userId, limit = 6) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { courseId: true, semester: true }
-    });
+  async getRecommendedNotes(userId, limit = 6, userContext = null) {
+    const user = userContext !== null ? userContext : await this.getStudentContext(userId);
 
     const whereClause = {
       status: { in: ['PUBLISHED', 'APPROVED'] },

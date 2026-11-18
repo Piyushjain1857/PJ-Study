@@ -113,7 +113,10 @@ export class NoteService {
       throw error;
     }
 
-    const note = await this.repo.findById(id);
+    const [note, ratingInfo] = await Promise.all([
+      this.repo.findById(id),
+      this.repo.getAverageRating(id)
+    ]);
     if (!note) {
       const error = new Error(`Note with ID "${id}" was not found.`);
       error.statusCode = 404;
@@ -177,7 +180,6 @@ export class NoteService {
       }
     }
 
-    const ratingInfo = await this.repo.getAverageRating(id);
     return sanitizeNote({
       ...note,
       viewCount: hasIncremented ? note.viewCount + 1 : note.viewCount,

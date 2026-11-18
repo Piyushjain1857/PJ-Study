@@ -11,7 +11,7 @@ import swaggerRoutes from './docs/swagger.routes.js';
 import notFound from './middleware/notFound.js';
 import errorHandler from './middleware/errorHandler.js';
 import requestId from './middleware/requestId.js';
-import prisma from './config/database.js';
+import prisma, { queryMetricsStorage } from './config/database.js';
 
 // Ensure BigInt values serialize cleanly to JSON across all API endpoints
 if (!BigInt.prototype.toJSON) {
@@ -35,19 +35,28 @@ export function createApp() {
   // Correlate requests with structured Request IDs
   app.use(requestId);
 
-  // High-resolution response timing & Server-Timing telemetry header
+  // High-resolution response timing & Database Server-Timing telemetry headers
   app.use((req, res, next) => {
     const start = process.hrtime.bigint();
-    const originalWriteHead = res.writeHead;
-    res.writeHead = function (...args) {
-      if (!res.headersSent) {
-        const durationMs = (Number(process.hrtime.bigint() - start) / 1e6).toFixed(2);
-        res.setHeader('X-Response-Time', `${durationMs}ms`);
-        res.setHeader('Server-Timing', `total;dur=${durationMs}`);
-      }
-      return originalWriteHead.apply(this, args);
-    };
-    next();
+    const metrics = { dbDurationMs: 0, queryCount: 0 };
+
+    queryMetricsStorage.run(metrics, () => {
+      const originalWriteHead = res.writeHead;
+      res.writeHead = function (...args) {
+        if (!res.headersSent) {
+          const totalMs = (Number(process.hrtime.bigint() - start) / 1e6).toFixed(2);
+          const dbMs = metrics.dbDurationMs.toFixed(2);
+          res.setHeader('X-Response-Time', `${totalMs}ms`);
+          res.setHeader('X-Database-Time', `${dbMs}ms`);
+          res.setHeader(
+            'Server-Timing',
+            `total;dur=${totalMs}, db;dur=${dbMs};desc="${metrics.queryCount} queries"`
+          );
+        }
+        return originalWriteHead.apply(this, args);
+      };
+      next();
+    });
   });
 
   // Enable reverse proxy trust for correct client IP detection in rate limiting

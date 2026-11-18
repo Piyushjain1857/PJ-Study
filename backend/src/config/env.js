@@ -34,6 +34,7 @@ function validateAndLoadConfig() {
   const nodeEnv = process.env.NODE_ENV || 'development';
   const port = parseInt(process.env.PORT || '5000', 10);
   const databaseUrl = process.env.DATABASE_URL || '';
+  const directUrl = process.env.DIRECT_URL || databaseUrl;
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
   // JWT & Session configurations
@@ -107,6 +108,7 @@ function validateAndLoadConfig() {
     port,
     nodeEnv,
     databaseUrl,
+    directUrl,
     frontendUrl,
     jwtAccessSecret,
     jwtAccessExpiresIn,
