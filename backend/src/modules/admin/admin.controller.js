@@ -418,6 +418,84 @@ export class AdminController {
       return next(err);
     }
   };
+
+  /**
+   * Returns paginated email delivery logs.
+   */
+  getEmailDeliveryLogs = async (req, res, next) => {
+    try {
+      const logs = await this.adminSvc.getEmailDeliveryLogs(req.query);
+      return sendSuccess(res, logs);
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  /**
+   * Returns failed email delivery logs.
+   */
+  getFailedEmailLogs = async (req, res, next) => {
+    try {
+      const logs = await this.adminSvc.getFailedEmailLogs(req.query);
+      return sendSuccess(res, logs);
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  /**
+   * Retries delivering a failed email message.
+   */
+  retryEmailDelivery = async (req, res, next) => {
+    try {
+      const result = await this.adminSvc.retryEmailDelivery(req.params.id);
+      return sendSuccess(res, result);
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  /**
+   * Returns notification templates.
+   */
+  getNotificationTemplates = async (req, res, next) => {
+    try {
+      const templates = await this.adminSvc.getNotificationTemplates();
+      return sendSuccess(res, templates);
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  /**
+   * Updates a notification template.
+   */
+  updateNotificationTemplate = async (req, res, next) => {
+    try {
+      const updated = await this.adminSvc.updateNotificationTemplate(req.params.key, {
+        ...req.body,
+        updatedById: req.user.id
+      });
+      return sendSuccess(res, updated, 200, 'Notification template updated successfully');
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  /**
+   * Broadcasts an email message platform-wide to active scholars.
+   */
+  broadcastEmail = async (req, res, next) => {
+    try {
+      const result = await this.adminSvc.broadcastEmail({
+        ...req.body,
+        adminId: req.user.id
+      });
+      return sendSuccess(res, result, 200, result.message);
+    } catch (err) {
+      return next(err);
+    }
+  };
 }
 
 export const adminController = new AdminController();

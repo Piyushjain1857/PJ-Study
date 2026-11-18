@@ -24,7 +24,7 @@
     "db:verify": "node scripts/verify-migration-integrity.js",
     "db:cutover": "node scripts/cutover-to-postgres.js",
     "db:rollback": "node scripts/rollback-to-mysql.js",
-    "test": "node --test --test-concurrency=1 tests/**/*.test.js"
+    "test": "NODE_ENV=test node --test --test-concurrency=1 tests/**/*.test.js"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",
@@ -40,7 +40,9 @@
     "morgan": "^1.10.0",
     "multer": "^2.5.0",
     "mysql2": "^3.24.6",
+    "nodemailer": "^10.6.0",
     "pg": "^8.23.1",
+    "socket.io": "^4.8.4",
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {

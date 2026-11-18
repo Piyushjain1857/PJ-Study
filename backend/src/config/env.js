@@ -49,6 +49,11 @@ function validateAndLoadConfig() {
   const emailProvider = process.env.EMAIL_PROVIDER || 'console';
   const emailFrom = process.env.EMAIL_FROM || 'noreply@pjstudy.com';
   const emailApiKey = process.env.EMAIL_API_KEY || '';
+  const smtpHost = process.env.SMTP_HOST || '';
+  const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
+  const smtpUser = process.env.SMTP_USER || '';
+  const smtpPass = process.env.SMTP_PASS || '';
+  const smtpSecure = process.env.SMTP_SECURE === 'true';
 
   // File Storage configurations
   const maxFileSizeMb = parseInt(process.env.MAX_FILE_SIZE_MB || '25', 10);
@@ -111,6 +116,11 @@ function validateAndLoadConfig() {
     emailProvider,
     emailFrom,
     emailApiKey,
+    smtpHost,
+    smtpPort,
+    smtpUser,
+    smtpPass,
+    smtpSecure,
     maxFileSizeMb,
     uploadDir,
     storageProvider,

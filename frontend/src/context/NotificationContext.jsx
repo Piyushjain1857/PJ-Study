@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext.jsx';
 import notificationService from '../services/notificationService.js';
 import { isCancellation } from '../services/api.js';
@@ -10,6 +11,8 @@ export function NotificationProvider({ children }) {
 
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [liveActivities, setLiveActivities] = useState([]);
+  const [isConnected, setIsConnected] = useState(false);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -19,8 +22,9 @@ export function NotificationProvider({ children }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Polling interval ref
+  // References
   const pollTimerRef = useRef(null);
+  const socketRef = useRef(null);
 
   // Fetch unread count
   const fetchUnreadCount = useCallback(async () => {
@@ -118,7 +122,66 @@ export function NotificationProvider({ children }) {
     [fetchUnreadCount]
   );
 
-  // Background polling with Page Visibility API
+  // Socket.IO Real-Time Live Connection
+  useEffect(() => {
+    if (!isAuthenticated) {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      setIsConnected(false);
+      return;
+    }
+
+    const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api/v1';
+    const socketUrl = apiBase.replace(/\/api\/v1\/?$/, '');
+
+    const socket = io(socketUrl, {
+      transports: ['websocket', 'polling'],
+      withCredentials: true,
+      autoConnect: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 2000
+    });
+
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      setIsConnected(true);
+      fetchUnreadCount();
+    });
+
+    socket.on('disconnect', () => {
+      setIsConnected(false);
+    });
+
+    socket.on('notification:new', (newNotif) => {
+      setNotifications((prev) => [newNotif, ...prev]);
+      setUnreadCount((c) => c + 1);
+    });
+
+    socket.on('unread_count:update', ({ unreadCount: count }) => {
+      if (typeof count === 'number') {
+        setUnreadCount(count);
+      }
+    });
+
+    socket.on('activity:live', (activity) => {
+      setLiveActivities((prev) => [activity, ...prev.slice(0, 49)]);
+    });
+
+    socket.on('announcement:new', () => {
+      fetchUnreadCount();
+      fetchNotifications({ page: 1, limit: 10 });
+    });
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [isAuthenticated, user?.id, fetchUnreadCount, fetchNotifications]);
+
+  // Background polling fallback with Page Visibility API
   useEffect(() => {
     if (!isAuthenticated) {
       setNotifications([]);
@@ -135,7 +198,7 @@ export function NotificationProvider({ children }) {
         if (document.visibilityState === 'visible') {
           fetchUnreadCount();
         }
-      }, 30000); // 30 seconds interval
+      }, 30000); // 30 seconds interval fallback
     };
 
     const handleVisibilityChange = () => {
@@ -159,6 +222,8 @@ export function NotificationProvider({ children }) {
   const value = {
     notifications,
     unreadCount,
+    liveActivities,
+    isConnected,
     pagination,
     isLoading,
     error,

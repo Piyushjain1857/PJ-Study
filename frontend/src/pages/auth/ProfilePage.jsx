@@ -8,6 +8,7 @@ import { Badge } from '../../components/common/Badge.jsx';
 import { Input } from '../../components/common/Input.jsx';
 import { Button } from '../../components/common/Button.jsx';
 import NoteCard from '../../components/notes/NoteCard.jsx';
+import EmailNotificationSettings from '../../components/profile/EmailNotificationSettings.jsx';
 import SEO from '../../components/common/SEO.jsx';
 import './ProfilePage.css';
 import './Auth.css';
@@ -630,6 +631,15 @@ export function ProfilePage() {
           onClick={() => setActiveTab('security')}
         >
           Security & Password
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'email-notifications'}
+          className={`profile-tab ${activeTab === 'email-notifications' ? 'profile-tab--active' : ''}`}
+          onClick={() => setActiveTab('email-notifications')}
+        >
+          Email Notifications
         </button>
       </div>
 
@@ -1326,6 +1336,13 @@ export function ProfilePage() {
               </Button>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* TAB: EMAIL NOTIFICATIONS */}
+      {activeTab === 'email-notifications' && (
+        <div className="profile-tab-content">
+          <EmailNotificationSettings />
         </div>
       )}
     </div>

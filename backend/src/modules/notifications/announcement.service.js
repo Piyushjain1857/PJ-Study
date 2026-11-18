@@ -147,6 +147,44 @@ export class AnnouncementService {
       recipientCount += res.count;
     }
 
+    // Broadcast live activity and dispatch announcement emails asynchronously
+    import('../../services/realtime/socket.service.js').then(
+      ({ recordAndBroadcastActivity, broadcastEvent }) => {
+        recordAndBroadcastActivity({
+          type: 'ANNOUNCEMENT_NEW',
+          action: 'ANNOUNCEMENT_PUBLISHED',
+          title: `Announcement: ${title}`,
+          description: message,
+          actorId: adminId,
+          actorRole: 'ADMIN',
+          targetId: announcement.id,
+          targetType: 'ANNOUNCEMENT',
+          isPublic: true
+        }).catch(() => {});
+        broadcastEvent('announcement:new', announcement);
+      }
+    ).catch(() => {});
+
+    import('../../services/email/email.service.js').then(({ emailService }) => {
+      prisma.user.findMany({
+        where: userWhere,
+        take: 100,
+        select: { id: true, name: true, email: true }
+      }).then((recipients) => {
+        for (const r of recipients) {
+          emailService.sendAnnouncementEmail({
+            to: r.email,
+            name: r.name,
+            title,
+            message,
+            priority,
+            targetUrl: sanitizedTargetUrl,
+            userId: r.id
+          }).catch(() => {});
+        }
+      }).catch(() => {});
+    }).catch(() => {});
+
     return {
       announcement,
       recipientCount

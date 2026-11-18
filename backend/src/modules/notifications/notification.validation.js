@@ -87,7 +87,13 @@ export function validateUpdatePreferences(req, res, next) {
     'reviewActivity',
     'helpfulVotes',
     'platformAnnouncements',
-    'inAppEnabled'
+    'inAppEnabled',
+    'emailSecurityAlerts',
+    'emailNewNotes',
+    'emailAnnouncements',
+    'emailLiveActivity',
+    'emailAccountUpdates',
+    'emailWeeklyDigest'
   ];
 
   const errors = [];

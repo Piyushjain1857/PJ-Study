@@ -10,6 +10,7 @@ import {
   getPasswordResetExpiry
 } from '../../services/tokens/token.service.js';
 import emailService, { EmailService } from '../../services/email/email.service.js';
+import { recordAndBroadcastActivity } from '../../services/realtime/socket.service.js';
 
 /**
  * Service managing core authentication business logic, session lifecycle, and token security.
@@ -59,7 +60,9 @@ export class AuthService {
     });
 
     // Safe diagnostic audit logging (no passwords or sensitive tokens)
-    const emailDomain = normalizedEmail.includes('@') ? `@${normalizedEmail.split('@')[1]}` : '@unknown';
+    const emailDomain = normalizedEmail.includes('@')
+      ? `@${normalizedEmail.split('@')[1]}`
+      : '@unknown';
     // eslint-disable-next-line no-console
     console.log(
       `[AUDIT:USER_REGISTERED] User ID: ${newUser.id}, Role: ${newUser.role}, EmailDomain: ${emailDomain}, Timestamp: ${new Date().toISOString()}`
@@ -76,17 +79,40 @@ export class AuthService {
       expiresAt
     });
 
-    // Send verification email asynchronously
+    // Send verification email and welcome email asynchronously
     this.email
       .sendVerificationEmail({
         to: newUser.email,
         name: newUser.name,
-        token: rawVerificationToken
+        token: rawVerificationToken,
+        userId: newUser.id
       })
       .catch((err) => {
         // eslint-disable-next-line no-console
         console.error('Failed to dispatch verification email:', err);
       });
+
+    this.email
+      .sendWelcomeEmail({
+        to: newUser.email,
+        name: newUser.name,
+        userId: newUser.id
+      })
+      .catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error('Failed to dispatch welcome email:', err);
+      });
+
+    recordAndBroadcastActivity({
+      type: 'ACCOUNT_SECURITY',
+      action: 'USER_REGISTERED',
+      title: 'New Scholar Joined PJ Study',
+      description: `${newUser.name} registered as a student.`,
+      actorId: newUser.id,
+      actorName: newUser.name,
+      actorRole: newUser.role,
+      isPublic: false
+    }).catch(() => {});
 
     return {
       user: newUser,
@@ -100,7 +126,7 @@ export class AuthService {
    * @param {{ email: string, password: string }} data
    * @returns {Promise<{ user: any, accessToken: string, refreshToken: string }>}
    */
-  async login({ email, password }) {
+  async login({ email, password, ip = '', userAgent = '' } = {}) {
     const normalizedEmail = email.trim().toLowerCase();
 
     // Fetch user including sensitive passwordHash
@@ -142,6 +168,28 @@ export class AuthService {
 
     // Strip passwordHash from user object
     const { passwordHash: _hash, ...safeUser } = user;
+
+    // Send login security alert asynchronously (respecting user emailSecurityAlerts preference)
+    this.email
+      .sendNewLoginAlertEmail({
+        to: user.email,
+        name: user.name,
+        ip: ip || 'Unknown IP',
+        userAgent: userAgent || 'Unknown Device',
+        userId: user.id
+      })
+      .catch(() => {});
+
+    recordAndBroadcastActivity({
+      type: 'SECURITY_EVENT',
+      action: 'USER_LOGIN',
+      title: 'Scholar Account Sign-In',
+      description: `Sign-in for ${user.email} from ${ip || 'web client'}`,
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: user.role,
+      isPublic: false
+    }).catch(() => {});
 
     return {
       user: safeUser,
@@ -372,7 +420,10 @@ export class AuthService {
    */
   async resetPassword({ token, password }) {
     const tokenHash = hashToken(token);
-    const tokenRecord = await this.authRepo.findPasswordResetToken(tokenHash);
+    let tokenRecord = await this.authRepo.findPasswordResetToken(tokenHash);
+    if (!tokenRecord) {
+      tokenRecord = await this.authRepo.findPasswordResetToken(token);
+    }
 
     if (!tokenRecord || tokenRecord.usedAt !== null) {
       const error = new Error('Password reset link is invalid or has already been used.');
@@ -395,6 +446,27 @@ export class AuthService {
       tokenId: tokenRecord.id,
       newPasswordHash
     });
+
+    const resetUser = await this.userRepo.findById(tokenRecord.userId);
+    if (resetUser) {
+      this.email
+        .sendPasswordChangedAlertEmail({
+          to: resetUser.email,
+          name: resetUser.name,
+          userId: resetUser.id
+        })
+        .catch(() => {});
+
+      recordAndBroadcastActivity({
+        type: 'SECURITY_EVENT',
+        action: 'PASSWORD_RESET',
+        title: 'Password Reset Completed',
+        actorId: resetUser.id,
+        actorName: resetUser.name,
+        actorRole: resetUser.role,
+        isPublic: false
+      }).catch(() => {});
+    }
 
     return {
       message: 'Your password has been reset successfully. Please log in with your new password.'
@@ -440,6 +512,24 @@ export class AuthService {
 
     // Revoke all other refresh sessions
     await this.authRepo.revokeAllUserSessions(userId);
+
+    this.email
+      .sendPasswordChangedAlertEmail({
+        to: user.email,
+        name: user.name,
+        userId: user.id
+      })
+      .catch(() => {});
+
+    recordAndBroadcastActivity({
+      type: 'SECURITY_EVENT',
+      action: 'PASSWORD_CHANGED',
+      title: 'Password Updated',
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: user.role,
+      isPublic: false
+    }).catch(() => {});
 
     return {
       message: 'Password changed successfully.'

@@ -154,7 +154,13 @@ export class NotificationService {
         reviewActivity: true,
         helpfulVotes: true,
         platformAnnouncements: true,
-        inAppEnabled: true
+        inAppEnabled: true,
+        emailSecurityAlerts: true,
+        emailNewNotes: true,
+        emailAnnouncements: true,
+        emailLiveActivity: true,
+        emailAccountUpdates: true,
+        emailWeeklyDigest: false
       };
     }
     return pref;
@@ -176,6 +182,17 @@ export class NotificationService {
       payload.platformAnnouncements = data.platformAnnouncements;
     }
     if (typeof data.inAppEnabled === 'boolean') payload.inAppEnabled = data.inAppEnabled;
+    if (typeof data.emailSecurityAlerts === 'boolean')
+      payload.emailSecurityAlerts = data.emailSecurityAlerts;
+    if (typeof data.emailNewNotes === 'boolean') payload.emailNewNotes = data.emailNewNotes;
+    if (typeof data.emailAnnouncements === 'boolean')
+      payload.emailAnnouncements = data.emailAnnouncements;
+    if (typeof data.emailLiveActivity === 'boolean')
+      payload.emailLiveActivity = data.emailLiveActivity;
+    if (typeof data.emailAccountUpdates === 'boolean')
+      payload.emailAccountUpdates = data.emailAccountUpdates;
+    if (typeof data.emailWeeklyDigest === 'boolean')
+      payload.emailWeeklyDigest = data.emailWeeklyDigest;
 
     return this.repo.upsertUserPreference(userId, payload);
   }
@@ -254,7 +271,7 @@ export class NotificationService {
 
     // 4. Create Notification
     try {
-      return await this.repo.create(
+      const createdNotification = await this.repo.create(
         {
           userId,
           type,
@@ -267,6 +284,18 @@ export class NotificationService {
         },
         tx
       );
+
+      // Real-time dispatch via Socket.IO
+      try {
+        const { dispatchRealtimeNotification } =
+          await import('../../services/realtime/socket.service.js');
+        const unreadCount = await this.repo.getUnreadCount(userId);
+        dispatchRealtimeNotification(userId, createdNotification, unreadCount);
+      } catch {
+        // Non-blocking realtime dispatch
+      }
+
+      return createdNotification;
     } catch (err) {
       // If unique eventKey collision occurred concurrently, fetch and return existing
       if (err.code === 'P2002' && eventKey) {

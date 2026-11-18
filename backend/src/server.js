@@ -1,6 +1,8 @@
+import http from 'http';
 import app from './app.js';
 import env from './config/env.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
+import { initializeSocketServer } from './services/realtime/socket.service.js';
 
 /**
  * Starts the PJ Study backend HTTP server and establishes background connections.
@@ -25,14 +27,21 @@ async function startServer() {
   }
 
   const host = process.env.HOST || '0.0.0.0';
-  const server = app.listen(env.port, host, () => {
+  const httpServer = http.createServer(app);
+  initializeSocketServer(httpServer);
+
+  const server = httpServer.listen(env.port, host, () => {
     console.log(`===============================================`);
     console.log(`  PJ Study API Server running`);
     console.log(`  Environment : ${env.nodeEnv}`);
     console.log(`  Host        : ${host}`);
     console.log(`  Port        : ${env.port}`);
-    console.log(`  Health Check: http://${host === '0.0.0.0' ? 'localhost' : host}:${env.port}/api/v1/health`);
-    console.log(`  Swagger API : http://${host === '0.0.0.0' ? 'localhost' : host}:${env.port}/api/docs`);
+    console.log(
+      `  Health Check: http://${host === '0.0.0.0' ? 'localhost' : host}:${env.port}/api/v1/health`
+    );
+    console.log(
+      `  Swagger API : http://${host === '0.0.0.0' ? 'localhost' : host}:${env.port}/api/docs`
+    );
     console.log(`===============================================`);
   });
 

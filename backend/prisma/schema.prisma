@@ -105,6 +105,7 @@ model User {
   passwordResetTokens     PasswordResetToken[]
   notifications           Notification[]
   notificationPreference  NotificationPreference?
+  emailDeliveryLogs       EmailDeliveryLog[]
   announcementsCreated    Announcement[]           @relation("AnnouncementAuthor")
 
   @@index([role])
@@ -607,6 +608,12 @@ model NotificationPreference {
   helpfulVotes          Boolean  @default(true) @map("helpful_votes")
   platformAnnouncements Boolean  @default(true) @map("platform_announcements")
   inAppEnabled          Boolean  @default(true) @map("in_app_enabled")
+  emailSecurityAlerts   Boolean  @default(true) @map("email_security_alerts")
+  emailNewNotes         Boolean  @default(true) @map("email_new_notes")
+  emailAnnouncements     Boolean  @default(true) @map("email_announcements")
+  emailLiveActivity      Boolean  @default(true) @map("email_live_activity")
+  emailAccountUpdates    Boolean  @default(true) @map("email_account_updates")
+  emailWeeklyDigest      Boolean  @default(false) @map("email_weekly_digest")
   createdAt             DateTime @default(now()) @map("created_at")
   updatedAt             DateTime @updatedAt @map("updated_at")
 
@@ -614,6 +621,71 @@ model NotificationPreference {
   user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notification_preferences")
+}
+
+/// EmailDeliveryLog records outgoing email messages, statuses, retry counts, and diagnostics.
+model EmailDeliveryLog {
+  id           String    @id @default(uuid())
+  recipient    String    @db.VarChar(255)
+  subject      String    @db.VarChar(255)
+  templateKey  String?   @map("template_key") @db.VarChar(100)
+  status       String    @default("SENT") @db.VarChar(20) // 'SENT', 'FAILED', 'PENDING'
+  errorMessage String?   @map("error_message") @db.Text
+  attempts     Int       @default(1)
+  metadata     Json?
+  userId       String?   @map("user_id")
+  sentAt       DateTime? @map("sent_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Relationships
+  user         User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([recipient])
+  @@index([templateKey])
+  @@index([createdAt])
+  @@map("email_delivery_logs")
+}
+
+/// NotificationTemplate stores customizable operational and marketing email notification templates.
+model NotificationTemplate {
+  id          String   @id @default(uuid())
+  key         String   @unique @db.VarChar(100)
+  name        String   @db.VarChar(150)
+  subject     String   @db.VarChar(255)
+  htmlBody    String   @map("html_body") @db.Text
+  textBody    String?  @map("text_body") @db.Text
+  description String?  @db.VarChar(255)
+  variables   Json?
+  isActive    Boolean  @default(true) @map("is_active")
+  updatedById String?  @map("updated_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("notification_templates")
+}
+
+/// LiveActivity logs real-time events for scholar and admin activity streams.
+model LiveActivity {
+  id          String   @id @default(uuid())
+  type        String   @db.VarChar(50) // 'NOTE_PUBLISHED', 'NOTE_UPDATED', 'ANNOUNCEMENT_NEW', 'SECURITY_EVENT', 'ADMIN_ACTION'
+  action      String   @db.VarChar(100)
+  title       String   @db.VarChar(255)
+  description String?  @db.Text
+  actorId     String?  @map("actor_id")
+  actorName   String?  @map("actor_name") @db.VarChar(150)
+  actorRole   String?  @map("actor_role") @db.VarChar(50)
+  targetId    String?  @map("target_id")
+  targetType  String?  @map("target_type") @db.VarChar(50)
+  metadata    Json?
+  isPublic    Boolean  @default(true) @map("is_public")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([type, createdAt])
+  @@index([actorId])
+  @@index([isPublic, createdAt])
+  @@map("live_activities")
 }
 
 /// Announcement stores administrative broadcasts published across the scholar community.

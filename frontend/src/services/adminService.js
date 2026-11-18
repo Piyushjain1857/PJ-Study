@@ -260,6 +260,39 @@ export const adminService = {
   async getLiveActivity(limit = 20) {
     const response = await apiClient.get('/admin/activity', { params: { limit } });
     return response.data?.data;
+  },
+
+  /**
+   * Email Delivery Logs & Notification Templates
+   */
+  async getEmailDeliveryLogs(params = {}) {
+    const response = await apiClient.get('/admin/email-logs', { params });
+    return response.data?.data;
+  },
+
+  async getFailedEmailLogs(params = {}) {
+    const response = await apiClient.get('/admin/email-logs/failed', { params });
+    return response.data?.data;
+  },
+
+  async retryEmailDelivery(id) {
+    const response = await apiClient.post(`/admin/email-logs/${id}/retry`);
+    return response.data?.data;
+  },
+
+  async getNotificationTemplates() {
+    const response = await apiClient.get('/admin/notification-templates');
+    return response.data?.data;
+  },
+
+  async updateNotificationTemplate(key, data) {
+    const response = await apiClient.put(`/admin/notification-templates/${key}`, data);
+    return response.data?.data;
+  },
+
+  async broadcastEmail(data) {
+    const response = await apiClient.post('/admin/broadcast-email', data);
+    return response.data?.data;
   }
 };
 

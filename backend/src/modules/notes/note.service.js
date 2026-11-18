@@ -453,6 +453,52 @@ export class NoteService {
     );
 
     invalidateExploreFiltersCache();
+
+    // Live Activity & Email Notification for Published Notes
+    if (note.status === 'PUBLISHED') {
+      import('../../services/realtime/socket.service.js').then(({ recordAndBroadcastActivity }) => {
+        recordAndBroadcastActivity({
+          type: 'NOTE_PUBLISHED',
+          action: 'NOTE_CREATED',
+          title: `New Note: ${note.title}`,
+          description: `${course?.name || 'Academic Course'} • Semester ${note.semester}`,
+          actorId: uploadedById,
+          actorName: uploader.name,
+          actorRole: uploader.role,
+          targetId: note.id,
+          targetType: 'NOTE',
+          isPublic: true
+        }).catch(() => {});
+      }).catch(() => {});
+
+      import('../../services/email/email.service.js').then(({ emailService }) => {
+        prisma.user.findMany({
+          where: {
+            isActive: true,
+            role: 'STUDENT',
+            OR: [
+              { courseId: note.courseId },
+              { courseId: null }
+            ]
+          },
+          take: 50,
+          select: { id: true, name: true, email: true }
+        }).then((students) => {
+          for (const s of students) {
+            emailService.sendNewNotePublishedEmail({
+              to: s.email,
+              name: s.name,
+              noteTitle: note.title,
+              courseName: course?.name,
+              semester: note.semester,
+              noteId: note.id,
+              userId: s.id
+            }).catch(() => {});
+          }
+        }).catch(() => {});
+      }).catch(() => {});
+    }
+
     return sanitizeNote(note);
   }
 
@@ -544,6 +590,24 @@ export class NoteService {
 
     const updated = await this.repo.update(noteId, updatePayload);
     invalidateExploreFiltersCache();
+
+    // Live Activity broadcast for updated note
+    import('../../services/realtime/socket.service.js')
+      .then(({ recordAndBroadcastActivity }) => {
+        recordAndBroadcastActivity({
+          type: 'NOTE_UPDATED',
+          action: 'NOTE_EDITED',
+          title: `Note Updated: ${updated.title}`,
+          description: `Academic manuscript details updated.`,
+          actorId: userId,
+          actorRole: userRole,
+          targetId: updated.id,
+          targetType: 'NOTE',
+          isPublic: updated.status === 'PUBLISHED'
+        }).catch(() => {});
+      })
+      .catch(() => {});
+
     return sanitizeNote(updated);
   }
 

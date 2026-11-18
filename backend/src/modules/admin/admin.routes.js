@@ -208,6 +208,11 @@ router.get(
   requirePermission(PERMISSIONS.USERS_READ),
   adminController.getLiveActivity
 );
+router.get(
+  '/live-activity',
+  requirePermission(PERMISSIONS.USERS_READ),
+  adminController.getLiveActivity
+);
 
 /**
  * Audit log compliance trail
@@ -292,6 +297,40 @@ router.get(
   '/announcements',
   requireRole(ROLES.ADMIN, ROLES.SUPER_ADMIN),
   notificationController.getAnnouncements
+);
+
+/**
+ * Email Delivery Logs, Notification Templates & Broadcasts (Super Admin only)
+ */
+router.get(
+  '/email-logs',
+  requireRole(ROLES.SUPER_ADMIN),
+  adminController.getEmailDeliveryLogs
+);
+router.get(
+  '/email-logs/failed',
+  requireRole(ROLES.SUPER_ADMIN),
+  adminController.getFailedEmailLogs
+);
+router.post(
+  '/email-logs/:id/retry',
+  requireRole(ROLES.SUPER_ADMIN),
+  adminController.retryEmailDelivery
+);
+router.get(
+  '/notification-templates',
+  requireRole(ROLES.SUPER_ADMIN),
+  adminController.getNotificationTemplates
+);
+router.put(
+  '/notification-templates/:key',
+  requireRole(ROLES.SUPER_ADMIN),
+  adminController.updateNotificationTemplate
+);
+router.post(
+  '/broadcast-email',
+  requireRole(ROLES.SUPER_ADMIN),
+  adminController.broadcastEmail
 );
 
 export default router;

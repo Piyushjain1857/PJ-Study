@@ -371,6 +371,30 @@ export const router = createBrowserRouter(
           )
         },
         {
+          path: 'admin/email-delivery',
+          element: (
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/email-logs',
+          element: (
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'admin/email-templates',
+          element: (
+            <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          )
+        },
+        {
           path: 'admin/storage',
           element: (
             <ProtectedRoute roles={[ROLES.SUPER_ADMIN]}>

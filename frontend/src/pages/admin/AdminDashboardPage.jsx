@@ -24,6 +24,7 @@ import NavigationBuilderTab from './components/NavigationBuilderTab.jsx';
 import PermissionsManagerTab from './components/PermissionsManagerTab.jsx';
 import ContentManagerTab from './components/ContentManagerTab.jsx';
 import VersionHistoryTab from './components/VersionHistoryTab.jsx';
+import AdminEmailManager from '../../components/admin/AdminEmailManager.jsx';
 
 /**
  * Editorial Academic Governance & Role Management Dashboard (V3 Production-Grade).
@@ -582,6 +583,8 @@ export function AdminDashboardPage() {
       setActiveTab('announcements');
     } else if (path === '/admin/notifications') {
       setActiveTab('notifications');
+    } else if (path === '/admin/email-delivery' || path === '/admin/email-logs' || path === '/admin/email-templates') {
+      setActiveTab('email-delivery');
     } else if (path === '/admin/storage') {
       setActiveTab('storage');
     } else if (path === '/admin/audit-logs') {
@@ -1445,6 +1448,14 @@ export function AdminDashboardPage() {
         subtitle: 'Tamper-evident forensic ledger of privileged administrative operations, role modifications, access control events, and publication lifecycle changes.'
       };
     }
+    if (activeTab === 'email-delivery') {
+      return {
+        seo: 'Email Infrastructure & Delivery Logs | PJ Study Super Admin',
+        badge: 'Transactional Communications',
+        title: 'Email Delivery & Live Activities',
+        subtitle: 'Inspect transactional email delivery logs, review templates, dispatch platform broadcasts, and track real-time activity events.'
+      };
+    }
     if (activeTab === 'announcements') {
       return {
         seo: 'Platform Announcements | PJ Study Super Admin',
@@ -2057,6 +2068,20 @@ export function AdminDashboardPage() {
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
             Announcements
           </button>
+          {isSuperAdmin && (
+            <button
+              ref={activeTab === 'email-delivery' ? activeTabRef : null}
+              type="button"
+              className={`admin-tab-btn ${activeTab === 'email-delivery' ? 'admin-tab-btn--active' : ''}`}
+              onClick={() => navigate('/admin/email-delivery')}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                <polyline points="22,6 12,13 2,6" />
+              </svg>
+              Email & Live Feed
+            </button>
+          )}
           <button
             ref={activeTab === 'settings' ? activeTabRef : null}
             type="button"
@@ -5155,6 +5180,15 @@ mysqldump -u root -p pj_study &gt; backup_$(date +%F).sql
         {activeTab === 'config-history' && (
           <div className="admin-tab-content">
             <VersionHistoryTab onNotify={setActionNotice} />
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB: EMAIL DELIVERY & LIVE STREAM (SUPER ADMIN)
+            ===================================================================== */}
+        {activeTab === 'email-delivery' && (
+          <div className="admin-tab-content">
+            <AdminEmailManager onNotify={setActionNotice} />
           </div>
         )}
 

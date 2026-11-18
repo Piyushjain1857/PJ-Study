@@ -62,7 +62,11 @@ export class AuthController {
    */
   login = async (req, res, next) => {
     try {
-      const { user, accessToken, refreshToken } = await this.service.login(req.body);
+      const { user, accessToken, refreshToken } = await this.service.login({
+        ...req.body,
+        ip: req.ip || req.socket?.remoteAddress || '127.0.0.1',
+        userAgent: req.headers['user-agent'] || 'Web Browser'
+      });
 
       // Set secure HttpOnly cookie
       res.cookie(REFRESH_COOKIE_NAME, refreshToken, getRefreshCookieOptions());

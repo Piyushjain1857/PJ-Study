@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import Button from '../common/Button.jsx';
 import Avatar from '../common/Avatar.jsx';
 import Dropdown from '../common/Dropdown.jsx';
+import NotificationBell from '../notifications/NotificationBell.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import './Navbar.css';
 
@@ -126,6 +127,7 @@ export function Navbar() {
                   {isSuperAdmin ? 'Command Center' : isPlatformAdmin ? 'Admin Workspace' : 'Dashboard'}
                 </Button>
               </Link>
+              <NotificationBell />
               <Dropdown
                 trigger={
                   <button

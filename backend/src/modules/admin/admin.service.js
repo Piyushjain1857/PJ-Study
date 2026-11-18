@@ -258,12 +258,18 @@ export class AdminService {
 
     // Invariant 1: No user can modify their own role
     if (targetId === actor.id) {
-      if (targetUser.role === ROLES.SUPER_ADMIN && requestedRole && requestedRole.toUpperCase().trim() !== ROLES.SUPER_ADMIN) {
+      if (
+        targetUser.role === ROLES.SUPER_ADMIN &&
+        requestedRole &&
+        requestedRole.toUpperCase().trim() !== ROLES.SUPER_ADMIN
+      ) {
         const activeSuperAdminCount = await prisma.user.count({
           where: { role: ROLES.SUPER_ADMIN, isActive: true }
         });
         if (activeSuperAdminCount <= 1) {
-          const error = new Error('Cannot demote or remove the last active Super Administrator. Assign another Super Admin first.');
+          const error = new Error(
+            'Cannot demote or remove the last active Super Administrator. Assign another Super Admin first.'
+          );
           error.statusCode = 400;
           error.code = 'LAST_SUPER_ADMIN_PROTECTED';
           throw error;
@@ -458,7 +464,9 @@ export class AdminService {
       prisma.note.count({ where: { status: { in: ['PUBLISHED', 'APPROVED'] } } }),
       prisma.note.count({
         where: {
-          status: { in: ['UNPUBLISHED', 'DRAFT', 'PENDING', 'PENDING_REVIEW', 'REJECTED', 'ARCHIVED'] }
+          status: {
+            in: ['UNPUBLISHED', 'DRAFT', 'PENDING', 'PENDING_REVIEW', 'REJECTED', 'ARCHIVED']
+          }
         }
       }),
       prisma.note.count({ where: { status: { in: ['PENDING', 'PENDING_REVIEW'] } } }),
@@ -726,7 +734,9 @@ export class AdminService {
       if (upper === 'PUBLISHED') {
         where.status = { in: ['PUBLISHED', 'APPROVED'] };
       } else if (upper === 'UNPUBLISHED') {
-        where.status = { in: ['UNPUBLISHED', 'DRAFT', 'PENDING', 'PENDING_REVIEW', 'REJECTED', 'ARCHIVED'] };
+        where.status = {
+          in: ['UNPUBLISHED', 'DRAFT', 'PENDING', 'PENDING_REVIEW', 'REJECTED', 'ARCHIVED']
+        };
       } else {
         where.status = query.status;
       }
@@ -889,7 +899,8 @@ export class AdminService {
     const reviewReportsWhere = {};
     if (status !== 'ALL') {
       if (status === 'OPEN' || status === 'PENDING') reviewReportsWhere.status = 'OPEN';
-      else if (status === 'RESOLVED' || status === 'ACTIONED') reviewReportsWhere.status = 'ACTIONED';
+      else if (status === 'RESOLVED' || status === 'ACTIONED')
+        reviewReportsWhere.status = 'ACTIONED';
       else if (status === 'DISMISSED') reviewReportsWhere.status = 'DISMISSED';
     }
 
@@ -1285,8 +1296,35 @@ export class AdminService {
    * @param {number} [limit=20]
    */
   async getLiveActivity(limit = 20) {
+    const take = Math.min(Number(limit) || 20, 50);
+
+    const liveList = await prisma.liveActivity.findMany({
+      take,
+      orderBy: { createdAt: 'desc' }
+    });
+
+    if (liveList && liveList.length > 0) {
+      return liveList.map((act) => ({
+        id: act.id,
+        type: act.type,
+        action: act.action,
+        title: act.title,
+        description: act.description,
+        actor: {
+          id: act.actorId,
+          name: act.actorName || 'System Platform',
+          role: act.actorRole || 'SYSTEM'
+        },
+        targetId: act.targetId,
+        targetType: act.targetType,
+        metadata: act.metadata,
+        isPublic: act.isPublic,
+        createdAt: act.createdAt
+      }));
+    }
+
     const logs = await prisma.auditLog.findMany({
-      take: Math.min(Number(limit) || 20, 50),
+      take,
       orderBy: { createdAt: 'desc' },
       include: {
         actor: {
@@ -1302,13 +1340,333 @@ export class AdminService {
 
     return logs.map((log) => ({
       id: log.id,
+      type: 'ADMIN_ACTION',
       action: log.action,
+      title: `${log.action} on ${log.entityType || 'resource'}`,
+      description: null,
       entityType: log.entityType,
       entityId: log.entityId,
       actor: log.actor || { name: 'System Automated', email: 'system@pjstudy.com', role: 'SYSTEM' },
       metadata: log.metadata,
       createdAt: log.createdAt
     }));
+  }
+
+  /**
+   * Retrieves paginated email delivery logs and summary counts for Super Admin.
+   *
+   * @param {object} [query]
+   * @returns {Promise<any>}
+   */
+  async getEmailDeliveryLogs(query = {}) {
+    const page = Math.max(1, parseInt(query.page || '1', 10));
+    const limit = Math.min(100, Math.max(1, parseInt(query.limit || '20', 10)));
+    const skip = (page - 1) * limit;
+
+    const where = {};
+    if (query.status && query.status !== 'ALL') {
+      where.status = query.status.toUpperCase();
+    }
+    if (query.recipient) {
+      where.recipient = { contains: query.recipient.trim(), mode: 'insensitive' };
+    }
+    if (query.templateKey && query.templateKey !== 'ALL') {
+      where.templateKey = query.templateKey;
+    }
+
+    const [items, total, sentCount, failedCount, pendingCount] = await Promise.all([
+      prisma.emailDeliveryLog.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: { id: true, name: true, email: true, role: true }
+          }
+        }
+      }),
+      prisma.emailDeliveryLog.count({ where }),
+      prisma.emailDeliveryLog.count({ where: { status: 'SENT' } }),
+      prisma.emailDeliveryLog.count({ where: { status: 'FAILED' } }),
+      prisma.emailDeliveryLog.count({ where: { status: 'PENDING' } })
+    ]);
+
+    const allTotal = sentCount + failedCount + pendingCount;
+    const successRate = allTotal > 0 ? Number(((sentCount / allTotal) * 100).toFixed(1)) : 100;
+
+    return {
+      logs: items,
+      items,
+      pagination: {
+        page,
+        limit,
+        totalItems: total,
+        totalPages: Math.ceil(total / limit) || 1
+      },
+      summary: {
+        total: allTotal,
+        sent: sentCount,
+        failed: failedCount,
+        pending: pendingCount,
+        successRate
+      }
+    };
+  }
+
+  /**
+   * Retrieves failed email delivery logs specifically.
+   *
+   * @param {object} [query]
+   * @returns {Promise<any>}
+   */
+  async getFailedEmailLogs(query = {}) {
+    return this.getEmailDeliveryLogs({ ...query, status: 'FAILED' });
+  }
+
+  /**
+   * Retries delivering a failed email message.
+   *
+   * @param {string} logId
+   * @returns {Promise<any>}
+   */
+  async retryEmailDelivery(logId) {
+    const log = await prisma.emailDeliveryLog.findUnique({
+      where: { id: logId }
+    });
+
+    if (!log) {
+      const error = new Error('Email delivery log not found.');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const { emailService } = await import('../../services/email/email.service.js');
+    const result = await emailService._send({
+      to: log.recipient,
+      subject: log.subject,
+      html: `<p>${log.subject}</p>`,
+      text: log.subject,
+      templateKey: log.templateKey || 'retry',
+      userId: log.userId,
+      metadata: log.metadata
+    });
+
+    const status = result.success ? 'SENT' : 'FAILED';
+    const updated = await prisma.emailDeliveryLog
+      .update({
+        where: { id: logId },
+        data: {
+          status,
+          sentAt: result.success ? new Date() : null,
+          attempts: { increment: 1 },
+          errorMessage: result.error || null
+        }
+      })
+      .catch(() => null);
+
+    return {
+      success: result.success,
+      status,
+      message: result.success ? 'Email retry sent successfully' : 'Email retry failed',
+      log: updated,
+      result
+    };
+  }
+
+  /**
+   * Retrieves or initializes notification templates.
+   *
+   * @returns {Promise<any[]>}
+   */
+  async getNotificationTemplates() {
+    let templates = await prisma.notificationTemplate.findMany({
+      orderBy: { key: 'asc' }
+    });
+
+    if (templates.length === 0) {
+      const defaults = [
+        {
+          key: 'welcome_email',
+          name: 'Welcome Email',
+          subject: 'Welcome to PJ Study!',
+          description: 'Dispatched to scholars immediately upon successful account creation.',
+          htmlBody: '<h1>Welcome to PJ Study!</h1><p>Your academic manuscript hub.</p>',
+          textBody: 'Welcome to PJ Study! Access your scholar dashboard.',
+          variables: ['name', 'dashboardUrl'],
+          isActive: true
+        },
+        {
+          key: 'email_verification',
+          name: 'Email Verification',
+          subject: 'Verify your email address - PJ Study',
+          description: 'Single-use security verification link dispatched to new registrants.',
+          htmlBody: '<h1>Verify Your Email</h1><p>Confirm your academic account.</p>',
+          textBody: 'Please verify your email address.',
+          variables: ['name', 'verificationUrl', 'expiresIn'],
+          isActive: true
+        },
+        {
+          key: 'password_reset',
+          name: 'Password Reset Request',
+          subject: 'Reset your password - PJ Study',
+          description: 'Expiring single-use reset link dispatched for account recovery.',
+          htmlBody: '<h1>Password Reset</h1><p>Choose a new password.</p>',
+          textBody: 'Click the link to set a new password.',
+          variables: ['name', 'resetUrl', 'expiresIn'],
+          isActive: true
+        },
+        {
+          key: 'security_alert_login',
+          name: 'Security Alert: New Sign-In',
+          subject: 'New Login Detected – PJ Study',
+          description: 'Instant notification on new login with IP and device details.',
+          htmlBody: '<h1>Security Alert: New Sign-In</h1><p>Review sign-in activity.</p>',
+          textBody: 'A new sign-in was detected on your account.',
+          variables: ['name', 'ip', 'userAgent', 'time', 'securitySettingsUrl'],
+          isActive: true
+        },
+        {
+          key: 'security_alert_password_changed',
+          name: 'Security Alert: Password Changed',
+          subject: 'Security Alert: Password Changed – PJ Study',
+          description: 'Alert dispatched immediately upon successful password change.',
+          htmlBody: '<h1>Password Changed</h1><p>Your account password was updated.</p>',
+          textBody: 'Your password was updated.',
+          variables: ['name', 'time', 'securitySettingsUrl'],
+          isActive: true
+        },
+        {
+          key: 'new_notes_published',
+          name: 'New Notes Available',
+          subject: 'New Study Notes Available – PJ Study',
+          description: 'Dispatched to scholars when notes matching their curriculum are published.',
+          htmlBody: '<h1>New Study Material Published!</h1><p>Check out recent notes.</p>',
+          textBody: 'New study notes available.',
+          variables: ['name', 'noteTitle', 'courseName', 'semester', 'noteUrl'],
+          isActive: true
+        },
+        {
+          key: 'platform_announcement',
+          name: 'Platform Announcement',
+          subject: 'Important Announcement – PJ Study',
+          description: 'Broadcast announcement dispatched to all platform members.',
+          htmlBody: '<h1>Platform Announcement</h1><p>{{message}}</p>',
+          textBody: 'Platform Announcement: {{message}}',
+          variables: ['name', 'title', 'message', 'priority', 'targetUrl'],
+          isActive: true
+        },
+        {
+          key: 'live_activity',
+          name: 'Live Activity Notification',
+          subject: 'Live Activity Update – PJ Study',
+          description: 'Dispatched for major collaborative actions in student network.',
+          htmlBody: '<h1>Live Activity Update</h1><p>{{activityTitle}}</p>',
+          textBody: 'Live Activity Update: {{activityTitle}}',
+          variables: ['name', 'activityTitle', 'description', 'time', 'activityUrl'],
+          isActive: true
+        }
+      ];
+
+      for (const t of defaults) {
+        await prisma.notificationTemplate.upsert({
+          where: { key: t.key },
+          update: {},
+          create: t
+        });
+      }
+
+      templates = await prisma.notificationTemplate.findMany({
+        orderBy: { key: 'asc' }
+      });
+    }
+
+    return templates;
+  }
+
+  /**
+   * Updates a notification template by key.
+   *
+   * @param {string} key
+   * @param {object} data
+   * @returns {Promise<any>}
+   */
+  async updateNotificationTemplate(key, data) {
+    const existing = await prisma.notificationTemplate.findUnique({ where: { key } });
+    if (!existing) {
+      const error = new Error(`Template with key "${key}" not found.`);
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const updated = await prisma.notificationTemplate.update({
+      where: { key },
+      data: {
+        subject: data.subject !== undefined ? data.subject.trim() : existing.subject,
+        htmlBody: data.htmlBody !== undefined ? data.htmlBody : existing.htmlBody,
+        textBody: data.textBody !== undefined ? data.textBody : existing.textBody,
+        isActive: data.isActive !== undefined ? Boolean(data.isActive) : existing.isActive,
+        updatedById: data.updatedById || null
+      }
+    });
+
+    return updated;
+  }
+
+  /**
+   * Broadcasts an email message platform-wide to active scholars.
+   *
+   * @param {{ title: string, message: string, priority?: string, targetUrl?: string, adminId?: string }} params
+   * @returns {Promise<any>}
+   */
+  async broadcastEmail({ title, message, priority = 'NORMAL', targetUrl = '', adminId }) {
+    if (!title || !message) {
+      const error = new Error('Title and message are required for broadcast email.');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const users = await prisma.user.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, email: true }
+    });
+
+    const { emailService } = await import('../../services/email/email.service.js');
+    const { recordAndBroadcastActivity } =
+      await import('../../services/realtime/socket.service.js');
+
+    // Record live activity
+    await recordAndBroadcastActivity({
+      type: 'ANNOUNCEMENT_NEW',
+      action: 'PLATFORM_BROADCAST',
+      title: `Platform Broadcast: ${title}`,
+      description: message,
+      actorId: adminId,
+      actorRole: 'SUPER_ADMIN',
+      isPublic: true
+    });
+
+    let queued = 0;
+    for (const u of users) {
+      emailService
+        .sendAnnouncementEmail({
+          to: u.email,
+          name: u.name,
+          title,
+          message,
+          priority,
+          targetUrl,
+          userId: u.id
+        })
+        .catch(() => {});
+      queued++;
+    }
+
+    return {
+      success: true,
+      recipientCount: queued,
+      message: `Broadcast email dispatched to ${queued} active recipients.`
+    };
   }
 }
 
