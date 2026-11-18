@@ -17,6 +17,7 @@ import contributorRoutes from '../modules/profile/contributor.routes.js';
 import notificationRoutes from '../modules/notifications/notification.routes.js';
 import seoRoutes from '../modules/seo/seo.routes.js';
 import storageRoutes from '../modules/storage/storage.routes.js';
+import collectionRoutes from '../modules/collections/collection.routes.js';
 import { publicConfigRouter, adminConfigRouter } from '../modules/platformConfig/platformConfig.routes.js';
 import { requireAuth } from '../auth/requireAuth.js';
 import noteController from '../modules/notes/note.controller.js';
@@ -174,6 +175,12 @@ router.use('/notes', noteRoutes);
  * /api/v1/dashboard/...
  */
 router.use('/dashboard', dashboardRoutes);
+
+/**
+ * Student study collections and thematic binders.
+ * /api/v1/collections/...
+ */
+router.use('/collections', collectionRoutes);
 
 /**
  * Smart notes recommendation engine & academic discovery.

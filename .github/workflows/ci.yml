@@ -1,0 +1,95 @@
+name: PJ Study — Continuous Quality Assurance & Acceptance CI
+
+on:
+  push:
+    branches: [main, master, staging]
+  pull_request:
+    branches: [main, master, staging]
+
+jobs:
+  quality-assurance:
+    name: Full-Stack Quality Gates & Acceptance Test Matrix
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: pj_test_user
+          POSTGRES_PASSWORD: pj_test_password
+          POSTGRES_DB: pj_study_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: test
+      PORT: 5001
+      DATABASE_URL: postgresql://pj_test_user:pj_test_password@localhost:5432/pj_study_test?schema=public
+      JWT_SECRET: e2e-ci-test-jwt-secret-key-minimum-32-chars-long!
+      JWT_REFRESH_SECRET: e2e-ci-test-jwt-refresh-secret-key-minimum-32-chars-long!
+      SESSION_SECRET: e2e-ci-test-session-secret-key-minimum-32-chars-long!
+      FRONTEND_URL: http://localhost:5173
+      ENABLE_SWAGGER: false
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # ------------------------------------------------------------------------
+      # 1. FRONTEND QUALITY GATES
+      # ------------------------------------------------------------------------
+      - name: Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Frontend Code Quality & ESLint Audit
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Frontend Production Bundle Build & PWA Precache
+        working-directory: ./frontend
+        run: npm run build
+
+      # ------------------------------------------------------------------------
+      # 2. BACKEND DATABASE & PRISMA GATES
+      # ------------------------------------------------------------------------
+      - name: Install Backend Dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Generate Prisma ORM Client
+        working-directory: ./backend
+        run: npx prisma generate
+
+      - name: Apply PostgreSQL Schema Migrations
+        working-directory: ./backend
+        run: npx prisma migrate deploy
+
+      - name: Seed Reference Taxonomy (Opt-In Core Mode)
+        working-directory: ./backend
+        run: npm run seed:core
+
+      # ------------------------------------------------------------------------
+      # 3. AUTOMATED FULL-STACK ACCEPTANCE TEST RUNNER
+      # ------------------------------------------------------------------------
+      - name: Execute Full Backend & E2E Acceptance Test Suite
+        working-directory: ./backend
+        run: npm test
+
+      # ------------------------------------------------------------------------
+      # 4. SECURITY & CONFIGURATION VERIFICATION
+      # ------------------------------------------------------------------------
+      - name: Verify Backend Configuration Smoke Test
+        working-directory: ./backend
+        run: node src/server.js --check-only

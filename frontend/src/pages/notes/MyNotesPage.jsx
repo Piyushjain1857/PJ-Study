@@ -499,7 +499,7 @@ export function MyNotesPage() {
                           {col.description || 'Custom collection binder'}
                         </p>
                         <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 'auto' }}>
-                          {col.itemCount || 0} notes organized
+                          {(col.itemCount ?? col.noteCount ?? 0)} notes organized
                         </span>
                       </div>
                     ))}

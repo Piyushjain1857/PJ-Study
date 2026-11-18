@@ -30,6 +30,10 @@ export default [
         Intl: 'readonly',
         AbortController: 'readonly',
         URLSearchParams: 'readonly',
+        navigator: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        URL: 'readonly',
         import: 'readonly'
       }
     },

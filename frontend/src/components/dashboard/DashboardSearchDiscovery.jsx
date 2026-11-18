@@ -14,8 +14,6 @@ export function DashboardSearchDiscovery({
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSemester, setSelectedSemester] = useState(userSemester || '');
-  const [selectedFormat, setSelectedFormat] = useState('');
-  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'semester' | 'subjects' | 'categories'
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -24,7 +22,6 @@ export function DashboardSearchDiscovery({
 
     if (query) params.set('search', query);
     if (selectedSemester) params.set('semester', String(selectedSemester));
-    if (selectedFormat) params.set('format', selectedFormat);
 
     const queryString = params.toString();
     navigate(`/notes/explore${queryString ? `?${queryString}` : ''}`);

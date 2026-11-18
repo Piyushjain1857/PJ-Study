@@ -161,7 +161,10 @@ export function NotePreview({ note, onClose = null, hideHeader = false }) {
               <button
                 type="button"
                 className="note-preview-root__action-btn note-preview-root__action-btn--close"
-                onClick={() => setIsFullscreen(false)}
+                onClick={() => {
+                  setIsFullscreen(false);
+                  if (typeof onClose === 'function') onClose();
+                }}
                 title="Exit full screen (Esc)"
                 aria-label="Exit full screen"
               >
