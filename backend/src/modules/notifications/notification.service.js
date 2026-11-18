@@ -328,6 +328,10 @@ export class NotificationService {
       if (err.code === 'P2002' && eventKey) {
         return this.repo.findByEventKey(eventKey, tx);
       }
+      // If foreign key constraint failed (e.g. user deleted concurrently or in ephemeral tests)
+      if (err.code === 'P2003') {
+        return null;
+      }
       throw err;
     }
   }
