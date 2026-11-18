@@ -788,6 +788,22 @@ export class NoteService {
       }
     });
 
+    // Notify author of note approval
+    if (note.uploadedById && note.uploadedById !== actorId) {
+      notificationService
+        .createNotification({
+          userId: note.uploadedById,
+          type: 'NOTE_APPROVED',
+          category: 'ACADEMIC',
+          title: 'Manuscript Approved & Published',
+          message: `Your manuscript "${note.title}" has been approved and published to the public library.`,
+          targetUrl: `/notes/${noteId}`,
+          eventKey: `note_approved_${noteId}`,
+          metadata: { noteId }
+        })
+        .catch(() => {});
+    }
+
     invalidateExploreFiltersCache();
     invalidateExploreFiltersCache();
     return sanitizeNote(updated);
@@ -893,6 +909,22 @@ export class NoteService {
         }
       }
     });
+
+    // Notify author of note rejection with feedback
+    if (note.uploadedById && note.uploadedById !== actorId && normalized === 'REJECTED') {
+      notificationService
+        .createNotification({
+          userId: note.uploadedById,
+          type: 'NOTE_REJECTED',
+          category: 'ACADEMIC',
+          title: 'Manuscript Submission Feedback',
+          message: `Your manuscript submission "${note.title}" requires revisions${reason ? `: ${reason}` : '.'}`,
+          targetUrl: `/notes/${noteId}`,
+          eventKey: `note_rejected_${noteId}_${Math.floor(Date.now() / 60000)}`,
+          metadata: { noteId, reason }
+        })
+        .catch(() => {});
+    }
 
     invalidateExploreFiltersCache();
     return sanitizeNote(updated);

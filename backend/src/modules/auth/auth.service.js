@@ -120,6 +120,25 @@ export class AuthService {
       isPublic: false
     }).catch(() => {});
 
+    // In-app welcome notification (deduplicated by unique eventKey)
+    import('../notifications/notification.service.js')
+      .then(({ default: notificationService }) => {
+        notificationService
+          .createNotification({
+            userId: newUser.id,
+            type: 'WELCOME',
+            category: 'SYSTEM',
+            title: 'Welcome to PJ Study',
+            message:
+              'Welcome to the PJ Study Academic Portal! Browse study notes, download materials, and share your own knowledge.',
+            targetUrl: '/notes/explore',
+            eventKey: `welcome_${newUser.id}`,
+            metadata: { userId: newUser.id }
+          })
+          .catch(() => {});
+      })
+      .catch(() => {});
+
     return {
       user: newUser,
       message: 'Account created successfully. Please check your email to verify your account.'
@@ -487,6 +506,25 @@ export class AuthService {
         actorRole: resetUser.role,
         isPublic: false
       }).catch(() => {});
+
+      // In-app security alert notification
+      import('../notifications/notification.service.js')
+        .then(({ default: notificationService }) => {
+          notificationService
+            .createNotification({
+              userId: resetUser.id,
+              type: 'PASSWORD_RESET',
+              category: 'SECURITY',
+              title: 'Security Alert: Password Reset',
+              message:
+                'Your account password was recently reset. If you did not request this, please contact administrator immediately.',
+              targetUrl: '/profile',
+              eventKey: `security_pw_reset_${resetUser.id}_${Math.floor(Date.now() / 60000)}`,
+              metadata: { userId: resetUser.id }
+            })
+            .catch(() => {});
+        })
+        .catch(() => {});
     }
 
     return {
@@ -551,6 +589,25 @@ export class AuthService {
       actorRole: user.role,
       isPublic: false
     }).catch(() => {});
+
+    // In-app security alert notification
+    import('../notifications/notification.service.js')
+      .then(({ default: notificationService }) => {
+        notificationService
+          .createNotification({
+            userId: user.id,
+            type: 'PASSWORD_CHANGED',
+            category: 'SECURITY',
+            title: 'Security Alert: Password Changed',
+            message:
+              'Your account password was recently changed. If you did not make this change, please contact support immediately.',
+            targetUrl: '/profile',
+            eventKey: `security_pw_change_${user.id}_${Math.floor(Date.now() / 60000)}`,
+            metadata: { userId: user.id }
+          })
+          .catch(() => {});
+      })
+      .catch(() => {});
 
     return {
       message: 'Password changed successfully.'

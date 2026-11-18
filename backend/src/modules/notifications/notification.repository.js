@@ -139,6 +139,28 @@ export class NotificationRepository {
   }
 
   /**
+   * Finds a recent duplicate notification within a sliding time window (defaults to 5 minutes).
+   * Used for fallback idempotency when callers omit an explicit eventKey.
+   *
+   * @param {{ userId: string, type: string, title: string, windowSeconds?: number }} params
+   * @param {any} [tx=prisma]
+   * @returns {Promise<any>}
+   */
+  async findRecentDuplicate({ userId, type, title, windowSeconds = 300 }, tx = prisma) {
+    const cutoff = new Date(Date.now() - windowSeconds * 1000);
+    return tx.notification.findFirst({
+      where: {
+        userId,
+        type,
+        title,
+        createdAt: { gte: cutoff }
+      },
+      orderBy: { createdAt: 'desc' },
+      select: NOTIFICATION_SAFE_SELECT
+    });
+  }
+
+  /**
    * Creates an in-app notification record.
    *
    * @param {object} data
@@ -264,6 +286,29 @@ export class NotificationRepository {
           select: { id: true, name: true, email: true, role: true }
         }
       }
+    });
+  }
+
+  /**
+   * Finds a recent announcement by title, message, and targetAudience for deduplication.
+   *
+   * @param {{ title: string, message: string, targetAudience: string, windowSeconds?: number }} params
+   * @param {any} [tx=prisma]
+   * @returns {Promise<any>}
+   */
+  async findRecentAnnouncement(
+    { title, message, targetAudience, windowSeconds = 600 },
+    tx = prisma
+  ) {
+    const cutoff = new Date(Date.now() - windowSeconds * 1000);
+    return tx.announcement.findFirst({
+      where: {
+        title,
+        message,
+        targetAudience,
+        createdAt: { gte: cutoff }
+      },
+      orderBy: { createdAt: 'desc' }
     });
   }
 

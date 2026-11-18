@@ -39,6 +39,10 @@ export function NotificationProvider({ children }) {
     }
   }, [isAuthenticated]);
 
+  // Keep stable callback refs for socket listeners to avoid re-subscription loops
+  const fetchUnreadCountRef = useRef(fetchUnreadCount);
+  fetchUnreadCountRef.current = fetchUnreadCount;
+
   // Fetch notifications
   const fetchNotifications = useCallback(
     async (params = {}) => {
@@ -48,7 +52,14 @@ export function NotificationProvider({ children }) {
       try {
         const data = await notificationService.getNotifications(params);
         if (data) {
-          setNotifications(data.notifications || []);
+          // Deduplicate incoming array by ID to guarantee UI idempotency
+          const seen = new Set();
+          const deduplicated = (data.notifications || []).filter((item) => {
+            if (!item || !item.id || seen.has(item.id)) return false;
+            seen.add(item.id);
+            return true;
+          });
+          setNotifications(deduplicated);
           if (data.pagination) setPagination(data.pagination);
           if (typeof data.unreadCount === 'number') setUnreadCount(data.unreadCount);
         }
@@ -62,6 +73,9 @@ export function NotificationProvider({ children }) {
     },
     [isAuthenticated]
   );
+
+  const fetchNotificationsRef = useRef(fetchNotifications);
+  fetchNotificationsRef.current = fetchNotifications;
 
   // Mark single as read
   const markAsRead = useCallback(
@@ -148,7 +162,7 @@ export function NotificationProvider({ children }) {
 
     socket.on('connect', () => {
       setIsConnected(true);
-      fetchUnreadCount();
+      if (fetchUnreadCountRef.current) fetchUnreadCountRef.current();
     });
 
     socket.on('disconnect', () => {
@@ -156,8 +170,19 @@ export function NotificationProvider({ children }) {
     });
 
     socket.on('notification:new', (newNotif) => {
-      setNotifications((prev) => [newNotif, ...prev]);
-      setUnreadCount((c) => c + 1);
+      if (!newNotif || !newNotif.id) return;
+      setNotifications((prev) => {
+        // Enforce deduplication against existing in-memory notifications
+        const isDuplicate = prev.some(
+          (n) => n.id === newNotif.id || (newNotif.eventKey && n.eventKey === newNotif.eventKey)
+        );
+        if (isDuplicate) return prev;
+        return [newNotif, ...prev];
+      });
+      // Synchronize unread count cleanly
+      if (fetchUnreadCountRef.current) {
+        fetchUnreadCountRef.current();
+      }
     });
 
     socket.on('unread_count:update', ({ unreadCount: count }) => {
@@ -167,21 +192,26 @@ export function NotificationProvider({ children }) {
     });
 
     socket.on('activity:live', (activity) => {
-      setLiveActivities((prev) => [activity, ...prev.slice(0, 49)]);
+      if (!activity || !activity.id) return;
+      setLiveActivities((prev) => {
+        if (prev.some((a) => a.id === activity.id)) return prev;
+        return [activity, ...prev.slice(0, 49)];
+      });
     });
 
     socket.on('announcement:new', () => {
-      fetchUnreadCount();
-      fetchNotifications({ page: 1, limit: 10 });
+      if (fetchUnreadCountRef.current) {
+        fetchUnreadCountRef.current();
+      }
     });
 
     return () => {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [isAuthenticated, user?.id, fetchUnreadCount, fetchNotifications]);
+  }, [isAuthenticated, user?.id]);
 
-  // Background polling fallback with Page Visibility API
+  // Background polling fallback with Page Visibility API (optimized for Render Free Plan)
   useEffect(() => {
     if (!isAuthenticated) {
       setNotifications([]);
@@ -189,35 +219,43 @@ export function NotificationProvider({ children }) {
       return;
     }
 
-    // Initial fetch
+    // Initial fetch on mount
     fetchUnreadCount();
 
-    const startPolling = () => {
-      if (pollTimerRef.current) window.clearInterval(pollTimerRef.current);
-      pollTimerRef.current = window.setInterval(() => {
-        if (document.visibilityState === 'visible') {
-          fetchUnreadCount();
-        }
-      }, 30000); // 30 seconds interval fallback
-    };
+    // When WebSocket is healthy, do not poll to save Render Free compute & network bandwidth.
+    // Only poll when socket is disconnected AND tab is visible.
+    const pollIntervalMs = 60000; // 60s fallback
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
+    const checkAndPoll = () => {
+      if (document.visibilityState === 'visible' && !isConnected) {
         fetchUnreadCount();
-        startPolling();
-      } else {
-        if (pollTimerRef.current) window.clearInterval(pollTimerRef.current);
       }
     };
 
-    startPolling();
+    if (!isConnected) {
+      if (pollTimerRef.current) window.clearInterval(pollTimerRef.current);
+      pollTimerRef.current = window.setInterval(checkAndPoll, pollIntervalMs);
+    } else {
+      if (pollTimerRef.current) {
+        window.clearInterval(pollTimerRef.current);
+        pollTimerRef.current = null;
+      }
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Re-sync unread count once when returning to visible tab
+        fetchUnreadCount();
+      }
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       if (pollTimerRef.current) window.clearInterval(pollTimerRef.current);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isAuthenticated, user?.id, fetchUnreadCount]);
+  }, [isAuthenticated, isConnected, fetchUnreadCount]);
 
   const value = {
     notifications,

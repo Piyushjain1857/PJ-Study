@@ -232,6 +232,12 @@ export async function recordAndBroadcastActivity(params) {
  */
 export function dispatchRealtimeNotification(userId, notification, unreadCount) {
   if (!ioInstance || !userId) return;
+  if (!env.isTest) {
+    // eslint-disable-next-line no-console
+    console.log(
+      `[Socket.IO] Realtime notification dispatched to user:${userId}, type:${notification?.type}`
+    );
+  }
   ioInstance.to(`user:${userId}`).emit('notification:new', notification);
   if (typeof unreadCount === 'number') {
     ioInstance.to(`user:${userId}`).emit('unread_count:update', { unreadCount });

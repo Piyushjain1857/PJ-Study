@@ -1,5 +1,6 @@
 import notificationRepository, { NotificationRepository } from './notification.repository.js';
 import { getPaginationParams, buildPaginatedResponse } from '../../utils/pagination.js';
+import env from '../../config/env.js';
 
 export const VALID_CATEGORIES = ['ACADEMIC', 'REVIEWS', 'COMMUNITY', 'SYSTEM', 'SECURITY'];
 
@@ -234,7 +235,26 @@ export class NotificationService {
     if (eventKey) {
       const existing = await this.repo.findByEventKey(eventKey, tx);
       if (existing) {
+        if (!env.isTest) {
+          // eslint-disable-next-line no-console
+          console.log(`[Notification] Deduplicated event skipped: eventKey=${eventKey}`);
+        }
         return existing;
+      }
+    } else {
+      // 1b. Fallback deduplication: Check recent duplicate (within 5 minutes) for identical user, type, and title
+      const recent = await this.repo.findRecentDuplicate(
+        { userId, type, title, windowSeconds: 300 },
+        tx
+      );
+      if (recent) {
+        if (!env.isTest) {
+          // eslint-disable-next-line no-console
+          console.log(
+            `[Notification] Sliding window duplicate suppressed: userId=${userId}, type=${type}`
+          );
+        }
+        return recent;
       }
     }
 
@@ -284,6 +304,13 @@ export class NotificationService {
         },
         tx
       );
+
+      if (!env.isTest) {
+        // eslint-disable-next-line no-console
+        console.log(
+          `[Notification] Created notification: id=${createdNotification.id}, userId=${userId}, type=${type}, category=${category}`
+        );
+      }
 
       // Real-time dispatch via Socket.IO
       try {

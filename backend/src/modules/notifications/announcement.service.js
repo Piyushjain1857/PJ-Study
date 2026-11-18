@@ -1,4 +1,5 @@
 import prisma from '../../config/database.js';
+import env from '../../config/env.js';
 import notificationRepository, { NotificationRepository } from './notification.repository.js';
 import { getPaginationParams, buildPaginatedResponse } from '../../utils/pagination.js';
 
@@ -84,6 +85,25 @@ export class AnnouncementService {
       sanitizedTargetUrl = trimmed;
     }
 
+    // Deduplication check: Avoid re-publishing identical announcement submitted within 10 minutes
+    const recentAnnouncement = await this.repo.findRecentAnnouncement({
+      title,
+      message,
+      targetAudience: audience,
+      windowSeconds: 600
+    });
+    if (recentAnnouncement) {
+      if (!env.isTest) {
+        // eslint-disable-next-line no-console
+        console.log(`[Announcement] Duplicate announcement suppressed (id: ${recentAnnouncement.id})`);
+      }
+      return {
+        announcement: recentAnnouncement,
+        recipientCount: 0,
+        deduplicated: true
+      };
+    }
+
     // 1. Create Announcement Record
     const announcement = await this.repo.createAnnouncement({
       createdById: adminId,
@@ -98,6 +118,17 @@ export class AnnouncementService {
     const userWhere = { isActive: true };
     if (audience !== 'ALL') {
       userWhere.role = audience;
+    }
+
+    // In test environment, strictly restrict fan-out to test fixtures to prevent spamming personal/production users
+    if (env.isTest || process.env.NODE_ENV === 'test') {
+      userWhere.email = {
+        OR: [
+          { startsWith: 'notif_' },
+          { contains: 'test' },
+          { endsWith: '@pjstudy.com' }
+        ]
+      };
     }
 
     // Query active recipients with preferences
@@ -147,6 +178,13 @@ export class AnnouncementService {
       recipientCount += res.count;
     }
 
+    if (!env.isTest) {
+      // eslint-disable-next-line no-console
+      console.log(
+        `[Announcement] Published announcement: id=${announcement.id}, audience=${audience}, priority=${priority}, recipients=${recipientCount}`
+      );
+    }
+
     // Broadcast live activity and dispatch announcement emails asynchronously
     import('../../services/realtime/socket.service.js').then(
       ({ recordAndBroadcastActivity, broadcastEvent }) => {
@@ -165,25 +203,27 @@ export class AnnouncementService {
       }
     ).catch(() => {});
 
-    import('../../services/email/email.service.js').then(({ emailService }) => {
-      prisma.user.findMany({
-        where: userWhere,
-        take: 100,
-        select: { id: true, name: true, email: true }
-      }).then((recipients) => {
-        for (const r of recipients) {
-          emailService.sendAnnouncementEmail({
-            to: r.email,
-            name: r.name,
-            title,
-            message,
-            priority,
-            targetUrl: sanitizedTargetUrl,
-            userId: r.id
-          }).catch(() => {});
-        }
+    if (!env.isTest) {
+      import('../../services/email/email.service.js').then(({ emailService }) => {
+        prisma.user.findMany({
+          where: userWhere,
+          take: 100,
+          select: { id: true, name: true, email: true }
+        }).then((recipients) => {
+          for (const r of recipients) {
+            emailService.sendAnnouncementEmail({
+              to: r.email,
+              name: r.name,
+              title,
+              message,
+              priority,
+              targetUrl: sanitizedTargetUrl,
+              userId: r.id
+            }).catch(() => {});
+          }
+        }).catch(() => {});
       }).catch(() => {});
-    }).catch(() => {});
+    }
 
     return {
       announcement,

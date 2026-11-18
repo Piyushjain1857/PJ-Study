@@ -90,7 +90,12 @@ test('Enterprise Notifications & Activity Center Suite', async (t) => {
     // Clean any previous test relics
     await prisma.notification.deleteMany({
       where: {
-        userId: { in: [testStudentA.id, testStudentB.id, testModerator.id, testAdmin.id] }
+        OR: [
+          { userId: { in: [testStudentA.id, testStudentB.id, testModerator.id, testAdmin.id] } },
+          { eventKey: { startsWith: 'announcement_' } },
+          { title: { contains: 'Spring Semester Midterms' } },
+          { title: { contains: 'Moderator Policy Update' } }
+        ]
       }
     });
     await prisma.notificationPreference.deleteMany({
@@ -99,7 +104,13 @@ test('Enterprise Notifications & Activity Center Suite', async (t) => {
       }
     });
     await prisma.announcement.deleteMany({
-      where: { createdById: testAdmin.id }
+      where: {
+        OR: [
+          { createdById: testAdmin.id },
+          { title: { contains: 'Spring Semester Midterms' } },
+          { title: { contains: 'Moderator Policy Update' } }
+        ]
+      }
     });
     await prisma.user.deleteMany({
       where: {
@@ -127,7 +138,12 @@ test('Enterprise Notifications & Activity Center Suite', async (t) => {
     // Teardown test fixtures
     await prisma.notification.deleteMany({
       where: {
-        userId: { in: [testStudentA.id, testStudentB.id, testModerator.id, testAdmin.id] }
+        OR: [
+          { userId: { in: [testStudentA.id, testStudentB.id, testModerator.id, testAdmin.id] } },
+          { eventKey: { startsWith: 'announcement_' } },
+          { title: { contains: 'Spring Semester Midterms' } },
+          { title: { contains: 'Moderator Policy Update' } }
+        ]
       }
     });
     await prisma.notificationPreference.deleteMany({
@@ -136,7 +152,13 @@ test('Enterprise Notifications & Activity Center Suite', async (t) => {
       }
     });
     await prisma.announcement.deleteMany({
-      where: { createdById: testAdmin.id }
+      where: {
+        OR: [
+          { createdById: testAdmin.id },
+          { title: { contains: 'Spring Semester Midterms' } },
+          { title: { contains: 'Moderator Policy Update' } }
+        ]
+      }
     });
     await prisma.user.deleteMany({
       where: {
@@ -197,6 +219,29 @@ test('Enterprise Notifications & Activity Center Suite', async (t) => {
       where: { eventKey: 'note_approved_test_note_1' }
     });
     assert.equal(count, 1);
+
+    // Sliding window fallback deduplication when eventKey is omitted
+    const noKey1 = await notificationService.createNotification({
+      userId: testStudentA.id,
+      type: 'SECURITY_ALERT',
+      category: 'SECURITY',
+      title: 'Suspicious Activity Detected',
+      message: 'A login attempt from a new location was recorded.'
+    });
+    assert.ok(noKey1?.id);
+
+    const noKey2 = await notificationService.createNotification({
+      userId: testStudentA.id,
+      type: 'SECURITY_ALERT',
+      category: 'SECURITY',
+      title: 'Suspicious Activity Detected',
+      message: 'A login attempt from a new location was recorded.'
+    });
+    assert.equal(
+      noKey2.id,
+      noKey1.id,
+      'Sliding window deduplication must return existing notification record.'
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -473,6 +518,25 @@ test('Enterprise Notifications & Activity Center Suite', async (t) => {
       assert.equal(adminRes.body.success, true);
       assert.ok(adminRes.body.data.announcement.id);
       assert.ok(adminRes.body.data.recipientCount >= 1);
+
+      // Verify announcement deduplication suppresses redundant fan-out
+      const duplicateRes = await api('/admin/announcements', {
+        method: 'POST',
+        token: tokenAdmin,
+        body: {
+          title: 'Spring Semester Midterms Library',
+          message: 'New curated study materials have been published for Computer Science.',
+          targetAudience: 'ALL',
+          targetUrl: '/notes/explore',
+          priority: 'HIGH'
+        }
+      });
+      assert.equal(duplicateRes.status, 201);
+      assert.equal(
+        duplicateRes.body.data.recipientCount,
+        0,
+        'Duplicate announcement must not fan out repeatedly'
+      );
     }
   );
 
