@@ -13,6 +13,16 @@ import {
   DEFAULT_ADMIN_PERMISSION_SCOPES
 } from './defaultConfigs.js';
 
+let publicConfigCache = null;
+let publicConfigExpiry = 0;
+let hasInitializedDefaults = false;
+const PUBLIC_CONFIG_TTL_MS = 60000; // 60 seconds
+
+export function invalidatePublicConfigCache() {
+  publicConfigCache = null;
+  publicConfigExpiry = 0;
+}
+
 export class PlatformConfigService {
   constructor(auditSvc = auditService) {
     this.auditSvc = auditSvc;
@@ -22,6 +32,18 @@ export class PlatformConfigService {
    * Initializes database with default configuration records if absent.
    */
   async initDefaultConfigurations() {
+    if (hasInitializedDefaults) return;
+
+    try {
+      const pageCount = await prisma.pageConfiguration.count();
+      if (pageCount >= Object.keys(DEFAULT_PAGE_CONFIGS).length) {
+        hasInitializedDefaults = true;
+        return;
+      }
+    } catch {
+      // If table query fails, continue with upsert fallback
+    }
+
     // 1. Seed Page Configurations
     const PAGE_TITLES = {
       homepage: 'Public Landing Page',
@@ -151,6 +173,10 @@ export class PlatformConfigService {
    * --- PUBLIC CONFIGURATION ---
    */
   async getPublicConfig() {
+    if (publicConfigCache && Date.now() < publicConfigExpiry) {
+      return publicConfigCache;
+    }
+
     await this.initDefaultConfigurations();
 
     const [themeRec, pageRec, features, content] = await Promise.all([
@@ -170,12 +196,16 @@ export class PlatformConfigService {
       contentMap[c.key] = c.content;
     }
 
-    return {
+    const result = {
       theme: themeRec?.publishedConfig || DEFAULT_THEMES.PUBLIC,
       homepage: pageRec?.publishedConfig || DEFAULT_PAGE_CONFIGS.homepage,
       features: featureMap,
       content: contentMap
     };
+
+    publicConfigCache = result;
+    publicConfigExpiry = Date.now() + PUBLIC_CONFIG_TTL_MS;
+    return result;
   }
 
   /**
@@ -298,6 +328,8 @@ export class PlatformConfigService {
       metadata: { pageKey, version: newVersion, changeSummary }
     });
 
+    invalidatePublicConfigCache();
+
     return updated;
   }
 
@@ -379,6 +411,8 @@ export class PlatformConfigService {
       entityId: existing.id,
       metadata: { roleScope, version: newVersion }
     });
+
+    invalidatePublicConfigCache();
 
     return updated;
   }

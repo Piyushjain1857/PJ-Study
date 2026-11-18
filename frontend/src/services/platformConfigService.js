@@ -1,14 +1,43 @@
 import apiClient from './api.js';
 
+let cachedPublicConfig = null;
+let publicConfigTimestamp = 0;
+let inFlightPublicConfigPromise = null;
+const CONFIG_CACHE_TTL_MS = 60000; // 60 seconds
+
+export function invalidateClientPublicConfig() {
+  cachedPublicConfig = null;
+  publicConfigTimestamp = 0;
+}
+
 /**
  * Platform Configuration & Customization Service (Step 20)
  * Connects frontend to the Platform Owner Command Center backend APIs.
  */
 export const platformConfigService = {
   // Public & Workspace Delivery
-  async getPublicConfig() {
-    const res = await apiClient.get('/platform/config/public');
-    return res.data?.data;
+  async getPublicConfig(options = { forceFresh: false }) {
+    const now = Date.now();
+    if (!options.forceFresh && cachedPublicConfig && now - publicConfigTimestamp < CONFIG_CACHE_TTL_MS) {
+      return cachedPublicConfig;
+    }
+
+    if (!options.forceFresh && inFlightPublicConfigPromise) {
+      return inFlightPublicConfigPromise;
+    }
+
+    inFlightPublicConfigPromise = apiClient
+      .get('/platform/config/public')
+      .then((res) => {
+        cachedPublicConfig = res.data?.data;
+        publicConfigTimestamp = Date.now();
+        return cachedPublicConfig;
+      })
+      .finally(() => {
+        inFlightPublicConfigPromise = null;
+      });
+
+    return inFlightPublicConfigPromise;
   },
 
   async getWorkspaceConfig() {

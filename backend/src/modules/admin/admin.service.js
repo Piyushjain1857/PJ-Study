@@ -12,6 +12,15 @@ import { slugify } from '../courses/course.service.js';
 /**
  * Service managing administrative operations, role assignments, user status, and audit governance.
  */
+let settingsCache = null;
+let settingsCacheExpiry = 0;
+const SETTINGS_CACHE_TTL_MS = 60000; // 60 seconds
+
+export function invalidateSettingsCache() {
+  settingsCache = null;
+  settingsCacheExpiry = 0;
+}
+
 export class AdminService {
   /**
    * Retrieves a paginated, searchable, and filtered list of users.
@@ -1055,6 +1064,10 @@ export class AdminService {
    * Retrieves runtime configurable platform settings.
    */
   async getSettings() {
+    if (settingsCache && Date.now() < settingsCacheExpiry) {
+      return settingsCache;
+    }
+
     const defaults = [
       {
         key: 'platformName',
@@ -1094,15 +1107,18 @@ export class AdminService {
       }
     ];
 
-    for (const d of defaults) {
-      await prisma.platformSetting.upsert({
-        where: { key: d.key },
-        update: {},
-        create: d
-      });
-    }
+    let settings = await prisma.platformSetting.findMany();
 
-    const settings = await prisma.platformSetting.findMany();
+    if (settings.length < defaults.length) {
+      for (const d of defaults) {
+        await prisma.platformSetting.upsert({
+          where: { key: d.key },
+          update: {},
+          create: d
+        });
+      }
+      settings = await prisma.platformSetting.findMany();
+    }
 
     const settingsMap = {};
     for (const s of settings) {
@@ -1114,6 +1130,8 @@ export class AdminService {
       };
     }
 
+    settingsCache = settingsMap;
+    settingsCacheExpiry = Date.now() + SETTINGS_CACHE_TTL_MS;
     return settingsMap;
   }
 
@@ -1185,6 +1203,8 @@ export class AdminService {
       entityId: 'SYSTEM',
       metadata: updated
     });
+
+    invalidateSettingsCache();
 
     return updated;
   }

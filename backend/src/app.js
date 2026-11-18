@@ -1,4 +1,5 @@
 import express from 'express';
+import zlib from 'zlib';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -115,11 +116,56 @@ export function createApp() {
     })
   );
 
-  // Request logging
+  // High-performance gzip response compression for JSON and text payloads >= 1KB
+  app.use((req, res, next) => {
+    const acceptEncoding = req.headers['accept-encoding'] || '';
+    if (!acceptEncoding.includes('gzip')) return next();
+
+    const originalSend = res.send;
+    res.send = function (body) {
+      if (
+        res.headersSent ||
+        res.getHeader('Content-Encoding') ||
+        (res.statusCode >= 300 && res.statusCode < 400)
+      ) {
+        return originalSend.call(this, body);
+      }
+
+      const contentType = res.getHeader('Content-Type') || '';
+      const isCompressible =
+        typeof contentType === 'string' &&
+        (contentType.includes('application/json') ||
+          contentType.includes('text/html') ||
+          contentType.includes('text/plain') ||
+          contentType.includes('application/xml'));
+
+      if (isCompressible && (typeof body === 'string' || Buffer.isBuffer(body))) {
+        const payloadBuffer = typeof body === 'string' ? Buffer.from(body) : body;
+        if (payloadBuffer.length >= 1024) {
+          try {
+            const compressed = zlib.gzipSync(payloadBuffer);
+            res.setHeader('Content-Encoding', 'gzip');
+            res.setHeader('Content-Length', compressed.length);
+            res.removeHeader('ETag');
+            return originalSend.call(this, compressed);
+          } catch {
+            return originalSend.call(this, body);
+          }
+        }
+      }
+      return originalSend.call(this, body);
+    };
+    next();
+  });
+
+  // Request logging (skips high-frequency uptime and crawler probes to conserve CPU and I/O)
+  const isProbeRequest = (req) =>
+    req.url.includes('/health') || req.url === '/robots.txt' || req.url === '/sitemap.xml';
+
   if (env.isDevelopment) {
-    app.use(morgan('dev'));
+    app.use(morgan('dev', { skip: isProbeRequest }));
   } else if (!env.isTest) {
-    app.use(morgan('combined'));
+    app.use(morgan('combined', { skip: isProbeRequest }));
   }
 
   // Cookie parsing middleware

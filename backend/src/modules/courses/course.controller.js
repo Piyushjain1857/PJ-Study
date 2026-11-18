@@ -2,6 +2,15 @@ import courseService, { CourseService } from './course.service.js';
 import courseRepository from './course.repository.js';
 import { sendSuccess } from '../../utils/apiResponse.js';
 
+let activeCoursesCache = null;
+let activeCoursesExpiry = 0;
+const CACHE_TTL_MS = 60000; // 60 seconds
+
+export function invalidateActiveCoursesCache() {
+  activeCoursesCache = null;
+  activeCoursesExpiry = 0;
+}
+
 export class CourseController {
   constructor(service = courseService, repo = courseRepository) {
     this.service = service;
@@ -14,6 +23,12 @@ export class CourseController {
 
       // When called without pagination (e.g. for dropdowns) or all=true, return full active list
       if (all === 'true' || limit === 'all' || (!page && !limit)) {
+        const isDefaultActive = isActive === undefined || isActive === 'true' || isActive === true;
+        if (isDefaultActive && activeCoursesCache && Date.now() < activeCoursesExpiry) {
+          res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+          return sendSuccess(res, activeCoursesCache);
+        }
+
         const where = {};
         if (typeof isActive === 'boolean') {
           where.isActive = isActive;
@@ -39,6 +54,12 @@ export class CourseController {
           if (idxB !== -1) return 1;
           return a.name.localeCompare(b.name);
         });
+
+        if (isDefaultActive) {
+          activeCoursesCache = sortedItems;
+          activeCoursesExpiry = Date.now() + CACHE_TTL_MS;
+        }
+
         res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
         return sendSuccess(res, sortedItems);
       }

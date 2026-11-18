@@ -84,9 +84,42 @@ export const apiClient = axios.create({
   }
 });
 
+// Cold-start & delayed request tracking for graceful free-tier user feedback
+let pendingRequestsCount = 0;
+let coldStartTimer = null;
+
+function notifyRequestStart() {
+  pendingRequestsCount++;
+  if (!coldStartTimer) {
+    coldStartTimer = setTimeout(() => {
+      if (pendingRequestsCount > 0 && typeof window !== 'undefined' && typeof window.CustomEvent === 'function') {
+        window.dispatchEvent(
+          new window.CustomEvent('pj:server-delay', { detail: { isSlow: true } })
+        );
+      }
+    }, 3500);
+  }
+}
+
+function notifyRequestEnd() {
+  pendingRequestsCount = Math.max(0, pendingRequestsCount - 1);
+  if (pendingRequestsCount === 0) {
+    if (coldStartTimer) {
+      clearTimeout(coldStartTimer);
+      coldStartTimer = null;
+    }
+    if (typeof window !== 'undefined' && typeof window.CustomEvent === 'function') {
+      window.dispatchEvent(
+        new window.CustomEvent('pj:server-delay', { detail: { isSlow: false } })
+      );
+    }
+  }
+}
+
 // Request interceptor: injects in-memory JWT bearer token if available
 apiClient.interceptors.request.use(
   (config) => {
+    notifyRequestStart();
     config.baseURL = getRuntimeApiBaseUrl();
     if (inMemoryAccessToken && !config.headers.Authorization) {
       config.headers.Authorization = `Bearer ${inMemoryAccessToken}`;
@@ -97,13 +130,20 @@ apiClient.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    notifyRequestEnd();
+    return Promise.reject(error);
+  }
 );
 
 // Response interceptor: handles 401s with silent refresh token rotation
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    notifyRequestEnd();
+    return response;
+  },
   async (error) => {
+    notifyRequestEnd();
     const originalRequest = error.config;
     const statusCode = error.response?.status;
     const errorUrl = originalRequest?.url || '';

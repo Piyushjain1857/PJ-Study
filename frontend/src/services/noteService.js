@@ -1,5 +1,15 @@
 import apiClient, { API_BASE_URL } from './api.js';
 
+let cachedExploreFilters = null;
+let exploreFiltersTimestamp = 0;
+let inFlightFiltersPromise = null;
+const FILTERS_CACHE_TTL_MS = 60000; // 60 seconds
+
+export function invalidateClientExploreFilters() {
+  cachedExploreFilters = null;
+  exploreFiltersTimestamp = 0;
+}
+
 /**
  * Service for fetching notes, managing scholar manuscripts, file downloads, and moderation.
  */
@@ -18,13 +28,34 @@ export const noteService = {
 
   /**
    * Retrieves academic filter taxonomies (courses, categories, subjects, semesters).
+   * Includes in-flight request deduplication and memory caching.
    *
    * @param {AbortSignal} [signal]
+   * @param {{ forceFresh?: boolean }} [options]
    * @returns {Promise<{ courses: any[], categories: any[], subjects: any[], semesters: number[], totalApprovedNotes: number }>}
    */
-  async getExploreFilters(signal = null) {
-    const response = await apiClient.get('/notes/explore/filters', { signal });
-    return response.data?.data;
+  async getExploreFilters(signal = null, options = { forceFresh: false }) {
+    const now = Date.now();
+    if (!options.forceFresh && cachedExploreFilters && now - exploreFiltersTimestamp < FILTERS_CACHE_TTL_MS) {
+      return cachedExploreFilters;
+    }
+
+    if (!options.forceFresh && inFlightFiltersPromise) {
+      return inFlightFiltersPromise;
+    }
+
+    inFlightFiltersPromise = apiClient
+      .get('/notes/explore/filters', { signal })
+      .then((res) => {
+        cachedExploreFilters = res.data?.data;
+        exploreFiltersTimestamp = Date.now();
+        return cachedExploreFilters;
+      })
+      .finally(() => {
+        inFlightFiltersPromise = null;
+      });
+
+    return inFlightFiltersPromise;
   },
 
   /**

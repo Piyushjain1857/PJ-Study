@@ -16,16 +16,6 @@ async function startServer() {
     process.exit(0);
   }
 
-  // Attempt non-blocking database connection check in development
-  try {
-    await connectDatabase();
-  } catch (err) {
-    console.warn(
-      '⚠️ Notice: Could not connect to database immediately. Will continue starting HTTP server:',
-      err.message
-    );
-  }
-
   const host = process.env.HOST || '0.0.0.0';
   const httpServer = http.createServer(app);
   initializeSocketServer(httpServer);
@@ -43,6 +33,14 @@ async function startServer() {
       `  Swagger API : http://${host === '0.0.0.0' ? 'localhost' : host}:${env.port}/api/docs`
     );
     console.log(`===============================================`);
+  });
+
+  // Non-blocking background database connection verification
+  connectDatabase().catch((err) => {
+    console.warn(
+      '⚠️ Notice: Could not connect to database immediately. Will continue serving requests and retry on first query:',
+      err.message
+    );
   });
 
   server.on('error', (err) => {

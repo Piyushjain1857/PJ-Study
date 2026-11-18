@@ -3,24 +3,17 @@ import env from './env.js';
 
 /**
  * Global PrismaClient instance singleton.
- * Prevents multiple instances in development during hot-reloads.
+ * Prevents multiple instances in development during hot-reloads
+ * and ensures single shared connection pool in production.
  */
-let prisma;
-
 const isVerbosePrisma = process.env.PRISMA_VERBOSE === 'true';
 
-if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient({
-    log: ['error', 'warn']
+if (!globalThis.__pj_prisma) {
+  globalThis.__pj_prisma = new PrismaClient({
+    log: isVerbosePrisma ? ['query', 'info', 'warn', 'error'] : ['error']
   });
-} else {
-  if (!global.__pj_prisma) {
-    global.__pj_prisma = new PrismaClient({
-      log: isVerbosePrisma ? ['query', 'info', 'warn', 'error'] : ['error', 'warn']
-    });
-  }
-  prisma = global.__pj_prisma;
 }
+const prisma = globalThis.__pj_prisma;
 
 /**
  * Connect to the database with retry or check.

@@ -2,6 +2,13 @@ import subjectService, { SubjectService } from './subject.service.js';
 import subjectRepository from './subject.repository.js';
 import { sendSuccess } from '../../utils/apiResponse.js';
 
+let activeSubjectsCache = new Map();
+const CACHE_TTL_MS = 60000; // 60 seconds
+
+export function invalidateActiveSubjectsCache() {
+  activeSubjectsCache.clear();
+}
+
 export class SubjectController {
   constructor(service = subjectService, repo = subjectRepository) {
     this.service = service;
@@ -14,6 +21,13 @@ export class SubjectController {
 
       // When called without pagination (e.g. for dropdowns) or all=true, return full active list
       if (all === 'true' || limit === 'all' || (!page && !limit)) {
+        const cacheKey = `${courseId || ''}:${semester || ''}:${isActive ?? 'true'}`;
+        const cached = activeSubjectsCache.get(cacheKey);
+        if (cached && Date.now() < cached.expiry) {
+          res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+          return sendSuccess(res, cached.data);
+        }
+
         const where = {};
         if (courseId) where.courseId = courseId;
         if (semester) {
@@ -35,6 +49,12 @@ export class SubjectController {
           take: 200,
           where
         });
+
+        activeSubjectsCache.set(cacheKey, {
+          data: items,
+          expiry: Date.now() + CACHE_TTL_MS
+        });
+
         res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
         return sendSuccess(res, items);
       }
