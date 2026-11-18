@@ -35,11 +35,14 @@ export const VALID_NOTE_STATUSES = [
 ];
 
 /**
- * In-memory debounce cache to prevent duplicate view increments from
- * rapid duplicate requests, double-clicks, or React development double-mounts.
+ * In-memory debounce caches to prevent duplicate view and download increments
+ * from page reloads, browser pre-fetching, multi-mounts, or iframe preview requests.
  */
 const recentViewsCache = new Map();
-const VIEW_DEBOUNCE_MS = 2500;
+const VIEW_DEBOUNCE_MS = 15 * 60 * 1000; // 15 minutes window for distinct views
+
+const recentDownloadsCache = new Map();
+const DOWNLOAD_DEBOUNCE_MS = 15 * 60 * 1000; // 15 minutes window for distinct downloads
 
 /**
  * Short-lived in-memory cache for taxonomy explore filters.
@@ -140,24 +143,30 @@ export class NoteService {
 
     let hasIncremented = false;
     if (trackView && isPubliclyVisible) {
-      const cacheKey = currentUser?.id
-        ? `user:${currentUser.id}:${id}`
-        : `ip:${clientIp || 'unknown'}:${id}`;
+      const userKey = currentUser?.id ? `user:${currentUser.id}:${id}` : null;
+      const ipKey = clientIp ? `ip:${clientIp}:${id}` : null;
       const now = Date.now();
-      const lastViewTime = recentViewsCache.get(cacheKey);
 
-      if (!lastViewTime || now - lastViewTime > VIEW_DEBOUNCE_MS) {
-        recentViewsCache.set(cacheKey, now);
+      const lastUserView = userKey ? recentViewsCache.get(userKey) : null;
+      const lastIpView = ipKey ? recentViewsCache.get(ipKey) : null;
+
+      const isDebounced =
+        (lastUserView && now - lastUserView < VIEW_DEBOUNCE_MS) ||
+        (lastIpView && now - lastIpView < VIEW_DEBOUNCE_MS);
+
+      if (!isDebounced) {
+        if (userKey) recentViewsCache.set(userKey, now);
+        if (ipKey) recentViewsCache.set(ipKey, now);
         hasIncremented = true;
 
-        if (recentViewsCache.size > 2000) {
-          const threshold = now - 10000;
+        if (recentViewsCache.size > 5000) {
+          const threshold = now - VIEW_DEBOUNCE_MS;
           for (const [k, v] of recentViewsCache.entries()) {
             if (v < threshold) recentViewsCache.delete(k);
           }
         }
 
-        this.repo.incrementViewCount(id).catch((err) => {
+        await this.repo.incrementViewCount(id).catch((err) => {
           // eslint-disable-next-line no-console
           console.error('Failed to increment note view count:', err.message);
         });
@@ -1248,7 +1257,7 @@ export class NoteService {
    *   end?: number
    * }>}
    */
-  async getNoteFileForDownload(noteId, currentUser = null, rangeOptions = null) {
+  async getNoteFileForDownload(noteId, currentUser = null, options = {}) {
     const note = await this.repo.findById(noteId);
     if (!note) {
       const error = new Error(`Note with ID "${noteId}" was not found.`);
@@ -1283,14 +1292,55 @@ export class NoteService {
       throw error;
     }
 
-    // Increment download count (only for full download, not chunked byte range requests)
-    if (PUBLISHED_STATUSES.includes(note.status) && (!rangeOptions || !rangeOptions.start)) {
-      await this.repo.incrementDownloadCount(noteId).catch(() => {});
+    // Unpack options supporting direct rangeOptions object and options envelope
+    let rangeOptions = null;
+    let isInline = false;
+    let clientIp = null;
+
+    if (options && (options.start !== undefined || options.end !== undefined)) {
+      rangeOptions = options;
+    } else if (options && typeof options === 'object') {
+      rangeOptions = options.rangeOptions || null;
+      isInline = Boolean(options.isInline);
+      clientIp = options.clientIp || null;
     }
 
-    // Record user download history if authenticated
-    if (currentUser && currentUser.id && (!rangeOptions || !rangeOptions.start)) {
-      await this.repo.recordDownloadHistory(currentUser.id, noteId).catch(() => {});
+    // Increment download count ONLY for actual document downloads:
+    // 1. Must be a published note
+    // 2. Must NOT be an inline browser preview (e.g. iframe viewing in NotePreview)
+    // 3. Must NOT be a partial HTTP byte-range stream request
+    const isFullDownload = !isInline && !rangeOptions;
+
+    if (PUBLISHED_STATUSES.includes(note.status) && isFullDownload) {
+      const userKey = currentUser?.id ? `dl:user:${currentUser.id}:${noteId}` : null;
+      const ipKey = clientIp ? `dl:ip:${clientIp}:${noteId}` : null;
+      const now = Date.now();
+
+      const lastUserDl = userKey ? recentDownloadsCache.get(userKey) : null;
+      const lastIpDl = ipKey ? recentDownloadsCache.get(ipKey) : null;
+
+      const isDebounced =
+        (lastUserDl && now - lastUserDl < DOWNLOAD_DEBOUNCE_MS) ||
+        (lastIpDl && now - lastIpDl < DOWNLOAD_DEBOUNCE_MS);
+
+      if (!isDebounced) {
+        if (userKey) recentDownloadsCache.set(userKey, now);
+        if (ipKey) recentDownloadsCache.set(ipKey, now);
+
+        if (recentDownloadsCache.size > 5000) {
+          const threshold = now - DOWNLOAD_DEBOUNCE_MS;
+          for (const [k, v] of recentDownloadsCache.entries()) {
+            if (v < threshold) recentDownloadsCache.delete(k);
+          }
+        }
+
+        await this.repo.incrementDownloadCount(noteId).catch(() => {});
+
+        // Record user download history if authenticated
+        if (currentUser && currentUser.id) {
+          await this.repo.recordDownloadHistory(currentUser.id, noteId).catch(() => {});
+        }
+      }
     }
 
     const streamResult = await this.storage.getFileStream(

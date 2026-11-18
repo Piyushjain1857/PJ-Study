@@ -55,7 +55,16 @@ export class NoteController {
    */
   getNoteById = async (req, res, next) => {
     try {
-      const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress;
+      const rawForwarded = req.headers['x-forwarded-for'];
+      const clientIp = (
+        (typeof rawForwarded === 'string' ? rawForwarded.split(',')[0] : '') ||
+        req.ip ||
+        req.socket?.remoteAddress ||
+        'unknown'
+      )
+        .trim()
+        .replace(/^::ffff:/, '');
+
       const note = await this.service.getNoteById(req.params.id, req.user || null, true, clientIp);
       return sendSuccess(res, note);
     } catch (err) {
@@ -304,10 +313,24 @@ export class NoteController {
         };
       }
 
+      const rawForwarded = req.headers['x-forwarded-for'];
+      const clientIp = (
+        (typeof rawForwarded === 'string' ? rawForwarded.split(',')[0] : '') ||
+        req.ip ||
+        req.socket?.remoteAddress ||
+        'unknown'
+      )
+        .trim()
+        .replace(/^::ffff:/, '');
+
       const fileData = await this.service.getNoteFileForDownload(
         req.params.id,
         req.user || null,
-        rangeOptions
+        {
+          isInline,
+          rangeOptions,
+          clientIp
+        }
       );
 
       res.setHeader('Content-Type', fileData.mimeType);
