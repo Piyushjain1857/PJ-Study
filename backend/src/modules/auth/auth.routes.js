@@ -49,6 +49,7 @@ router.post(
  * Authenticated user account routes
  */
 router.get('/me', authenticate, authController.getMe);
+router.post('/verify-me', authenticate, authController.verifyCurrentSessionUser);
 router.post(
   '/change-password',
   authenticate,

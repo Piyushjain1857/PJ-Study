@@ -162,6 +162,18 @@ export class AuthController {
   };
 
   /**
+   * Directly verifies email for currently authenticated user session.
+   */
+  verifyCurrentSessionUser = async (req, res, next) => {
+    try {
+      const result = await this.service.verifyUserDirectly(req.user.id);
+      return sendSuccess(res, result.user, 200, result.message);
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  /**
    * Resends verification email.
    */
   resendVerification = async (req, res, next) => {

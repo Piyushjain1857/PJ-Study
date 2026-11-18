@@ -108,6 +108,14 @@ export const authService = {
   },
 
   /**
+   * Directly verifies email for currently authenticated user session.
+   */
+  async verifyMe() {
+    const response = await apiClient.post('/auth/verify-me');
+    return response.data;
+  },
+
+  /**
    * Verifies account email address.
    *
    * @param {string} token

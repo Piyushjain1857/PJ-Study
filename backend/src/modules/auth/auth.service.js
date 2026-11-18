@@ -1,3 +1,4 @@
+import env from '../../config/env.js';
 import userRepository, { UserRepository } from '../users/user.repository.js';
 import authRepository, { AuthRepository } from './auth.repository.js';
 import { hashPassword, comparePassword } from '../../utils/password.js';
@@ -49,13 +50,18 @@ export class AuthService {
     // Hash password securely
     const passwordHash = await hashPassword(password);
 
+    // Auto-verify on signup in production/development unless explicitly disabled, or via AUTO_VERIFY_SIGNUP
+    const shouldAutoVerify =
+      process.env.AUTO_VERIFY_SIGNUP === 'true' ||
+      (!env.isTest && process.env.NODE_ENV !== 'test' && process.env.AUTO_VERIFY_SIGNUP !== 'false');
+
     // Create user in database
     const newUser = await this.userRepo.create({
       name: name.trim(),
       email: normalizedEmail,
       passwordHash,
       role: 'STUDENT',
-      isEmailVerified: false,
+      isEmailVerified: Boolean(shouldAutoVerify),
       isActive: true
     });
 
@@ -329,6 +335,21 @@ export class AuthService {
     return {
       success: true,
       message: 'Email address successfully verified.',
+      user: updatedUser
+    };
+  }
+
+  /**
+   * Directly verifies the email address of an authenticated user.
+   *
+   * @param {string} userId
+   * @returns {Promise<{ user: any, message: string }>}
+   */
+  async verifyUserDirectly(userId) {
+    const updatedUser = await this.userRepo.update(userId, { isEmailVerified: true });
+    return {
+      success: true,
+      message: 'Email address verified successfully.',
       user: updatedUser
     };
   }

@@ -22,19 +22,21 @@ export class EmailService {
    * @param {object} [options]
    */
   constructor(options = {}) {
-    this.provider = options.provider || env.emailProvider || 'console';
+    this.provider = options.provider || env.emailProvider || (env.smtpUser && env.smtpPass ? 'smtp' : 'console');
     this.frontendUrl = options.frontendUrl || env.frontendUrl || 'http://localhost:5173';
-    this.from = options.from || env.emailFrom || 'noreply@pjstudy.com';
+    this.from = options.from || env.emailFrom || (env.smtpUser ? `PJ Study <${env.smtpUser}>` : 'noreply@pjstudy.com');
     this.lastSentMessage = null;
 
     // Initialize Nodemailer transporter if SMTP credentials or smtp provider is configured
     this.transporter = null;
-    if (this.provider === 'smtp' || env.smtpHost) {
+    const hasSmtpConfig = this.provider === 'smtp' || env.smtpHost || (env.smtpUser && env.smtpPass);
+    if (hasSmtpConfig) {
       try {
+        const isGmail = (env.smtpHost || '').includes('gmail');
         this.transporter = nodemailer.createTransport({
-          host: env.smtpHost,
-          port: env.smtpPort || 587,
-          secure: env.smtpSecure,
+          host: env.smtpHost || (isGmail ? 'smtp.gmail.com' : undefined),
+          port: env.smtpPort || (env.smtpSecure ? 465 : 587),
+          secure: env.smtpSecure || false,
           auth:
             env.smtpUser && env.smtpPass
               ? {
@@ -43,9 +45,12 @@ export class EmailService {
                 }
               : undefined,
           tls: {
-            rejectUnauthorized: env.isProduction
+            rejectUnauthorized: false
           }
         });
+        if (env.smtpUser && env.smtpPass) {
+          this.provider = 'smtp';
+        }
       } catch (err) {
         // eslint-disable-next-line no-console
         console.warn('⚠️ [EmailService] Failed to initialize SMTP transporter:', err.message);
@@ -125,22 +130,27 @@ export class EmailService {
     let lastError = null;
     let messageId = `msg-${Date.now()}`;
 
+    const isTestEnv = env.isTest || process.env.NODE_ENV === 'test';
     const isTestRecipient =
-      to.endsWith('@pjstudy.com') ||
       to.endsWith('.test') ||
-      to.includes('test_') ||
+      to.endsWith('@example.com') ||
+      to.startsWith('test_') ||
       to.startsWith('failed_') ||
-      to.endsWith('.edu') ||
-      to.endsWith('.fr') ||
-      to.endsWith('.ac.uk') ||
-      to.endsWith('.org') ||
-      env.isTest ||
-      process.env.NODE_ENV === 'test' ||
-      this.provider === 'console';
+      (isTestEnv &&
+        (to.endsWith('@pjstudy.com') ||
+          to.endsWith('.edu') ||
+          to.endsWith('.fr') ||
+          to.endsWith('.ac.uk') ||
+          to.endsWith('.org')));
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        if (this.transporter && (this.provider === 'smtp' || env.isProduction) && !isTestRecipient) {
+        const canSendSmtp = Boolean(
+          this.transporter &&
+            !isTestRecipient &&
+            (this.provider === 'smtp' || env.isProduction || (env.smtpUser && env.smtpPass))
+        );
+        if (canSendSmtp) {
           const info = await this.transporter.sendMail({
             from: this.from,
             to,

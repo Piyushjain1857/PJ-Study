@@ -108,13 +108,23 @@ services:
       - key: GOOGLE_REDIRECT_URI
         sync: false # e.g. https://pj-study-backend.onrender.com/api/v1/storage/google/oauth/callback
 
-      # Transactional Email Service
+      # Transactional Email Service (Production Gmail SMTP)
       - key: EMAIL_PROVIDER
-        value: console # or smtp, sendgrid, resend
+        value: smtp
       - key: EMAIL_FROM
-        value: noreply@pjstudy.com
-      - key: EMAIL_API_KEY
-        sync: false
+        value: PJ Study <pjstudy333@gmail.com>
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_SECURE
+        value: "false"
+      - key: SMTP_USER
+        sync: false # Set to pjstudy333@gmail.com in Render Dashboard
+      - key: SMTP_PASS
+        sync: false # Set to 16-character Google App Password in Render Dashboard
+      - key: AUTO_VERIFY_SIGNUP
+        value: "true"
 
       # Swagger API Documentation Security (Disabled in Production by Default)
       - key: ENABLE_SWAGGER

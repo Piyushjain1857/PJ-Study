@@ -68,7 +68,9 @@ export function ProfilePage() {
 
   // Email verification state
   const [isResending, setIsResending] = useState(false);
+  const [isDirectVerifying, setIsDirectVerifying] = useState(false);
   const [resendNotice, setResendNotice] = useState('');
+  const [resendType, setResendType] = useState('success');
   const userRef = useRef(user);
 
   useEffect(() => {
@@ -402,16 +404,43 @@ export function ProfilePage() {
     }
   }
 
+  async function handleDirectVerify() {
+    setIsDirectVerifying(true);
+    setResendNotice('');
+    try {
+      await authService.verifyMe();
+      updateUser?.({ isEmailVerified: true });
+      setProfileData((prev) => (prev ? { ...prev, isEmailVerified: true } : prev));
+      setResendType('success');
+      setResendNotice('Your email address has been verified successfully! You are now a Verified Scholar.');
+    } catch (err) {
+      setResendType('error');
+      setResendNotice(
+        err.response?.data?.error?.message || err.message || 'Failed to verify email directly.'
+      );
+    } finally {
+      setIsDirectVerifying(false);
+    }
+  }
+
   async function handleResendVerification() {
-    if (!user?.email) return;
+    const targetEmail = currentUser?.email || user?.email;
+    if (!targetEmail) return;
     setIsResending(true);
     setResendNotice('');
 
     try {
-      const res = await authService.resendVerification(user.email);
-      setResendNotice(res.message || 'Verification link sent to your email.');
+      const res = await authService.resendVerification(targetEmail);
+      setResendType('success');
+      setResendNotice(
+        res.message ||
+          `A fresh verification link has been sent to ${targetEmail}. Please check your inbox and spam folder.`
+      );
     } catch (err) {
-      setResendNotice(err.message || 'Failed to resend verification link.');
+      setResendType('error');
+      setResendNotice(
+        err.response?.data?.error?.message || err.message || 'Failed to resend verification link.'
+      );
     } finally {
       setIsResending(false);
     }
@@ -569,23 +598,62 @@ export function ProfilePage() {
 
       {/* Verification Notice if Unverified */}
       {!currentUser?.isEmailVerified && (
-        <div className="auth-alert auth-alert--danger" style={{ marginBottom: '24px' }}>
-          <strong>Email Verification Required</strong>
-          <span>Please verify your email address to enable document uploads and downloads.</span>
-          <div style={{ marginTop: '8px' }}>
-            <Button
-              variant="outline"
-              size="sm"
-              isLoading={isResending}
-              onClick={handleResendVerification}
-              style={{ backgroundColor: '#FFFFFF' }}
-            >
-              Resend Verification Link
-            </Button>
-            {resendNotice && (
-              <span style={{ marginLeft: '12px', fontSize: '0.85rem' }}>{resendNotice}</span>
-            )}
+        <div className="profile-verify-banner" role="alert">
+          <div className="profile-verify-banner__main">
+            <div className="profile-verify-banner__icon-col">
+              <div className="profile-verify-banner__icon" aria-hidden="true">
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+              </div>
+            </div>
+            <div className="profile-verify-banner__content">
+              <div className="profile-verify-banner__header">
+                <h4 className="profile-verify-banner__title">Verify Your Email Address</h4>
+                <span className="profile-verify-banner__tag">Pending Verification</span>
+              </div>
+              <p className="profile-verify-banner__text">
+                Confirm your email (<strong>{currentUser?.email}</strong>) to activate full scholar
+                privileges, secure notifications, and verified badge recognition.
+              </p>
+              <div className="profile-verify-banner__actions">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  isLoading={isDirectVerifying}
+                  onClick={handleDirectVerify}
+                >
+                  Verify Email Now
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  isLoading={isResending}
+                  onClick={handleResendVerification}
+                  style={{ backgroundColor: '#FFFFFF' }}
+                >
+                  Resend Verification Email
+                </Button>
+              </div>
+            </div>
           </div>
+          {resendNotice && (
+            <div
+              className={`profile-verify-banner__feedback profile-verify-banner__feedback--${resendType}`}
+            >
+              <span>{resendNotice}</span>
+            </div>
+          )}
         </div>
       )}
 
