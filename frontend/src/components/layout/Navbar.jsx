@@ -184,6 +184,7 @@ export function Navbar() {
         id="mobile-navigation-drawer"
         className={`navbar-mobile-menu ${mobileMenuOpen ? 'navbar-mobile-menu--open' : ''}`}
         aria-hidden={!mobileMenuOpen}
+        inert={!mobileMenuOpen ? '' : undefined}
         role="region"
         aria-label="Mobile Navigation Drawer"
       >
