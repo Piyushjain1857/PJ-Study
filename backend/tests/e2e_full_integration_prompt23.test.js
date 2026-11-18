@@ -82,6 +82,7 @@ test('PJ Study — Complete End-to-End User Journeys & Full Integration (Prompt 
             title: 'Foundations of Computer Architecture',
             content: 'Comprehensive lecture notes on memory hierarchies and cache coherence.',
             status: 'PUBLISHED',
+            courseId: subject.courseId,
             subjectId: subject.id,
             uploadedById: admin.id,
             fileName: 'lecture-architecture.pdf',

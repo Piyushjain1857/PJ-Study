@@ -5,6 +5,7 @@ import prisma from '../src/config/database.js';
 
 test('View and Download Deduplication & Debounce Protection', async (t) => {
   let testNote;
+  let createdTestNoteId = null;
 
   // Setup: Find or create a published note for testing
   t.before(async () => {
@@ -22,6 +23,7 @@ test('View and Download Deduplication & Debounce Protection', async (t) => {
             title: 'Test Dedup Manuscript',
             content: 'Test content for dedup test',
             status: 'PUBLISHED',
+            courseId: subject.courseId,
             subjectId: subject.id,
             uploadedById: user.id,
             viewCount: 10,
@@ -30,7 +32,14 @@ test('View and Download Deduplication & Debounce Protection', async (t) => {
             storageProvider: 'local'
           }
         });
+        createdTestNoteId = testNote.id;
       }
+    }
+  });
+
+  t.after(async () => {
+    if (createdTestNoteId) {
+      await prisma.note.deleteMany({ where: { id: createdTestNoteId } }).catch(() => {});
     }
   });
 
