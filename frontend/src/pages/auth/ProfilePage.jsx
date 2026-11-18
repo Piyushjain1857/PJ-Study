@@ -1107,7 +1107,7 @@ export function ProfilePage() {
                     id="edit-university"
                     name="university"
                     type="text"
-                    placeholder="K.R. Mangalam University"
+                    placeholder="PJ Social"
                     value={editForm.university}
                     onChange={(e) =>
                       setEditForm((prev) => ({ ...prev, university: e.target.value }))

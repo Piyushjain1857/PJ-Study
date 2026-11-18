@@ -83,7 +83,7 @@ export function Navbar() {
           </span>
           <span className="navbar-brand__text">
             <span className="navbar-brand__name">PJ Study</span>
-            <span className="navbar-brand__sub">K.R. Mangalam University</span>
+            {/* <span className="navbar-brand__sub">K.R. Mangalam University</span> */}
           </span>
         </Link>
 

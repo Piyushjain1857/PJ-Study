@@ -158,8 +158,21 @@
   }
 }
 
+.footer-bottom__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .footer-bottom__copy {
   color: #83958c;
+}
+
+.footer-disclaimer {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #728279;
+  line-height: 1.4;
 }
 
 .footer-bottom__status {

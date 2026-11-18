@@ -102,9 +102,14 @@ export function Footer() {
 
         {/* Bottom Colophon */}
         <div className="footer-bottom">
-          <div className="footer-bottom__copy">
-            &copy; {currentYear} PJ Study. All rights reserved. Built with precision for higher
-            education.
+          <div className="footer-bottom__info">
+            <div className="footer-bottom__copy">
+              &copy; {currentYear} PJ Study. All rights reserved. Built with precision for higher
+              education.
+            </div>
+            <p className="footer-disclaimer">
+              This is not an official portal authorized by K.R. Mangalam University.
+            </p>
           </div>
           <div className="footer-bottom__status">
             <span className="footer-status-indicator" aria-hidden="true" />

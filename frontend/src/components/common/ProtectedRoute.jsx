@@ -116,7 +116,10 @@ export function ProtectedRoute({ children, roles = [], permissions = [] }) {
             </button>
             <button
               type="button"
-              onClick={() => window.location.href = '/login'}
+              onClick={() => {
+                const target = location.pathname + (location.search || '') + (location.hash || '');
+                window.location.href = `/login?redirect=${encodeURIComponent(target)}`;
+              }}
               style={{
                 backgroundColor: 'transparent',
                 color: 'var(--color-text-secondary, #57635a)',

@@ -8,7 +8,8 @@ export const DEFAULT_PAGE_CONFIGS = Object.freeze({
     hero: {
       headline: 'Everything You Need to Study Smarter.',
       highlightText: 'Study Smarter.',
-      description: 'Discover organized academic notes, explore subjects effortlessly, and keep your study resources together in one focused learning space.',
+      description:
+        'Discover organized academic notes, explore subjects effortlessly, and keep your study resources together in one focused learning space.',
       eyebrow: 'THE SMARTER WAY TO STUDY',
       primaryCtaText: 'Explore Study Notes',
       primaryCtaLink: '/notes/explore',
@@ -28,25 +29,29 @@ export const DEFAULT_PAGE_CONFIGS = Object.freeze({
     },
     features: {
       title: 'Academic Excellence, Reimagined',
-      subtitle: 'Structured knowledge designed for deep comprehension, peer collaboration, and curriculum mastery.',
+      subtitle:
+        'Structured knowledge designed for deep comprehension, peer collaboration, and curriculum mastery.',
       columns: 3,
       items: [
         {
           id: 'feat-1',
           title: 'Curriculum-Mapped Notes',
-          description: 'Lecture manuscripts organized strictly by university school, degree program, and semester syllabus.',
+          description:
+            'Lecture manuscripts organized strictly by university school, degree program, and semester syllabus.',
           icon: 'book'
         },
         {
           id: 'feat-2',
           title: 'Verified Peer Reviews',
-          description: 'Community feedback, helpfulness scoring, and qualitative ratings from enrolled university scholars.',
+          description:
+            'Community feedback, helpfulness scoring, and qualitative ratings from enrolled university scholars.',
           icon: 'check'
         },
         {
           id: 'feat-3',
           title: 'Personal Study Desk',
-          description: 'Private bookmarking, organized collections, reading history, and direct PDF downloads.',
+          description:
+            'Private bookmarking, organized collections, reading history, and direct PDF downloads.',
           icon: 'layers'
         }
       ],
@@ -64,32 +69,35 @@ export const DEFAULT_PAGE_CONFIGS = Object.freeze({
         {
           stepNumber: 2,
           title: 'Access Peer-Reviewed Notes',
-          description: 'Read detailed lecture slides, past question solutions, and concise cheat sheets.'
+          description:
+            'Read detailed lecture slides, past question solutions, and concise cheat sheets.'
         },
         {
           stepNumber: 3,
           title: 'Build Your Personal Library',
-          description: 'Bookmark key chapters, track downloads, and review materials before exam deadlines.'
+          description:
+            'Bookmark key chapters, track downloads, and review materials before exam deadlines.'
         }
       ],
       isVisible: true
     },
     academic_highlights: {
       title: 'Official KRMU Campus Taxonomy',
-      subtitle: 'Dedicated curriculum architecture and course catalog for K.R. Mangalam University.',
-      campusName: 'K.R. Mangalam University',
+      subtitle: 'Dedicated curriculum architecture and course catalog',
+      campusName: 'PJ Study',
       isVisible: true
     },
     trust_cta: {
       headline: 'Ready to Elevate Your Academic Journey?',
-      description: 'Join thousands of university scholars discovering course-mapped lecture notes and study collections.',
+      description:
+        'Join thousands of university scholars discovering course-mapped lecture notes and study collections.',
       buttonText: 'Get Started Free',
       buttonLink: '/register',
       isVisible: true
     },
     footer: {
       brandText: 'PJ Study Academic Library',
-      copyright: '© 2026 PJ Study. Dedicated to K.R. Mangalam University Scholars.',
+      copyright: '© 2026 PJ Study. Dedicated for Scholars.',
       isVisible: true
     }
   },
@@ -108,7 +116,8 @@ export const DEFAULT_PAGE_CONFIGS = Object.freeze({
       subtitle: 'Everything you need for your semester, in one focused learning space.',
       bannerAlert: {
         show: true,
-        message: 'Semester examination revision notes and past paper solutions are now live in Explore Notes.',
+        message:
+          'Semester examination revision notes and past paper solutions are now live in Explore Notes.',
         variant: 'emerald'
       },
       isVisible: true
@@ -209,7 +218,8 @@ export const DEFAULT_PAGE_CONFIGS = Object.freeze({
     ],
     welcome_header: {
       title: 'Admin Operations Workspace',
-      subtitle: 'Manage verified academic notes, author study materials, and monitor curriculum compliance.',
+      subtitle:
+        'Manage verified academic notes, author study materials, and monitor curriculum compliance.',
       bannerAlert: {
         show: false,
         message: '',
@@ -268,7 +278,8 @@ export const DEFAULT_PAGE_CONFIGS = Object.freeze({
     section_order: ['explore_header', 'search_filters', 'notes_catalog'],
     explore_header: {
       title: 'Explore Curated Notes',
-      subtitle: 'Discover syllabus-aligned lecture manuscripts, exam guides, and reference documents.',
+      subtitle:
+        'Discover syllabus-aligned lecture manuscripts, exam guides, and reference documents.',
       isVisible: true
     },
     search_filters: {
@@ -288,7 +299,8 @@ export const DEFAULT_PAGE_CONFIGS = Object.freeze({
     section_order: ['rec_header', 'rec_grid'],
     rec_header: {
       title: 'Personalized Study Recommendations',
-      subtitle: 'Hand-picked manuscripts matched to your enrolled school, course, and semester focus.',
+      subtitle:
+        'Hand-picked manuscripts matched to your enrolled school, course, and semester focus.',
       isVisible: true
     },
     rec_grid: {
@@ -301,7 +313,8 @@ export const DEFAULT_PAGE_CONFIGS = Object.freeze({
     section_order: ['library_header', 'saved_tabs', 'collections_grid'],
     library_header: {
       title: 'My Study Library',
-      subtitle: 'All your bookmarked lecture notes, personal binders, and download archives in one place.',
+      subtitle:
+        'All your bookmarked lecture notes, personal binders, and download archives in one place.',
       isVisible: true
     },
     saved_tabs: {
@@ -318,7 +331,8 @@ export const DEFAULT_PAGE_CONFIGS = Object.freeze({
     section_order: ['profile_header', 'academic_card', 'security_settings'],
     profile_header: {
       title: 'Scholar Account & Credentials',
-      subtitle: 'Manage your K.R. Mangalam University profile, enrolled courses, and security preferences.',
+      subtitle:
+        'Manage your K.R. Mangalam University profile, enrolled courses, and security preferences.',
       isVisible: true
     },
     academic_card: {
@@ -459,24 +473,53 @@ export const DEFAULT_NAVIGATION = Object.freeze({
       label: 'ADMIN WORKSPACE',
       items: [
         { to: '/admin-workspace', label: 'Dashboard', icon: 'grid', isVisible: true },
-        { to: '/admin-workspace/analytics', label: 'Content Analytics', icon: 'bar-chart', isVisible: true }
+        {
+          to: '/admin-workspace/analytics',
+          label: 'Content Analytics',
+          icon: 'bar-chart',
+          isVisible: true
+        }
       ]
     },
     {
       label: 'NOTES MANAGEMENT',
       items: [
-        { to: '/notes/new', label: 'Upload Note', icon: 'plus-circle', highlight: true, isVisible: true },
-        { to: '/admin-workspace/notes', label: 'All Notes Directory', icon: 'file-text', isVisible: true },
-        { to: '/admin-workspace/notes?status=PUBLISHED', label: 'Published Notes', icon: 'check-circle', isVisible: true },
-        { to: '/admin-workspace/notes?status=UNPUBLISHED', label: 'Unpublished / Drafts', icon: 'slash', isVisible: true },
-        { to: '/admin-workspace/reports', label: 'Reported Content', icon: 'alert-triangle', isVisible: true }
+        {
+          to: '/notes/new',
+          label: 'Upload Note',
+          icon: 'plus-circle',
+          highlight: true,
+          isVisible: true
+        },
+        {
+          to: '/admin-workspace/notes',
+          label: 'All Notes Directory',
+          icon: 'file-text',
+          isVisible: true
+        },
+        {
+          to: '/admin-workspace/notes?status=PUBLISHED',
+          label: 'Published Notes',
+          icon: 'check-circle',
+          isVisible: true
+        },
+        {
+          to: '/admin-workspace/notes?status=UNPUBLISHED',
+          label: 'Unpublished / Drafts',
+          icon: 'slash',
+          isVisible: true
+        },
+        {
+          to: '/admin-workspace/reports',
+          label: 'Reported Content',
+          icon: 'alert-triangle',
+          isVisible: true
+        }
       ]
     },
     {
       label: 'ACCOUNT',
-      items: [
-        { to: '/profile', label: 'Admin Profile', icon: 'user', isVisible: true }
-      ]
+      items: [{ to: '/profile', label: 'Admin Profile', icon: 'user', isVisible: true }]
     }
   ],
   SUPER_ADMIN: [
@@ -492,9 +535,24 @@ export const DEFAULT_NAVIGATION = Object.freeze({
       label: 'PLATFORM BUILDER',
       items: [
         { to: '/admin/ui-builder', label: 'Visual Website Builder', icon: 'code', isVisible: true },
-        { to: '/admin/ui-builder/scholar', label: 'Scholar UI Editor', icon: 'user-check', isVisible: true },
-        { to: '/admin/ui-builder/admin', label: 'Admin UI Editor', icon: 'shield', isVisible: true },
-        { to: '/admin/ui-builder/homepage', label: 'Homepage Editor', icon: 'monitor', isVisible: true },
+        {
+          to: '/admin/ui-builder/scholar',
+          label: 'Scholar UI Editor',
+          icon: 'user-check',
+          isVisible: true
+        },
+        {
+          to: '/admin/ui-builder/admin',
+          label: 'Admin UI Editor',
+          icon: 'shield',
+          isVisible: true
+        },
+        {
+          to: '/admin/ui-builder/homepage',
+          label: 'Homepage Editor',
+          icon: 'monitor',
+          isVisible: true
+        },
         { to: '/admin/appearance', label: 'Theme Studio', icon: 'palette', isVisible: true },
         { to: '/admin/navigation', label: 'Navigation Builder', icon: 'compass', isVisible: true },
         { to: '/admin/widgets', label: 'Dashboard Widgets', icon: 'layers', isVisible: true }
@@ -522,7 +580,12 @@ export const DEFAULT_NAVIGATION = Object.freeze({
     {
       label: 'OPERATIONS',
       items: [
-        { to: '/admin/announcements', label: 'Announcements', icon: 'message-square', isVisible: true },
+        {
+          to: '/admin/announcements',
+          label: 'Announcements',
+          icon: 'message-square',
+          isVisible: true
+        },
         { to: '/admin/notifications', label: 'Notifications', icon: 'bell', isVisible: true },
         { to: '/admin/storage', label: 'Storage Management', icon: 'database', isVisible: true },
         { to: '/admin/audit-logs', label: 'Audit Logs', icon: 'clipboard', isVisible: true }
@@ -534,14 +597,17 @@ export const DEFAULT_NAVIGATION = Object.freeze({
         { to: '/admin/security', label: 'Security Center', icon: 'lock', isVisible: true },
         { to: '/admin/health', label: 'System Health', icon: 'cpu', isVisible: true },
         { to: '/admin/backups', label: 'Backup & Recovery', icon: 'database', isVisible: true },
-        { to: '/admin/config/history', label: 'Configuration History', icon: 'history', isVisible: true }
+        {
+          to: '/admin/config/history',
+          label: 'Configuration History',
+          icon: 'history',
+          isVisible: true
+        }
       ]
     },
     {
       label: 'ACCOUNT',
-      items: [
-        { to: '/profile', label: 'Super Admin Profile', icon: 'user', isVisible: true }
-      ]
+      items: [{ to: '/profile', label: 'Super Admin Profile', icon: 'user', isVisible: true }]
     }
   ]
 });
@@ -550,28 +616,32 @@ export const DEFAULT_FEATURE_FLAGS = Object.freeze([
   {
     key: 'recommendations',
     name: 'Smart Study Recommendations',
-    description: 'Personalized course-based note suggestions on Scholar Dashboard and Explore pages.',
+    description:
+      'Personalized course-based note suggestions on Scholar Dashboard and Explore pages.',
     category: 'DISCOVERY',
     isEnabled: true
   },
   {
     key: 'reviews',
     name: 'Ratings & Peer Reviews',
-    description: 'Allows scholars to post 5-star ratings, peer commentary, and mark helpful reviews.',
+    description:
+      'Allows scholars to post 5-star ratings, peer commentary, and mark helpful reviews.',
     category: 'COMMUNITY',
     isEnabled: true
   },
   {
     key: 'collections',
     name: 'Personal Study Collections',
-    description: 'Enables scholars to curate custom grouped folders of lecture notes and exam guides.',
+    description:
+      'Enables scholars to curate custom grouped folders of lecture notes and exam guides.',
     category: 'SCHOLAR',
     isEnabled: true
   },
   {
     key: 'public_profiles',
     name: 'Public Contributor Profiles',
-    description: 'Public author pages highlighting published manuscripts, contributions, and badges.',
+    description:
+      'Public author pages highlighting published manuscripts, contributions, and badges.',
     category: 'COMMUNITY',
     isEnabled: true
   },
@@ -592,7 +662,8 @@ export const DEFAULT_FEATURE_FLAGS = Object.freeze([
   {
     key: 'homepage_stats',
     name: 'Homepage Live Counters',
-    description: 'Displays live verified counts of published notes, verified subjects, and active scholars.',
+    description:
+      'Displays live verified counts of published notes, verified subjects, and active scholars.',
     category: 'MARKETING',
     isEnabled: true
   },

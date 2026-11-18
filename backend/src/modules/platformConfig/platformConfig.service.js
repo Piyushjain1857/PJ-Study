@@ -146,7 +146,8 @@ export class PlatformConfigService {
         section: 'dashboard',
         title: 'Campus Examination Notice',
         content: {
-          banner: 'Official examination revision materials are published under K.R. Mangalam University curriculum.',
+          banner:
+            'Official examination revision materials are published under PJ Social curriculum.',
           contactEmail: 'academics@krmangalam.edu.in'
         }
       }
@@ -215,7 +216,11 @@ export class PlatformConfigService {
     await this.initDefaultConfigurations();
 
     const roleScope =
-      role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : role === 'ADMIN' || role === 'MODERATOR' ? 'ADMIN' : 'SCHOLAR';
+      role === 'SUPER_ADMIN'
+        ? 'SUPER_ADMIN'
+        : role === 'ADMIN' || role === 'MODERATOR'
+          ? 'ADMIN'
+          : 'SCHOLAR';
 
     const pageKey = roleScope === 'ADMIN' ? 'admin_dashboard' : 'scholar_dashboard';
 
@@ -483,7 +488,9 @@ export class PlatformConfigService {
             sanitizeString(item.to, 'Item destination');
             // Hard safety boundary: block dangerous protocol URLs
             if (item.to.includes(':') && !item.to.startsWith('https://')) {
-              throw new Error('Navigation destinations must be relative paths or secure HTTPS links.');
+              throw new Error(
+                'Navigation destinations must be relative paths or secure HTTPS links.'
+              );
             }
           }
         }
@@ -802,7 +809,9 @@ export class PlatformConfigService {
         }
       });
     } else if (entityType === 'NAVIGATION') {
-      const nav = await prisma.navigationConfiguration.findUnique({ where: { roleScope: entityKey } });
+      const nav = await prisma.navigationConfiguration.findUnique({
+        where: { roleScope: entityKey }
+      });
       if (!nav) throw new Error(`Target navigation "${entityKey}" not found.`);
       const newVersion = nav.version + 1;
 

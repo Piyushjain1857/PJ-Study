@@ -56,17 +56,32 @@ export function LoginPage() {
       const userRole = result?.user?.role;
       const searchParams = new URLSearchParams(location.search);
       const queryRedirect = searchParams.get('redirect');
-      let targetPath = queryRedirect || location.state?.from?.pathname;
+      const fromState = location.state?.from;
+      let targetPath =
+        queryRedirect ||
+        (fromState
+          ? (typeof fromState === 'string'
+              ? fromState
+              : `${fromState.pathname || ''}${fromState.search || ''}${fromState.hash || ''}`)
+          : null);
 
-      // Strict open-redirect guard: target must be a valid relative path starting with '/' and not '//' or '/\'
+      // Strict open-redirect guard: target must be a valid relative path starting with '/' and not external protocols
       const isSafeRelativePath =
         typeof targetPath === 'string' &&
         targetPath.startsWith('/') &&
         !targetPath.startsWith('//') &&
         !targetPath.startsWith('/\\') &&
-        !targetPath.includes(':');
+        !targetPath.toLowerCase().includes('javascript:') &&
+        !targetPath.includes('://');
 
-      if (!isSafeRelativePath || targetPath === '/dashboard' || targetPath === '/admin' || targetPath === '/admin-workspace') {
+      if (
+        !isSafeRelativePath ||
+        targetPath === '/dashboard' ||
+        targetPath === '/admin' ||
+        targetPath === '/admin-workspace' ||
+        targetPath.startsWith('/login') ||
+        targetPath.startsWith('/register')
+      ) {
         if (userRole === 'SUPER_ADMIN') {
           targetPath = '/admin';
         } else if (userRole === 'ADMIN' || userRole === 'MODERATOR') {
@@ -187,7 +202,7 @@ export function LoginPage() {
               </div>
               <h1 className="auth-card__title">Sign In to PJ Study</h1>
               <p className="auth-card__subtitle">
-                Access your curated manuscripts, personal collections, and verified course notes for K.R. Mangalam University.
+                Access your curated manuscripts, personal collections, and verified course notes for Students.
               </p>
             </div>
 

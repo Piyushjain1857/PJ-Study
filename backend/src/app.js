@@ -1,3 +1,6 @@
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import express from 'express';
 import zlib from 'zlib';
 import cors from 'cors';
@@ -12,6 +15,9 @@ import notFound from './middleware/notFound.js';
 import errorHandler from './middleware/errorHandler.js';
 import requestId from './middleware/requestId.js';
 import prisma, { queryMetricsStorage } from './config/database.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Ensure BigInt values serialize cleanly to JSON across all API endpoints
 if (!BigInt.prototype.toJSON) {
@@ -258,6 +264,69 @@ export function createApp() {
 
   // API v1 router
   app.use('/api/v1', v1Routes);
+
+  // Serve frontend client build and handle SPA navigation fallback if present (Web Service deployment)
+  const candidateDistPaths = [
+    process.env.CLIENT_DIST_PATH,
+    path.resolve(__dirname, '../../frontend/dist'),
+    path.resolve(process.cwd(), '../frontend/dist'),
+    path.resolve(process.cwd(), 'frontend/dist'),
+    path.resolve(process.cwd(), 'dist'),
+    path.resolve(process.cwd(), 'public')
+  ].filter(Boolean);
+
+  let clientDistPath = null;
+  let clientIndexPath = null;
+
+  for (const candidate of candidateDistPaths) {
+    const candidateIndexPath = path.join(candidate, 'index.html');
+    if (fs.existsSync(candidateIndexPath)) {
+      clientDistPath = candidate;
+      clientIndexPath = candidateIndexPath;
+      break;
+    }
+  }
+
+  if (clientDistPath && clientIndexPath && !env.isTest) {
+    // Serve static assets with long-term cache headers
+    app.use(
+      express.static(clientDistPath, {
+        index: false,
+        maxAge: '1y',
+        immutable: true
+      })
+    );
+
+    // Single Page Application (SPA) HTML fallback for frontend routes
+    app.get('*', (req, res, next) => {
+      // Never intercept API routes, health probes, SEO files, or Swagger docs
+      if (
+        req.path.startsWith('/api') ||
+        req.path.startsWith('/health') ||
+        req.path.startsWith('/live') ||
+        req.path.startsWith('/ready') ||
+        req.path.startsWith('/docs') ||
+        req.path.startsWith('/swagger') ||
+        req.path === '/sitemap.xml' ||
+        req.path === '/robots.txt'
+      ) {
+        return next();
+      }
+
+      // Never intercept missing static assets (prevent returning index.html for missing .js/.css/.png)
+      if (path.extname(req.path)) {
+        return next();
+      }
+
+      // Only rewrite browser requests that accept HTML
+      if (!req.accepts('html')) {
+        return next();
+      }
+
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      return res.sendFile(clientIndexPath);
+    });
+  }
 
   // Catch-all 404 handler for unmatched routes
   app.use(notFound);

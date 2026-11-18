@@ -795,7 +795,7 @@ export function AdminDashboardPage() {
           await adminService.createSchool(payload);
           setActionNotice({
             type: 'success',
-            message: `School "${academicFormData.name}" created successfully under K.R. Mangalam University.`
+            message: `School "${academicFormData.name}" created successfully`
           });
         } else {
           await adminService.updateSchool(entity.id, payload);

@@ -208,7 +208,7 @@ export function MyNotesPage() {
                   borderRadius: '4px'
                 }}
               >
-                {isStaff ? 'Academic Staff' : 'K.R. Mangalam University'}
+                {isStaff ? 'Academic Staff' : 'PJ Social'}
               </span>
               <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>
                 {isStaff ? 'Faculty Operations' : 'Verified Scholar'}

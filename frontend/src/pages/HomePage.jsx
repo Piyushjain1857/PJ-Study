@@ -39,17 +39,17 @@ export function HomePage() {
   const [activeShowcaseTab, setActiveShowcaseTab] = useState('catalog');
 
   const heroConfig = publicConfig?.homepage?.hero;
-  const heroBadge = heroConfig?.badge || 'K.R. Mangalam University — Academic Portal';
+  const heroBadge = heroConfig?.badge || 'Academic Portal';
   const heroHeadline = heroConfig?.title || 'Everything You Need to Study Smarter.';
   const heroDescription = heroConfig?.subtitle ||
-    'Discover syllabus-accurate notes, lecture manuscripts, and curriculum solutions tailored for K.R. Mangalam University.';
+    'Discover syllabus-accurate notes, lecture manuscripts, and curriculum solutions tailored ';
   const heroCtaText = heroConfig?.primaryCtaText || 'Explore Study Notes';
 
   return (
     <div className="home-root">
       <SEO
-        title="PJ Study | K.R. Mangalam University Academic Library"
-        description="Discover organized academic notes, study resources, and course-wise learning materials with PJ Study at K.R. Mangalam University."
+        title="PJ Study | Academic Library"
+        description="Discover organized academic notes, study resources, and course-wise learning materials with PJ Study"
         canonical="/"
         schema={HOME_SCHEMA}
       />

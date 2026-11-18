@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -14,6 +15,17 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    {
+      name: 'spa-fallback-generator',
+      closeBundle() {
+        const distDir = path.resolve(__dirname, 'dist');
+        const indexPath = path.join(distDir, 'index.html');
+        const fallbackPath = path.join(distDir, '404.html');
+        if (fs.existsSync(indexPath)) {
+          fs.copyFileSync(indexPath, fallbackPath);
+        }
+      }
+    },
     VitePWA({
       registerType: 'prompt', // Never force reloads during active uploads or editing
       includeAssets: [

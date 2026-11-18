@@ -2162,7 +2162,7 @@ function renderRealCanvasSection(sectionKey, config, _selectedPage) {
               Siddharth Kapoor
             </h3>
             <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
-              KRMU2024CS042 · B.Tech Computer Science & Engineering · Semester 4
+              PJSocial2024CS042 · B.Tech Computer Science & Engineering · Semester 4
             </p>
           </div>
         </div>
@@ -2172,7 +2172,7 @@ function renderRealCanvasSection(sectionKey, config, _selectedPage) {
       return (
         <div style={containerStyle}>
           <strong style={{ fontSize: '13px', color: textColor, display: 'block', marginBottom: '8px' }}>
-            K.R. Mangalam University Credentials
+            Credentials
           </strong>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
             <div style={{ padding: '8px 10px', background: 'var(--color-bg-primary, #F5F4F0)', borderRadius: '4px', border: '1px solid var(--color-border, #D7D9D3)' }}>
@@ -2405,7 +2405,7 @@ function renderRealCanvasSection(sectionKey, config, _selectedPage) {
             <div>
               <strong style={{ fontSize: '13px', color: textColor }}>{config.title || 'Official KRMU Campus Taxonomy'}</strong>
               <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--color-text-secondary, #626A62)' }}>
-                {config.subtitle || 'Dedicated curriculum architecture and course catalog for K.R. Mangalam University.'}
+                {config.subtitle || 'Dedicated curriculum architecture and course catalog'}
               </p>
             </div>
             <span style={{ fontSize: '10px', color: 'var(--color-primary, #245C46)', fontWeight: 700 }}>6 Academic Faculties</span>
@@ -2449,7 +2449,7 @@ function renderRealCanvasSection(sectionKey, config, _selectedPage) {
             <div>
               <strong style={{ color: '#FFFFFF', fontSize: '12px' }}>{config.brandText || 'PJ Study Academic Library'}</strong>
               <p style={{ margin: '3px 0 0', fontSize: '10px', color: '#858B84' }}>
-                {config.copyright || '© 2026 PJ Study. Dedicated to K.R. Mangalam University Scholars.'}
+                {config.copyright || '© 2026 PJ Study. Not an official portal authorized by K.R. Mangalam University.'}
               </p>
             </div>
             <div style={{ display: 'flex', gap: '14px', fontSize: '11px', color: '#D7D9D3' }}>
