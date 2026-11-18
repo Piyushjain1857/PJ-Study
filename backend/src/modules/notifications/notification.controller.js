@@ -102,12 +102,10 @@ export class NotificationController {
   createAnnouncement = async (req, res, next) => {
     try {
       const result = await this.announcements.createAnnouncement(req.user.id, req.body);
-      return sendSuccess(
-        res,
-        result,
-        201,
-        `Platform announcement published to ${result.recipientCount} scholars.`
-      );
+      const msg = result.deduplicated
+        ? 'Duplicate announcement detected; existing announcement retained without redundant notifications.'
+        : `Platform announcement published to ${result.recipientCount} scholars.`;
+      return sendSuccess(res, result, 201, msg);
     } catch (err) {
       return next(err);
     }

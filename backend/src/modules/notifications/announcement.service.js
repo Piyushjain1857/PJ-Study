@@ -122,13 +122,11 @@ export class AnnouncementService {
 
     // In test environment, strictly restrict fan-out to test fixtures to prevent spamming personal/production users
     if (env.isTest || process.env.NODE_ENV === 'test') {
-      userWhere.email = {
-        OR: [
-          { startsWith: 'notif_' },
-          { contains: 'test' },
-          { endsWith: '@pjstudy.com' }
-        ]
-      };
+      userWhere.OR = [
+        { email: { startsWith: 'notif_' } },
+        { email: { contains: 'test' } },
+        { email: { endsWith: '@pjstudy.com' } }
+      ];
     }
 
     // Query active recipients with preferences
