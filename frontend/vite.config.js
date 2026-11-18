@@ -70,9 +70,10 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        navigateFallback: '/offline.html',
-        // Do NOT route backend APIs or Swagger docs through SPA offline fallback
-        navigateFallbackDenylist: [/^\/api/, /^\/api-docs/, /^\/docs/, /^\/swagger/],
+        // Single Page Application: Service Worker must serve index.html for all client route navigations
+        navigateFallback: '/index.html',
+        // Do NOT route backend APIs, Swagger docs, or files with static extensions through SPA fallback
+        navigateFallbackDenylist: [/^\/api/, /^\/api-docs/, /^\/docs/, /^\/swagger/, /\.[a-z0-9]+$/i],
         runtimeCaching: [
           // 1. Google Fonts stylesheets (stale-while-revalidate)
           {

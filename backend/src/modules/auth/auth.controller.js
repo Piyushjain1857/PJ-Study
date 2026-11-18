@@ -16,9 +16,12 @@ export function getRefreshCookieOptions() {
   return {
     httpOnly: true,
     secure: env.isProduction,
-    sameSite: 'lax',
-    path: '/api/v1/auth',
-    maxAge
+    // Cross-site cookie support between frontend and backend on Render subdomains
+    sameSite: env.isProduction ? 'none' : 'lax',
+    path: '/',
+    maxAge,
+    // Modern CHIPS partitioned cookie support
+    partitioned: true
   };
 }
 
@@ -26,8 +29,9 @@ export function getClearCookieOptions() {
   return {
     httpOnly: true,
     secure: env.isProduction,
-    sameSite: 'lax',
-    path: '/api/v1/auth'
+    sameSite: env.isProduction ? 'none' : 'lax',
+    path: '/',
+    partitioned: true
   };
 }
 
@@ -75,7 +79,8 @@ export class AuthController {
         res,
         {
           user,
-          accessToken
+          accessToken,
+          refreshToken
         },
         200,
         'Logged in successfully'
@@ -114,7 +119,8 @@ export class AuthController {
         res,
         {
           user,
-          accessToken
+          accessToken,
+          refreshToken: newRefreshToken
         },
         200,
         'Session refreshed successfully'

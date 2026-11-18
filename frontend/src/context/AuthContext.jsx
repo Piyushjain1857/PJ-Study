@@ -26,47 +26,46 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Check active session on initial load via silent refresh only if a session hint exists
-  useEffect(() => {
-    let isMounted = true;
-
-    async function checkCurrentSession() {
-      // Avoid firing unneeded network requests for guest visitors without active sessions
-      const hasSessionHint =
-        typeof window !== 'undefined' && window.localStorage?.getItem(SESSION_HINT_KEY) === 'true';
-      if (!hasSessionHint) {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-        return;
-      }
-
-      try {
-        const { user: currentUser, accessToken: newAccessToken } = await authService.refresh();
-        if (isMounted) {
-          setUser(currentUser);
-          updateAccessToken(newAccessToken);
-        }
-      } catch {
-        if (isMounted) {
-          setUser(null);
-          updateAccessToken(null);
-          if (typeof window !== 'undefined') {
-            window.localStorage?.removeItem(SESSION_HINT_KEY);
-          }
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
+  const checkCurrentSession = useCallback(async () => {
+    // Avoid firing unneeded network requests for guest visitors without active sessions
+    const hasSessionHint =
+      typeof window !== 'undefined' && window.localStorage?.getItem(SESSION_HINT_KEY) === 'true';
+    if (!hasSessionHint) {
+      setIsLoading(false);
+      return;
     }
 
-    checkCurrentSession();
+    setIsLoading(true);
+    setError(null);
 
-    return () => {
-      isMounted = false;
-    };
+    try {
+      const { user: currentUser, accessToken: newAccessToken } = await authService.refresh();
+      setUser(currentUser);
+      updateAccessToken(newAccessToken);
+      setError(null);
+    } catch (err) {
+      const statusCode = err?.statusCode || err?.response?.status;
+      // Only clear credentials if backend explicitly invalidates/rejects the session
+      if (statusCode === 401 || statusCode === 403) {
+        setUser(null);
+        updateAccessToken(null);
+        if (typeof window !== 'undefined') {
+          window.localStorage?.removeItem(SESSION_HINT_KEY);
+        }
+        setError(null);
+      } else {
+        // Network timeout, offline, or backend cold-start: preserve session hint so user isn't logged out
+        console.warn('Session restoration encountered a transient network or server delay:', err?.message);
+        setError(err);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   }, [updateAccessToken]);
+
+  useEffect(() => {
+    checkCurrentSession();
+  }, [checkCurrentSession]);
 
   /**
    * Logs in user and establishes session.
@@ -197,7 +196,8 @@ export function AuthProvider({ children }) {
       register,
       logout,
       refreshUser,
-      updateUser
+      updateUser,
+      retrySession: checkCurrentSession
     }),
     [
       user,
@@ -211,7 +211,8 @@ export function AuthProvider({ children }) {
       register,
       logout,
       refreshUser,
-      updateUser
+      updateUser,
+      checkCurrentSession
     ]
   );
 

@@ -43,6 +43,11 @@ export function createApp() {
     .map((o) => o.trim().replace(/\/+$/, ''))
     .filter(Boolean);
 
+  const allowedRenderOrigins = [
+    'https://pj-study.onrender.com',
+    'https://pj-study-frontend.onrender.com'
+  ];
+
   // Enterprise Security Headers
   app.use(
     helmet({
@@ -53,7 +58,14 @@ export function createApp() {
           styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
           fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
           imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-          connectSrc: ["'self'", ...configuredOrigins, 'http://localhost:5173', 'http://localhost:5001'],
+          connectSrc: [
+            "'self'",
+            ...configuredOrigins,
+            ...allowedRenderOrigins,
+            'https://*.onrender.com',
+            'http://localhost:5173',
+            'http://localhost:5001'
+          ],
           objectSrc: ["'none'"],
           mediaSrc: ["'self'", 'blob:'],
           frameSrc: ["'none'"],
@@ -79,14 +91,27 @@ export function createApp() {
           return callback(null, true);
         }
         const normalizedOrigin = origin.replace(/\/+$/, '');
-        if (configuredOrigins.includes(normalizedOrigin)) {
+        let isOriginAllowed = false;
+
+        try {
+          const parsed = new URL(origin);
+          isOriginAllowed =
+            configuredOrigins.includes(normalizedOrigin) ||
+            allowedRenderOrigins.includes(normalizedOrigin) ||
+            parsed.hostname.endsWith('.onrender.com');
+        } catch {
+          isOriginAllowed = configuredOrigins.includes(normalizedOrigin);
+        }
+
+        if (isOriginAllowed) {
           return callback(null, true);
         }
-        return callback(new Error('CORS policy: origin not allowed by Access-Control-Allow-Origin.'));
+        // Return null, false to reject origin cleanly without throwing 500 error
+        return callback(null, false);
       },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
+      allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'X-Request-Id']
     })
   );
 

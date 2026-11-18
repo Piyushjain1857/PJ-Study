@@ -10,6 +10,15 @@ export function RouteErrorBoundary() {
   const error = useRouteError();
   const isDev = Boolean(import.meta.env && import.meta.env.DEV);
 
+  const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+  const isServerUnavailable =
+    error?.code === 'ERR_NETWORK' ||
+    error?.code === 'ECONNABORTED' ||
+    error?.message?.includes('Network Error') ||
+    error?.status === 502 ||
+    error?.status === 503 ||
+    error?.status === 504;
+
   const handleReload = () => {
     window.location.reload();
   };
@@ -17,6 +26,24 @@ export function RouteErrorBoundary() {
   const handleGoHome = () => {
     window.location.href = '/';
   };
+
+  const badgeText = isOffline
+    ? 'Offline Notice'
+    : isServerUnavailable
+      ? 'Server Unavailable'
+      : 'Academic Portal Notice';
+
+  const headingText = isOffline
+    ? 'No Internet Connection'
+    : isServerUnavailable
+      ? 'Academic Server Waking Up'
+      : 'Something Went Unexpectedly Wrong';
+
+  const bodyText = isOffline
+    ? 'PJ Study could not load this view because your device is currently offline. Please reconnect to the internet and click Try Again.'
+    : isServerUnavailable
+      ? 'The cloud server took longer to respond or is starting up. Please wait a few moments and click Try Again.'
+      : 'The study application encountered an issue while loading this page. Your account and academic resources remain completely secure.';
 
   return (
     <div
@@ -51,8 +78,8 @@ export function RouteErrorBoundary() {
             width: '54px',
             height: '54px',
             borderRadius: '50%',
-            backgroundColor: 'rgba(181, 52, 52, 0.1)',
-            color: 'var(--color-danger, #b53434)',
+            backgroundColor: isOffline ? 'rgba(217, 119, 6, 0.1)' : 'rgba(181, 52, 52, 0.1)',
+            color: isOffline ? '#d97706' : 'var(--color-danger, #b53434)',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -61,15 +88,15 @@ export function RouteErrorBoundary() {
           }}
           aria-hidden="true"
         >
-          ⚠️
+          {isOffline ? '📶' : isServerUnavailable ? '📡' : '⚠️'}
         </div>
 
         <div
           style={{
             display: 'inline-block',
             padding: '3px 10px',
-            backgroundColor: 'rgba(181, 52, 52, 0.08)',
-            color: 'var(--color-danger, #b53434)',
+            backgroundColor: isOffline ? 'rgba(217, 119, 6, 0.08)' : 'rgba(181, 52, 52, 0.08)',
+            color: isOffline ? '#d97706' : 'var(--color-danger, #b53434)',
             fontSize: '0.75rem',
             fontWeight: 600,
             textTransform: 'uppercase',
@@ -78,7 +105,7 @@ export function RouteErrorBoundary() {
             marginBottom: '12px'
           }}
         >
-          Academic Portal Notice
+          {badgeText}
         </div>
 
         <h1
@@ -90,7 +117,7 @@ export function RouteErrorBoundary() {
             letterSpacing: '-0.02em'
           }}
         >
-          Something Went Unexpectedly Wrong
+          {headingText}
         </h1>
 
         <p
@@ -101,8 +128,7 @@ export function RouteErrorBoundary() {
             margin: '0 0 28px 0'
           }}
         >
-          The study application encountered an issue while loading this page. Your account and
-          academic resources remain completely secure.
+          {bodyText}
         </p>
 
         {isDev && error && (
@@ -152,7 +178,7 @@ export function RouteErrorBoundary() {
               transition: 'background-color 140ms ease'
             }}
           >
-            Reload Page
+            Try Again
           </button>
           <button
             type="button"
@@ -197,6 +223,10 @@ export class ErrorBoundary extends Component {
   componentDidCatch(error, errorInfo) {
     console.error('[PJ Study Runtime Exception]:', error, errorInfo);
   }
+
+  handleReset = () => {
+    this.setState({ hasError: false, error: null });
+  };
 
   handleReload = () => {
     window.location.reload();
@@ -332,7 +362,7 @@ export class ErrorBoundary extends Component {
             >
               <button
                 type="button"
-                onClick={this.handleReload}
+                onClick={this.handleReset}
                 style={{
                   backgroundColor: 'var(--color-primary, #1b4d36)',
                   color: '#ffffff',
@@ -343,6 +373,22 @@ export class ErrorBoundary extends Component {
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'background-color 140ms ease'
+                }}
+              >
+                Try Again
+              </button>
+              <button
+                type="button"
+                onClick={this.handleReload}
+                style={{
+                  backgroundColor: 'transparent',
+                  color: 'var(--color-text-primary, #151816)',
+                  border: '1px solid var(--color-border-strong, #b5b1a4)',
+                  borderRadius: '8px',
+                  padding: '10px 20px',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  cursor: 'pointer'
                 }}
               >
                 Reload Page

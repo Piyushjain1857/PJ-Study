@@ -1,9 +1,55 @@
 import apiClient, { setAccessToken } from './api.js';
 
+const REFRESH_TOKEN_STORAGE_KEY = 'pj_study_refresh_token';
+
+/**
+ * Safely accesses stored refresh token for cross-origin third-party cookie fallback.
+ */
+export function getStoredRefreshToken() {
+  try {
+    return typeof window !== 'undefined' ? window.localStorage?.getItem(REFRESH_TOKEN_STORAGE_KEY) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Stores refresh token securely for resilient cross-site session restoration.
+ */
+export function setStoredRefreshToken(token) {
+  try {
+    if (typeof window === 'undefined') return;
+    if (token) {
+      window.localStorage?.setItem(REFRESH_TOKEN_STORAGE_KEY, token);
+    } else {
+      window.localStorage?.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+    }
+  } catch {
+    // Ignore storage quota or access errors
+  }
+}
+
+/**
+ * Removes stored refresh token.
+ */
+export function clearStoredRefreshToken() {
+  try {
+    if (typeof window !== 'undefined') {
+      window.localStorage?.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+    }
+  } catch {
+    // Ignore
+  }
+}
+
 /**
  * Frontend authentication API service for PJ Study.
  */
 export const authService = {
+  getStoredRefreshToken,
+  setStoredRefreshToken,
+  clearStoredRefreshToken,
+
   /**
    * Registers a new student account.
    *
@@ -21,33 +67,43 @@ export const authService = {
    */
   async login(payload) {
     const response = await apiClient.post('/auth/login', payload);
-    const { user, accessToken } = response.data?.data || {};
+    const { user, accessToken, refreshToken } = response.data?.data || {};
     if (accessToken) {
       setAccessToken(accessToken);
     }
-    return { user, accessToken };
+    if (refreshToken) {
+      setStoredRefreshToken(refreshToken);
+    }
+    return { user, accessToken, refreshToken };
   },
 
   /**
-   * Refreshes the active session via HttpOnly cookie.
+   * Refreshes the active session via HttpOnly cookie with fallback token body.
    */
   async refresh() {
-    const response = await apiClient.post('/auth/refresh');
-    const { user, accessToken } = response.data?.data || {};
+    const fallbackToken = getStoredRefreshToken();
+    const payload = fallbackToken ? { refreshToken: fallbackToken } : {};
+    const response = await apiClient.post('/auth/refresh', payload);
+    const { user, accessToken, refreshToken } = response.data?.data || {};
     if (accessToken) {
       setAccessToken(accessToken);
     }
-    return { user, accessToken };
+    if (refreshToken) {
+      setStoredRefreshToken(refreshToken);
+    }
+    return { user, accessToken, refreshToken };
   },
 
   /**
-   * Logs out the user and clears in-memory tokens and server cookies.
+   * Logs out the user and clears in-memory tokens, storage tokens, and server cookies.
    */
   async logout() {
     try {
-      await apiClient.post('/auth/logout');
+      const fallbackToken = getStoredRefreshToken();
+      await apiClient.post('/auth/logout', fallbackToken ? { refreshToken: fallbackToken } : {});
     } finally {
       setAccessToken(null);
+      clearStoredRefreshToken();
     }
   },
 

@@ -45,42 +45,76 @@ function RouteLoadingFallback() {
   );
 }
 
+/**
+ * Wraps dynamic component imports with automatic reload fallback when
+ * old chunk files are missing after a new production deployment.
+ */
+function safeLazy(importFn) {
+  return lazy(async () => {
+    try {
+      const module = await importFn();
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem('pj_chunk_reload');
+      }
+      return module;
+    } catch (error) {
+      const isChunkError =
+        error?.message?.includes('Failed to fetch dynamically imported module') ||
+        error?.message?.includes('Importing a module script failed') ||
+        error?.name === 'ChunkLoadError';
+
+      if (isChunkError && typeof window !== 'undefined') {
+        const reloaded = window.sessionStorage.getItem('pj_chunk_reload');
+        if (!reloaded) {
+          window.sessionStorage.setItem('pj_chunk_reload', 'true');
+          window.location.reload();
+          return new Promise(() => {}); // Wait for reload
+        }
+      }
+      throw error;
+    }
+  });
+}
+
 // Helper to wrap lazy components in Suspense
-const withLazy = (Component) => (props) => (
-  <Suspense fallback={<RouteLoadingFallback />}>
-    <Component {...props} />
-  </Suspense>
-);
+const withLazy = (importFn) => {
+  const Component = safeLazy(importFn);
+  return (props) => (
+    <Suspense fallback={<RouteLoadingFallback />}>
+      <Component {...props} />
+    </Suspense>
+  );
+};
 
 import UnauthorizedPage from '../pages/UnauthorizedPage.jsx';
 
 // Route-Level Code Splitting for heavy views (drastically reduces initial JS bundle)
-const HomePage = withLazy(lazy(() => import('../pages/HomePage.jsx')));
-const NotFoundPage = withLazy(lazy(() => import('../pages/NotFoundPage.jsx')));
-const LoginPage = withLazy(lazy(() => import('../pages/auth/LoginPage.jsx')));
-const RegisterPage = withLazy(lazy(() => import('../pages/auth/RegisterPage.jsx')));
-const VerifyEmailPage = withLazy(lazy(() => import('../pages/auth/VerifyEmailPage.jsx')));
-const ForgotPasswordPage = withLazy(lazy(() => import('../pages/auth/ForgotPasswordPage.jsx')));
-const ResetPasswordPage = withLazy(lazy(() => import('../pages/auth/ResetPasswordPage.jsx')));
+const HomePage = withLazy(() => import('../pages/HomePage.jsx'));
+const NotFoundPage = withLazy(() => import('../pages/NotFoundPage.jsx'));
+const LoginPage = withLazy(() => import('../pages/auth/LoginPage.jsx'));
+const RegisterPage = withLazy(() => import('../pages/auth/RegisterPage.jsx'));
+const VerifyEmailPage = withLazy(() => import('../pages/auth/VerifyEmailPage.jsx'));
+const ForgotPasswordPage = withLazy(() => import('../pages/auth/ForgotPasswordPage.jsx'));
+const ResetPasswordPage = withLazy(() => import('../pages/auth/ResetPasswordPage.jsx'));
 
-const AdminDashboardPage = withLazy(lazy(() => import('../pages/admin/AdminDashboardPage.jsx')));
-const AdminWorkspacePage = withLazy(lazy(() => import('../pages/admin/AdminWorkspacePage.jsx')));
-const DesignSystemPage = withLazy(lazy(() => import('../pages/DesignSystemPage.jsx')));
-const ProfilePage = withLazy(lazy(() => import('../pages/auth/ProfilePage.jsx')));
+const AdminDashboardPage = withLazy(() => import('../pages/admin/AdminDashboardPage.jsx'));
+const AdminWorkspacePage = withLazy(() => import('../pages/admin/AdminWorkspacePage.jsx'));
+const DesignSystemPage = withLazy(() => import('../pages/DesignSystemPage.jsx'));
+const ProfilePage = withLazy(() => import('../pages/auth/ProfilePage.jsx'));
 const NotificationCenterPage = withLazy(
-  lazy(() => import('../pages/notifications/NotificationCenterPage.jsx'))
+  () => import('../pages/notifications/NotificationCenterPage.jsx')
 );
 const StudentDashboardPage = withLazy(
-  lazy(() => import('../pages/dashboard/StudentDashboardPage.jsx'))
+  () => import('../pages/dashboard/StudentDashboardPage.jsx')
 );
-const NotesExplorePage = withLazy(lazy(() => import('../pages/notes/NotesExplorePage.jsx')));
-const NoteDetailsPage = withLazy(lazy(() => import('../pages/notes/NoteDetailsPage.jsx')));
+const NotesExplorePage = withLazy(() => import('../pages/notes/NotesExplorePage.jsx'));
+const NoteDetailsPage = withLazy(() => import('../pages/notes/NoteDetailsPage.jsx'));
 const RecommendedNotesPage = withLazy(
-  lazy(() => import('../pages/notes/RecommendedNotesPage.jsx'))
+  () => import('../pages/notes/RecommendedNotesPage.jsx')
 );
-const CreateNotePage = withLazy(lazy(() => import('../pages/notes/CreateNotePage.jsx')));
-const EditNotePage = withLazy(lazy(() => import('../pages/notes/EditNotePage.jsx')));
-const MyNotesPage = withLazy(lazy(() => import('../pages/notes/MyNotesPage.jsx')));
+const CreateNotePage = withLazy(() => import('../pages/notes/CreateNotePage.jsx'));
+const EditNotePage = withLazy(() => import('../pages/notes/EditNotePage.jsx'));
+const MyNotesPage = withLazy(() => import('../pages/notes/MyNotesPage.jsx'));
 
 /**
  * Application routing table for PJ Study.

@@ -1,9 +1,31 @@
 import axios from 'axios';
 
 /**
+ * Resolves the appropriate base API URL across local development, custom domains,
+ * and Render production deployments (avoiding localhost fallbacks on production).
+ */
+function resolveApiBaseUrl() {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  if (typeof window !== 'undefined') {
+    const { hostname, protocol } = window.location;
+    // Auto-link to deployed Render backend if running on Render static hosting
+    if (hostname.includes('onrender.com')) {
+      return 'https://pj-study-backend.onrender.com/api/v1';
+    }
+    // Custom domain production fallback
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      return `${protocol}//${hostname}/api/v1`;
+    }
+  }
+  return 'http://localhost:5001/api/v1';
+}
+
+/**
  * Base URL for API requests.
  */
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api/v1';
+export const API_BASE_URL = resolveApiBaseUrl();
 
 /**
  * In-memory storage for short-lived access token.
@@ -53,7 +75,7 @@ function processQueue(error, token = null) {
  */
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000,
+  timeout: 45000, // 45 seconds to accommodate cloud web service cold starts
   withCredentials: true, // Send HttpOnly refresh cookies
   headers: {
     'Content-Type': 'application/json',
@@ -106,13 +128,23 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        const fallbackToken =
+          typeof window !== 'undefined'
+            ? window.localStorage?.getItem('pj_study_refresh_token')
+            : null;
+
         const refreshResponse = await axios.post(
           `${API_BASE_URL}/auth/refresh`,
-          {},
-          { withCredentials: true }
+          fallbackToken ? { refreshToken: fallbackToken } : {},
+          { withCredentials: true, timeout: 45000 }
         );
 
         const newAccessToken = refreshResponse.data?.data?.accessToken;
+        const newRefreshToken = refreshResponse.data?.data?.refreshToken;
+        if (newRefreshToken && typeof window !== 'undefined') {
+          window.localStorage?.setItem('pj_study_refresh_token', newRefreshToken);
+        }
+
         setAccessToken(newAccessToken);
         processQueue(null, newAccessToken);
 
@@ -121,6 +153,9 @@ apiClient.interceptors.response.use(
       } catch (refreshErr) {
         processQueue(refreshErr, null);
         setAccessToken(null);
+        if (typeof window !== 'undefined') {
+          window.localStorage?.removeItem('pj_study_refresh_token');
+        }
         return Promise.reject(formatAxiosError(error));
       } finally {
         isRefreshing = false;
