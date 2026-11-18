@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext.jsx';
 import notificationService from '../services/notificationService.js';
-import { isCancellation, API_BASE_URL } from '../services/api.js';
+import { isCancellation, getRuntimeApiBaseUrl } from '../services/api.js';
 
 const NotificationContext = createContext(null);
 
@@ -133,7 +133,7 @@ export function NotificationProvider({ children }) {
       return;
     }
 
-    const apiBase = API_BASE_URL;
+    const apiBase = getRuntimeApiBaseUrl();
     const socketUrl = apiBase.replace(/\/api\/v1\/?$/, '');
 
     const socket = io(socketUrl, {

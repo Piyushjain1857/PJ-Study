@@ -4,10 +4,7 @@ import axios from 'axios';
  * Resolves the appropriate base API URL across local development, custom domains,
  * and Render production deployments (avoiding localhost fallbacks on production).
  */
-function resolveApiBaseUrl() {
-  if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL;
-  }
+export function getRuntimeApiBaseUrl() {
   if (typeof window !== 'undefined') {
     const { hostname, protocol } = window.location;
     // Auto-link to deployed Render backend if running on Render static hosting
@@ -16,16 +13,20 @@ function resolveApiBaseUrl() {
     }
     // Custom domain production fallback
     if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      const configured = import.meta.env.VITE_API_BASE_URL;
+      if (configured && !configured.includes('localhost') && !configured.includes('127.0.0.1')) {
+        return configured;
+      }
       return `${protocol}//${hostname}/api/v1`;
     }
   }
-  return 'http://localhost:5001/api/v1';
+  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api/v1';
 }
 
 /**
  * Base URL for API requests.
  */
-export const API_BASE_URL = resolveApiBaseUrl();
+export const API_BASE_URL = getRuntimeApiBaseUrl();
 
 /**
  * In-memory storage for short-lived access token.
@@ -86,6 +87,7 @@ export const apiClient = axios.create({
 // Request interceptor: injects in-memory JWT bearer token if available
 apiClient.interceptors.request.use(
   (config) => {
+    config.baseURL = getRuntimeApiBaseUrl();
     if (inMemoryAccessToken && !config.headers.Authorization) {
       config.headers.Authorization = `Bearer ${inMemoryAccessToken}`;
     }
@@ -133,8 +135,9 @@ apiClient.interceptors.response.use(
             ? window.localStorage?.getItem('pj_study_refresh_token')
             : null;
 
+        const activeBase = getRuntimeApiBaseUrl();
         const refreshResponse = await axios.post(
-          `${API_BASE_URL}/auth/refresh`,
+          `${activeBase}/auth/refresh`,
           fallbackToken ? { refreshToken: fallbackToken } : {},
           { withCredentials: true, timeout: 45000 }
         );
