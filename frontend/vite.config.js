@@ -28,7 +28,8 @@ export default defineConfig({
       manifest: {
         name: 'PJ Study',
         short_name: 'PJ Study',
-        description: 'Your Entire Study World, One Place. Academic notes and AI-powered study platform.',
+        description:
+          'Your Entire Study World, One Place. Academic notes and AI-powered study platform.',
         theme_color: '#245C46',
         background_color: '#F5F4F0',
         display: 'standalone',
